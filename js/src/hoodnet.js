@@ -32,12 +32,17 @@ for (let i = 0; i < 10; i += 1) {
 
 // Let's ping everyone in the peer list
 my_local_simulator.get_peers().forEach((peer) => {
-	// me.ping(peer.node_info, (res) => {
+	// me.ping(peer.node_info, (res, ctx) => {
 	// 	console.log(`Ping acknowledge, res msg: ${res.data}`)
 	// });
 
-	me.find_node(BigInt(`0x${crypto.randomBytes(20).toString("hex")}`), peer.node_info, (res) => {
-		// console.log(`Got a FIND NODE res: ${res.data}`)
-		console.log(res);
+	// me.find_node(BigInt(`0x${crypto.randomBytes(20).toString("hex")}`), peer.node_info, (res, ctx) => {
+	// 	// console.log(`Got a FIND NODE res: ${res.data}`)
+	// 	console.log(res);
+	// });
+
+	me.store("Fuck your mother", "Hey it's the data", me.node_info, (res, ctx) => {
+		console.log(res.data);
+		console.log(ctx.data)
 	});
 });

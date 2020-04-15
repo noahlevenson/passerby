@@ -45,7 +45,7 @@ class Heng_alpha extends Heng {
 					clearTimeout(timeout_id);
 
 					if (typeof cb === "function") {
-						cb(res_msg);
+						cb(res_msg, this.node);
 					}
 
 					resolve();

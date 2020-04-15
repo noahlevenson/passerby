@@ -15,6 +15,7 @@ class Hnode {
 	// Dislike that this isn't static, but need to access the instanced handler functions?
 	RPC_RES_EXEC = new Map([
 		[Hmsg.RPC.PING, this._res_ping],
+		[Hmsg.RPC.STORE, this._res_store],
 		[Hmsg.RPC.FIND_NODE, this._res_find_node]
 	]);
 
@@ -30,6 +31,9 @@ class Hnode {
 		for (let i = 0; i < Hnode.DHT_BIT_WIDTH; i += 1) {
 			this.kbuckets.set(i, new Hkbucket({size: Hnode.K_SIZE}));
 		}
+
+		// This is our local data store -- I guess we're rehashing keys but whatever
+		this.data = new Map();
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our transport reference and call its out() method
@@ -57,8 +61,14 @@ class Hnode {
 		this.eng.send(msg, node_info, cb);
 	}
 
-	store(node_info, cb) {
+	store(key, val, node_info, cb) {
+		const msg = new Hmsg({
+			rpc: Hmsg.RPC.STORE,
+			from: new Hnode_info(this.node_info),
+			data: [key, val]
+		});
 
+		this.eng.send(msg, node_info, cb);
 	}
 
 	find_node(key, node_info, cb) {
@@ -75,17 +85,24 @@ class Hnode {
 
 	}
 
-	_on_req(msg) {
-		const res = this.RPC_RES_EXEC.get(msg.rpc).bind(this)(msg);
-		this.eng.send(res, msg.from)
-	}
-
 	_res_ping(req) {
 		return new Hmsg({
 			rpc: Hmsg.RPC.PING,
 			from: new Hnode_info(this.node_info),
 			res: true,
 			data: "PONG",
+			id: req.id
+		});
+	}
+
+	_res_store(req) {
+		this.data.set(req.data[0], req.data[1]);
+
+		return new Hmsg({
+			rpc: Hmsg.RPC.STORE,
+			from: new Hnode_info(this.node_info),
+			res: true,
+			data: "OK",
 			id: req.id
 		});
 	}
@@ -112,6 +129,11 @@ class Hnode {
 			data: nodes,
 			id: req.id
 		});
+	}
+
+	_on_req(msg) {
+		const res = this.RPC_RES_EXEC.get(msg.rpc).bind(this)(msg);
+		this.eng.send(res, msg.from)
 	}
 }
 
