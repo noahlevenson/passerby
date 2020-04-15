@@ -16,7 +16,7 @@ class Hnode {
 			return new Hmsg({
 				rpc: Hmsg.RPC.PING,
 				from: new Hnode_info(this.node_info),
-				reply: true,
+				res: true,
 				data: "PONG",
 				id: msg.id
 			});
@@ -27,6 +27,7 @@ class Hnode {
 	]);
 
 	constructor({transport = null, message_eng = null} = {}) {
+		// TODO: validate that the transport and message eng module are instances of the correct base classes and implement the functionality we rely on
 		this.transport = transport;
 		this.message_eng = message_eng;
 		this.node_id = Hmsg.generate_random_key(this.DHT_BIT_WIDTH);  // This is just a temp hack!! Node IDs must be generated properly bro!

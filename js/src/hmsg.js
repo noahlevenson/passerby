@@ -10,11 +10,11 @@ class Hmsg {
 		FIND_VALUE: 3
 	};
 
-	constructor({rpc = null, from = null, data = null, reply = false, id = Hmsg.generate_random_key()} = {}) { // I feel like generate_random_key() should probably be part of Hmsg, not Hnode
+	constructor({rpc = null, from = null, data = null, res = false, id = Hmsg.generate_random_key()} = {}) { // I feel like generate_random_key() should probably be part of Hmsg, not Hnode
 		this.rpc = rpc;
 		this.from = from;
 		this.data = data;
-		this.reply = reply;
+		this.res = res;
 		this.id = id;
 	}
 
