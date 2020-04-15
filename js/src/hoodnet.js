@@ -1,5 +1,7 @@
 "use strict";
 
+const crypto = require("crypto"); // DELETE ME!!!!!
+
 const { Hnode } = require("./hnode.js");
 const { Heng_alpha } = require("./eng/heng_alpha.js");
 const { Htrans_sim } = require("./trans/htrans_sim.js");
@@ -13,7 +15,7 @@ const my_preferred_message_eng = new Heng_alpha();
 const my_local_simulator = new Htrans_sim();
 
 // Create a node for me
-const me = new Hnode({message_eng: my_preferred_message_eng, transport: my_local_simulator});
+const me = new Hnode({eng: my_preferred_message_eng, transport: my_local_simulator});
 
 // Add me to the local simulator
 my_local_simulator.add_peer(me);
@@ -22,7 +24,7 @@ my_local_simulator.add_peer(me);
 for (let i = 0; i < 10; i += 1) {
 	const message_eng = new Heng_alpha();
 	const local_simulator = new Htrans_sim();
-	const node = new Hnode({message_eng: message_eng, transport: local_simulator});
+	const node = new Hnode({eng: message_eng, transport: local_simulator});
 
 	my_local_simulator.add_peer(node);
 }
@@ -30,7 +32,12 @@ for (let i = 0; i < 10; i += 1) {
 
 // Let's ping everyone in the peer list
 my_local_simulator.get_peers().forEach((peer) => {
-	me.ping(peer.node_info, () => {
-		console.log("Ping acknowledged!")
+	// me.ping(peer.node_info, (res) => {
+	// 	console.log(`Ping acknowledge, res msg: ${res.data}`)
+	// });
+
+	me.find_node(BigInt(`0x${crypto.randomBytes(20).toString("hex")}`), peer.node_info, (res) => {
+		// console.log(`Got a FIND NODE res: ${res.data}`)
+		console.log(res);
 	});
 });

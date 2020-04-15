@@ -24,7 +24,7 @@ class Heng_alpha extends Heng {
 
 		// The incoming message is req rather than a res, so just forward it to the protocol layer for decoding and further actions
 		console.log(`Node ${this.node.node_info.node_id.toString(16)} received a req from node ${msg.from.node_id.toString(16)}`)
-		this.node._on_message(msg); // TODO: A question to answer - what's the interface and contract? Currently responses fire an event and 
+		this.node._on_req(msg); // TODO: A question to answer - what's the interface and contract? Currently responses fire an event and 
 									// this event is monitored within this module -- Hnodes don't have to listen for Heng response events, Hnodes just
 									// need to specify what they want to do in a callback function - so is it also logical that 
 									// Hnode wouldn't listen for Heng req events, but rather, Heng would similarly do the work of just magically making them appear in the protocol layer?
@@ -39,7 +39,6 @@ class Heng_alpha extends Heng {
 					console.log(`req timed out for msg ${msg.id.toString(16)}`);
 					this.res.removeAllListeners(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`);
 					reject(); // Maybe we should reject with a proper error code etc
-
 				}, Heng_alpha.TIMEOUT);
 
 				this.res.once(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, (res_msg) => {

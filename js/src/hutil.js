@@ -1,0 +1,23 @@
+// Utility functions
+class Hutil {
+	static _log2(n) {
+		let x = BigInt(n);
+		let y = BigInt(1);
+		let i = 0;
+
+		while (x > 0) {
+			x >>= y;
+			i += 1
+		}
+
+		return i - 1;
+	}
+
+	static _sort_by_distance_from(arr, n) {
+		return arr.sort((a, b) => {
+			return Math.abs(a - n) - Math.abs(b - n);
+		});
+	}
+}
+
+module.exports.Hutil = Hutil;
