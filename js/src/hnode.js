@@ -6,7 +6,7 @@ const { Hutil } = require("./hutil.js");
 // A hoodnet DHT node
 // Nodes are the nucleus, wiring together a message engine module and transport module
 class Hnode {
-	// TODO: It'd be nice if these were actually consts, but it's not currently supported
+	// TODO: We can make these const-like by making them private and implementing getters
 	static DHT_BIT_WIDTH = 160;
 	static ID_LEN = this.DHT_BIT_WIDTH / 8;
 	static K_SIZE = 20;
@@ -166,10 +166,13 @@ class Hnode {
 		for (let i = 0; i < search_order.length && nodes.length < max; i += 1) {
 			const bucket = this.get_kbucket(search_order[i]);
 
-			for (let j = 0; j < bucket.data.length && nodes.length < max; j += 1) {
-				nodes.push(new Hnode_info(bucket.data[j]));
+			// Could be a bad bug here - bucket.length() could be changed mid-process by some event elsewhere
+			for (let j = 0; j < bucket.length() && nodes.length < max; j += 1) {
+				nodes.push(new Hnode_info(bucket.at[j]));
 			}
 		}
+
+		return nodes;
 	}
 
 	_on_req(msg) {
