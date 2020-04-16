@@ -6,6 +6,9 @@ const { Hnode } = require("./hnode.js");
 const { Heng_alpha } = require("./eng/heng_alpha.js");
 const { Htrans_sim } = require("./trans/htrans_sim.js");
 
+
+const { Hmin_priority_queue } = require("./hcontainer.js")
+
 // Is this source file necessary in the distribution? Do want to maybe move some global constants here?
 
 // Create a message engine module
@@ -30,23 +33,24 @@ for (let i = 0; i < 10; i += 1) {
 }
 
 // Let's ping everyone in the peer list
-my_local_simulator.get_peers().forEach((peer) => {
-	// me.ping(peer.node_info, (res, ctx) => {
-	// 	console.log(`Ping acknowledge, res msg: ${res.data}`)
-	// });
+// my_local_simulator.get_peers().forEach((peer) => {
+// 	// me.ping(peer.node_info, (res, ctx) => {
+// 	// 	console.log(`Ping acknowledge, res msg: ${res.data}`)
+// 	// });
 
-	// me.find_node(BigInt(`0x${crypto.randomBytes(20).toString("hex")}`), peer.node_info, (res, ctx) => {
-	// 	// console.log(`Got a FIND NODE res: ${res.data}`)
-	// 	console.log(res);
-	// });
+// 	// me.find_node(BigInt(`0x${crypto.randomBytes(20).toString("hex")}`), peer.node_info, (res, ctx) => {
+// 	// 	// console.log(`Got a FIND NODE res: ${res.data}`)
+// 	// 	console.log(res);
+// 	// });
 
-	const key = BigInt(`0x${crypto.randomBytes(20).toString("hex")}`);
+// 	const key = BigInt(`0x${crypto.randomBytes(20).toString("hex")}`);
 
-	me.store(key, "Hey it's some arbitrary data bro", peer.node_info, (res, ctx) => {
-		console.log(ctx.data);
+// 	me.store(key, "Hey it's some arbitrary data bro", peer.node_info, (res, ctx) => {
+// 		console.log(ctx.data);
 		
-		me.find_value(key, peer.node_info, (res, ctx) => {
-			console.log(`Got the data! ${res.data}`)
-		});
-	});
-});
+// 		me.find_value(key, peer.node_info, (res, ctx) => {
+// 			console.log(`Got the data! ${res.data}`)
+// 		});
+// 	});
+// });
+
