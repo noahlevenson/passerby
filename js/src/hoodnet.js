@@ -41,8 +41,13 @@ my_local_simulator.get_peers().forEach((peer) => {
 	// 	console.log(res);
 	// });
 
-	me.store("Fuck your mother", "Hey it's the data", me.node_info, (res, ctx) => {
-		console.log(res.data);
-		console.log(ctx.data)
+	const key = BigInt(`0x${crypto.randomBytes(20).toString("hex")}`);
+
+	me.store(key, "Hey it's some arbitrary data bro", peer.node_info, (res, ctx) => {
+		console.log(ctx.data);
+		
+		me.find_value(key, peer.node_info, (res, ctx) => {
+			console.log(`Got the data! ${res.data}`)
+		});
 	});
 });

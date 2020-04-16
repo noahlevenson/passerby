@@ -16,7 +16,8 @@ class Hnode {
 	RPC_RES_EXEC = new Map([
 		[Hmsg.RPC.PING, this._res_ping],
 		[Hmsg.RPC.STORE, this._res_store],
-		[Hmsg.RPC.FIND_NODE, this._res_find_node]
+		[Hmsg.RPC.FIND_NODE, this._res_find_node],
+		[Hmsg.RPC.FIND_VALUE, this._res_find_value]
 	]);
 
 	constructor({transport = null, eng = null} = {}) {
@@ -81,8 +82,14 @@ class Hnode {
 		this.eng.send(msg, node_info, cb);
 	}
 
-	find_value(node_info, cb) {
+	find_value(key, node_info, cb) {
+		const msg = new Hmsg({
+			rpc: Hmsg.RPC.FIND_VALUE,
+			from: new Hnode_info(this.node_info),
+			data: key
+		});
 
+		this.eng.send(msg, node_info, cb);
 	}
 
 	_res_ping(req) {
@@ -96,7 +103,7 @@ class Hnode {
 	}
 
 	_res_store(req) {
-		this.data.set(req.data[0], req.data[1]);
+		this.data.set(req.data[0].toString(16), req.data[1]);
 
 		return new Hmsg({
 			rpc: Hmsg.RPC.STORE,
@@ -108,19 +115,7 @@ class Hnode {
 	}
 
 	_res_find_node(req) {
-		const d = Hnode.get_distance(req.data, this.node_id);
-		const b = Hutil._log2(d);
-
-		const nodes = [];
-		const search_order = Hutil._sort_by_distance_from(Array.from(this.kbuckets.keys()), b);
-
-		for (let i = 0; i < search_order.length && nodes.length < Hnode.K_SIZE; i += 1) {
-			const bucket = this.get_kbucket(search_order[i]);
-
-			for (let j = 0; j < bucket.data.length && nodes.length < Hnode.K_SIZE; j += 1) {
-				nodes.push(new Hnode_info(bucket.data[j]));
-			}
-		}
+		const nodes = this._get_nodes_closest_to(req.data, Hnode.K_SIZE);
 
 		return new Hmsg({
 			rpc: Hmsg.RPC.FIND_NODE,
@@ -129,6 +124,38 @@ class Hnode {
 			data: nodes,
 			id: req.id
 		});
+	}
+
+	_res_find_value(req) {
+		let data = this.data.get(req.data.toString(16));
+		
+		if (!data) {
+			data = this._get_nodes_closest_to(req.data, Hnode.K_SIZE);
+		}
+
+		return new Hmsg({
+			rpc: Hmsg.RPC.FIND_VALUE,
+			from: new Hnode_info(this.node_info),
+			res: true,
+			data: data,
+			id: req.id
+		});
+	}
+
+	_get_nodes_closest_to(key, max) {
+		const d = Hnode.get_distance(key, this.node_id);
+		const b = Hutil._log2(d);
+
+		const nodes = [];
+		const search_order = Hutil._sort_by_distance_from(Array.from(this.kbuckets.keys()), b);
+
+		for (let i = 0; i < search_order.length && nodes.length < max; i += 1) {
+			const bucket = this.get_kbucket(search_order[i]);
+
+			for (let j = 0; j < bucket.data.length && nodes.length < max; j += 1) {
+				nodes.push(new Hnode_info(bucket.data[j]));
+			}
+		}
 	}
 
 	_on_req(msg) {
