@@ -49,6 +49,20 @@ class Hnode {
 		return this.kbuckets.get(i);
 	}
 
+	node_lookup(node_id) {
+		function _do_node_lookup(res, ctx) {
+
+		}
+
+		const node_infos = this._get_nodes_closest_to(key, this.ALPHA);
+		const node_list = new Map();  // node_list should really be a richer data structer to keep track of active vs non active nodes
+		
+		node_infos.forEach((node_info) => {
+			node_list.set(node_info.node_id, node_info);
+			this.find_node(node_id, node_info, _do_node_lookup);
+		});
+	}
+
 	// How our RPC req/res system works:
 	// If you want to make an RPC req, you call the appropriate RPC function and specify what you want to want to do with the response in a callback -- 
 	// your Heng module is responsible for figuring out how to keep track of the process (some Heng modules might keep messages as state in a queue and implement GC for timeouts, some might just use promises...)

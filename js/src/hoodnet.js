@@ -29,7 +29,6 @@ for (let i = 0; i < 10; i += 1) {
 	my_local_simulator.add_peer(node);
 }
 
-
 // Let's ping everyone in the peer list
 my_local_simulator.get_peers().forEach((peer) => {
 	// me.ping(peer.node_info, (res, ctx) => {
