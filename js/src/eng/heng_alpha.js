@@ -68,7 +68,7 @@ class Heng_alpha extends Heng {
 
 	// Currently we only listen for responses if the outgoing message is not a res
 	// Not sure if there's some cases where we want to send a res and continue to listen for a res
-	send(msg, node_info, cb)  {
+	send(msg, node_info, success, timeout)  {
 		if (!msg.res) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
@@ -80,14 +80,16 @@ class Heng_alpha extends Heng {
 				this.res.once(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, (res_msg) => {
 					clearTimeout(timeout_id);
 
-					if (typeof cb === "function") {
-						cb(res_msg, this.node);
+					if (typeof success === "function") {
+						success(res_msg, this.node);
 					}
 
-					resolve();
+					resolve(); // Maybe we should resolve with a value
 				});
 			}).catch((reason) => {
-				// The req timed out, let it go away and do nothing
+				if (typeof timeout === "function") {
+					timeout();
+				}
 			});
 		}
 

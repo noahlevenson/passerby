@@ -65,6 +65,11 @@ class Hnode {
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
 	node_lookup(key) {
 		function _do_node_lookup(res, ctx) {
+			// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
+			const resolve = arguments[0];
+			res = arguments[1];
+			ctx = arguments[2];
+
 			// We've heard back from a node (the sender is in the res.from field). 
 			// If it's already in our map, let's update it to be queried
 			// If it's not already in our map, let's add it as a queried node
@@ -95,6 +100,12 @@ class Hnode {
 				return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
 			});
 
+			// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
+
+			if (typeof resolve === "function") {
+				resolve();
+			}
+
 			const node_infos = [];
 
 			for (let i = 0; i < sorted.length && node_infos.length < Hnode.ALPHA; i += 1) {
@@ -112,6 +123,7 @@ class Hnode {
 			//console.log("satisfaction # " + satisfaction_number)
 			//console.log("sorted len " + sorted.length)
 
+			// Wow this is terrible
 			let done = true;
 
 			for (let i = 0; i < satisfaction_number && i < sorted.length; i += 1) {
@@ -124,21 +136,44 @@ class Hnode {
 				return;
 			}
 
-			
-
-			// console.log(ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length)
-
-			// This is interesting - we use the length of _get_nodes_closest to as a means to determine if the total # of nodes
-			// we have ever communicated with is less than K_SIZE, and if so, then how big it is
-			// but why do we need - 1?
-			// if (how_many_active_and_queried >= ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length) {
-			// 	return;
-			// } 
-
-			// console.log(node_infos.length)
+			const closest_bro = Hnode.get_distance(key, sorted[0].node_id);
+			const resolutions = [];
 
 			node_infos.forEach((node_info) => {
-				ctx.find_node(key, node_info, _do_node_lookup);
+				resolutions.push(new Promise((resolve, reject) => {
+					ctx.find_node(key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
+						resolve();																      // to the failure callback, because we want to use
+					});																				  // Promise.all() to test for their completion
+				}));
+			});
+
+			// If a full round of find_node instructions has failed to find a node that's any closer than the closest one we'd previously seen,
+			// we send a round of find_node instructions to all of the SIZE_K nodes we haven't already queried
+			// TODO: Is this "hail mary" round supposed to recurse?  I mean, I think so, right?
+			Promise.all(resolutions).then((values) => {
+				const new_sorted = Array.from(node_map.values()).sort((a, b) => {
+					return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
+				});
+
+				if (Hnode.get_distance(key, new_sorted[0].node_id) >= closest_bro) {
+					
+
+					const current_k_number = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
+
+					const k_closest_nodes_we_havent_queried = [];
+
+					for (let i = 0; i < new_sorted.length && k_closest_nodes_we_havent_queried.length < current_k_number; i += 1) {
+						if (!new_sorted[i].queried) {
+							k_closest_nodes_we_havent_queried.push(new_sorted[i]);
+						}
+					}
+
+					// console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
+
+					k_closest_nodes_we_havent_queried.forEach((node_info) => {
+						this.find_node(key, node_info, _do_node_lookup.bind(this, null));
+					});
+				}
 			});
 		}
 
@@ -146,7 +181,7 @@ class Hnode {
 		const node_map = new Map();
 		
 		node_infos.forEach((node_info) => {
-			this.find_node(key, node_info, _do_node_lookup);
+			this.find_node(key, node_info, _do_node_lookup.bind(this, null));
 		});
 	}
 
@@ -154,43 +189,43 @@ class Hnode {
 	// If you want to make an RPC req, you call the appropriate RPC function and specify what you want to want to do with the response in a callback -- 
 	// your Heng module is responsible for figuring out how to keep track of the process (some Heng modules might keep messages as state in a queue and implement GC for timeouts, some might just use promises...)
 	// Similarly, your Heng module is responsible for determining what is an incoming RPC req for us to answer, and it forwards it to our _on_req() function
-	ping(node_info, cb) {
+	ping(node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.PING,
 			from: new Hnode_info(this.node_info)
 		});
 
-		this.eng.send(msg, node_info, cb);
+		this.eng.send(msg, node_info, success, timeout);
 	}
 
-	store(key, val, node_info, cb) {
+	store(key, val, node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
 			data: [key, val]
 		});
 
-		this.eng.send(msg, node_info, cb);
+		this.eng.send(msg, node_info, success, timeout);
 	}
 
-	find_node(key, node_info, cb) {
+	find_node(key, node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
 			data: key
 		});
 
-		this.eng.send(msg, node_info, cb);
+		this.eng.send(msg, node_info, success, timeout);
 	}
 
-	find_value(key, node_info, cb) {
+	find_value(key, node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
 			data: key
 		});
 
-		this.eng.send(msg, node_info, cb);
+		this.eng.send(msg, node_info, success, timeout);
 	}
 
 	_res_ping(req) {
