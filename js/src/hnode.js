@@ -2,6 +2,7 @@ const { Hnode_info } = require("./hnode_info.js");
 const { Hkbucket } = require("./hkbucket.js");
 const { Hmsg } = require("./hmsg.js");
 const { Hutil } = require("./hutil.js");
+const { Hmin_priority_queue } = require("./hcontainer.js"); 
 
 // A hoodnet DHT node
 // Nodes are the nucleus, wiring together a message engine module and transport module
@@ -49,17 +50,110 @@ class Hnode {
 		return this.kbuckets.get(i);
 	}
 
-	node_lookup(node_id) {
+	bootstrap(node_info) {
+		const d = Hnode.get_distance(node_info.node_id, this.node_id);
+		const b = Hutil._log2(d);
+
+		this.get_kbucket(b).push(node_info);
+
+		this.node_lookup(this.node_id);
+
+		
+		// TODO: perform the "refresh" step
+	}
+
+	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
+	// Overall this is a really inefficient algorithm and we can make it better
+	node_lookup(key) {
 		function _do_node_lookup(res, ctx) {
 
+			// BRO -- do we even use the active property?  Shouldn't
+
+
+			// We got a response for this node, so set it to active + queried
+			// This is linear search, really bad -- do we want to mirror the node_list as a map for O(1) search?
+			
+			//const node_info = node_list.search(Hnode.get_distance(key, res.from.node_id)).get_obj();
+
+			const distance = Hnode.get_distance(key, res.from.node_id);
+			const node_info = node_map.get(distance.toString(16));
+			
+			node_info.queried = true; // Why do we set this to true twice?
+			node_info.active = true;
+			node_info.distance = distance;
+
+			// Add the response nodes to the node list, only if they're unique
+
+			// console.log(res.data);
+
+			res.data.forEach((node_info) => {
+				const distance = Hnode.get_distance(key, node_info.node_id);
+
+				if (!node_map.get(distance.toString(16))) {
+					node_info.queried = false;
+					node_info.active = false;
+					node_info.distance = distance;
+					// node_list.insert(node_info, Hnode.get_distance(key, node_info.node_id));
+					node_map.set(distance.toString(16), node_info);
+				}
+			});
+
+			// pick alpha nodes from the node list that we have not yet queried and send find_node requests to them
+			// This is super dumb - we traverse the priority queue by popping the min object and re-inserting it
+			// Need to rethink the way we're doing all of this
+			const new_node_infos = [];
+
+			// for (let i = 0; i < node_list.heap_size() && new_node_infos.length < Hnode.ALPHA; i += 1) {
+			// 	const q_node = node_list.extract_min();
+				
+			// 	if (!q_node.get_obj().queried) {
+			// 		new_node_infos.push(q_node.get_obj());
+			// 	}
+
+			// 	node_list.insert(q_node.get_obj(), q_node.get_key());
+			// }
+
+			// Please don't do this, it's slow and bad
+			// A priority queue is bad because the insert() function results in a race condition between each branch of the recursion
+			// it's also not good for traversing values to find those we haven't queried
+			// the hash map is nice because you get constant time lookups
+			// but this sort we have to perform on every recursion is murder
+			const sorted = Array.from(node_map.values()).sort((a, b) => {
+				return a.distance > b.distance ? 1 : -1;
+			});
+
+			// console.log(sorted);
+
+			for (let i = 0; i < sorted.length && new_node_infos.length < Hnode.ALPHA; i += 1) {
+				if (!sorted[i].queried) {
+					new_node_infos.push(sorted[i]);
+				}
+			}
+
+			// console.log(new_node_infos);
+
+			new_node_infos.forEach((node_info) => {
+				node_info.queried = true;
+				node_info.active = false;
+				// node_info.distance = Hnode.get_distance(key, node_info.node_id);
+				ctx.find_node(key, node_info, _do_node_lookup);
+			});
 		}
 
-		const node_infos = this._get_nodes_closest_to(key, this.ALPHA);
-		const node_list = new Map();  // node_list should really be a richer data structer to keep track of active vs non active nodes
+		const node_infos = this._get_nodes_closest_to(key, Hnode.ALPHA);
+		const node_map = new Map();
 		
 		node_infos.forEach((node_info) => {
-			node_list.set(node_info.node_id, node_info);
-			this.find_node(node_id, node_info, _do_node_lookup);
+			// TODO: This is really hacky - we just add properties to the Hnode_info objects to keep track of 
+			// who we've queried and who is active - can we do this better?
+			node_info.queried = true;
+			node_info.active = false;
+			node_info.distance = Hnode.get_distance(key, node_info.node_id); // Especially distance - shouldn't we just make this part of node info objs?
+
+			node_map.set(node_info.distance.toString(16), node_info);
+
+			// node_list.insert(node_info, Hnode.get_distance(key, node_info.node_id));
+			this.find_node(key, node_info, _do_node_lookup);
 		});
 	}
 
@@ -166,11 +260,18 @@ class Hnode {
 		for (let i = 0; i < search_order.length && nodes.length < max; i += 1) {
 			const bucket = this.get_kbucket(search_order[i]);
 
-			// Could be a bad bug here - bucket.length() could be changed mid-process by some event elsewhere
-			for (let j = 0; j < bucket.length() && nodes.length < max; j += 1) {
-				nodes.push(new Hnode_info(bucket.at[j]));
+			// Gotta think here -- we currently have an annoying system where k-buckets are created at a fixed size
+			// and populated with undefineds until they reach capacity, because I'm worried about getting bucket.length
+			// and iterating through a k-bucket potentially while a message event is pushing new values into the k-bucket
+			// but there's gotta be a better way bro
+			for (let j = bucket.length() - 1; j >= 0 && nodes.length < max; j -= 1) {	
+				const node_info = bucket.at(j);
+
+				if (node_info) {
+					nodes.push(new Hnode_info(node_info));
+				}
 			}
-		}
+		}	
 
 		return nodes;
 	}

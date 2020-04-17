@@ -2,6 +2,11 @@
 class Hutil {
 	static _log2(n) {
 		let x = BigInt(n);
+
+		if (x === BigInt(0)) {
+			return 0;
+		}
+		
 		let y = BigInt(1);
 		let i = 0;
 

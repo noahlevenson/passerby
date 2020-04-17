@@ -1,6 +1,9 @@
 const EventEmitter = require("events");
 const { Heng } = require("../heng.js");
 const { Hmsg } = require("../hmsg.js");
+const { Hnode } = require("../hnode.js"); // BAD circular dependency - gotta move functions off of Hnode
+const { Hutil } = require("../hutil.js");
+
 
 // Heng_alpha is a hoodnet message engine module that takes an event-driven approach and uses promises to avoid keeping message state
 class Heng_alpha extends Heng {
@@ -16,14 +19,47 @@ class Heng_alpha extends Heng {
 	
 	on_message(msg) {
 		// Assuming the message is already deserialized & validated to be an Hmsg object!
+
+		// First, update the appropriate k-bucket for the sender's node ID
+	
+		// ******* THIS SHOULD BE MOVED TO A FUNCTION ON THE HNODE *************************
+		// we just call it like:  this.node._update_kbucket(msg.from)
+		const d = Hnode.get_distance(msg.from.node_id, this.node.node_id);
+		const b = Hutil._log2(d);
+		const bucket = this.node.get_kbucket(b);
+
+		const i = bucket.exists(msg.from);
+
+		if (i !== null) {
+			bucket.move_to_tail(i);
+		} else if (!bucket.is_full()) {
+			bucket.push(msg.from);
+		} else {
+			this.node.ping(bucket.at(0), (res, ctx) => {
+				const d = Hnode.get_distance(res.from.node_id, ctx.node.node_id);
+				const b = Hutil._log2(d);
+				const bucket = ctx.node.get_kbucket(b);
+
+				const i = bucket.exists(res.from);
+
+				if (i !== null) {
+					bucket.move_to_tail(i);
+				}
+			});
+
+			// NEED TO HANDLE THE TIMEOUT CASE!!!!!!!!!
+		}
+		// *********************************************************************************
+		
+
 		if (msg.res) {
-			console.log(`Node ${this.node.node_info.node_id.toString(16)} received a res from node ${msg.from.node_id.toString(16)}`)
+			// console.log(`Node ${this.node.node_info.node_id.toString(16)} received a res from node ${msg.from.node_id.toString(16)}`)
 			this.res.emit(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, msg);
 			return;
 		}
 
 		// The incoming message is req rather than a res, so just forward it to the protocol layer for decoding and further actions
-		console.log(`Node ${this.node.node_info.node_id.toString(16)} received a req from node ${msg.from.node_id.toString(16)}`)
+		// console.log(`Node ${this.node.node_info.node_id.toString(16)} received a req from node ${msg.from.node_id.toString(16)}`)
 		this.node._on_req(msg); // TODO: A question to answer - what's the interface and contract? Currently responses fire an event and 
 									// this event is monitored within this module -- Hnodes don't have to listen for Heng response events, Hnodes just
 									// need to specify what they want to do in a callback function - so is it also logical that 

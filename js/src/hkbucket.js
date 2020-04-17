@@ -6,24 +6,21 @@ class Hkbucket {
 	constructor({size} = {}) {
 		// TODO: If no size, throw error
 		this.#size = size;
-		this.#data = []
+		this.#data = new Array(size);
 	}
 
 	push(node_info) {
 		this.#data.push(node_info);
+		this.#data.shift();
 	}
 
 	at(i) {
 		return this.#data[i];
 	}
 
-	length() {
-		return this.#data.length;
-	}
-
 	exists(node_info) {
-		for (let i = 0; i < this.data.length; i += 1) {
-			if (this.#data[i].node_id === node_info.node_id) {
+		for (let i = 0; i < this.#data.length; i += 1) {
+			if (this.#data[i] && this.#data[i].node_id === node_info.node_id) {
 				return i;
 			}
 		}
@@ -36,7 +33,17 @@ class Hkbucket {
 	}
 
 	is_full() {
-		return this.#data.length >= this.#size;
+		return this.#data.some((elem) => {
+			elem !== undefined;
+		});
+	}
+
+	length() {
+		return this.#data.length;
+	}
+
+	print() {
+		console.log(this.#data);
 	}
 }
 

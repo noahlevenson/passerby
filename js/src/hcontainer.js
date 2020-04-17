@@ -1,4 +1,5 @@
 // Priority queue node
+// Should we do away with nodes and instead implement a comparator func? https://www.geeksforgeeks.org/priorityqueue-comparator-method-in-java/?ref=rp
 class Hq_node {
 	#obj;
 	#key;
@@ -47,36 +48,36 @@ class Hmin_priority_queue {
 		return i >> 1;
 	}
 
-	// _max_heapify(i) {
-	// 	while (Hpriority_queue._left(i) < this.#heap_size && Hpriority_queue._right(i) < this.#heap_size) {
-	// 		const left = Hpriority_queue._left(i);
-	// 		const right = Hpriority_queue._right(i);	
-	// 		let largest = i;
+	_min_heapify(i) {
+		while (Hmin_priority_queue._left(i) < this.#heap_size && Hmin_priority_queue._right(i) < this.#heap_size) {
+			const left = Hmin_priority_queue._left(i);
+			const right = Hmin_priority_queue._right(i);	
+			let smallest = i;
 
-	// 		if (this.#data[left] > this.#data[i]) {
-	// 			largest = left;
-	// 		}
+			if (this.#data[left] < this.#data[i]) {
+				smallest = left;
+			}
 
-	// 		if (this.#data[right] > this.#data[largest]) {
-	// 			largest = right;
-	// 		}
+			if (this.#data[right] < this.#data[smallest]) {
+				smallest = right;
+			}
 
-	// 		if (largest === i) {
-	// 			break;
-	// 		}
+			if (smallest === i) {
+				break;
+			}
 
-	// 		const temp = this.#data[i];
-	// 		this.#data[i] = this.#data[largest];
-	// 		this.#data[largest] = temp;
-	// 		i = largest;
-	// 	}
-	// }
+			const temp = this.#data[i];
+			this.#data[i] = this.#data[largest];
+			this.#data[largest] = temp;
+			i = largest;
+		}
+	}
 
-	// _build_max_heap() {
-	// 	for (i = Math.floor(this.#length / 2); i >= 0; i -= 1) {
-	// 		this._max_heapify(i);
-	// 	}
-	// }
+	_build_max_heap() {
+		for (i = Math.floor(this.#length / 2); i >= 0; i -= 1) {
+			this._max_heapify(i);
+		}
+	}
 
 	_decrease_key(i, key) {
 		// TODO: catch key value too large error
@@ -88,20 +89,21 @@ class Hmin_priority_queue {
 			this.#data[i] = temp;
 			i = Hmin_priority_queue._parent(i);
 		}
+
 	}
 
 	min() {
 		return this.#data[0];
 	}
 
-	// extract_max() {
-	// 	// TODO: catch heap underflow
-	// 	const max = this.#data[0];
-	// 	this.#data[0] = this.#data[this.#heap_size - 1];
-	// 	this.#heap_size -= 1;
-	// 	this._max_heapify(0);
-	// 	return max;
-	// }
+	extract_min() {
+		// TODO: catch heap overflow
+		const min = this.#data[0];
+		this.#data[0] = this.#data[this.#heap_size - 1];
+		this.#heap_size -= 1;
+		this._min_heapify(0);
+		return min;
+	}
 
 	insert(obj, key) {
 		this.#data.push(new Hq_node(obj, Number.POSITIVE_INFINITY));
@@ -109,7 +111,23 @@ class Hmin_priority_queue {
 		this._decrease_key(this.#heap_size - 1, key);
 	}
 
+	search(key) {
+		for (let i = 0; i < this.#heap_size; i += 1) {
+			if (this.#data[i].get_key() === key) {
+				return this.#data[i];
+			}
+		}
+
+		return null;
+	}
+
+	heap_size() {
+		return this.#heap_size;
+	}
+
 	print() {
+		console.log(`Hmin_priority_queue:`);
+
 		this.#data.forEach((node) => {
 			console.log(`key: ${node.get_key()} =>`, node.get_obj());
 		});
