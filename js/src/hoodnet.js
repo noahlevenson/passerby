@@ -44,7 +44,7 @@ console.log(`BOOSTRAP NODE: ${bootstrap_node.node_info.node_id}`)
 
 
 // Now let's add some other nodes to the simulated network
-for (let i = 0; i < 100; i += 1) {
+for (let i = 0; i < 500; i += 1) {
 	const message_eng = new Heng_alpha();
 	const local_simulator = new Htrans_sim();
 	const node = new Hnode({eng: message_eng, transport: local_simulator});
@@ -59,6 +59,7 @@ for (let i = 0; i < 100; i += 1) {
 
 
 me.bootstrap(bootstrap_node.node_info);
+
 
 
 // console.log(bootstrap_node._get_nodes_closest_to(BigInt(0), 100));

@@ -63,79 +63,81 @@ class Hnode {
 	}
 
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
-	// Overall this is a really inefficient algorithm and we can make it better
 	node_lookup(key) {
 		function _do_node_lookup(res, ctx) {
+			// We've heard back from a node (the sender is in the res.from field). 
+			// If it's already in our map, let's update it to be queried
+			// If it's not already in our map, let's add it as a queried node
 
-			// BRO -- do we even use the active property?  Shouldn't
+			// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
+			const sender = res.from;
+			sender.queried = true;
+			node_map.set(Hnode.get_distance(key, res.from.node_id).toString(16), sender);
 
-
-			// We got a response for this node, so set it to active + queried
-			// This is linear search, really bad -- do we want to mirror the node_list as a map for O(1) search?
-			
-			//const node_info = node_list.search(Hnode.get_distance(key, res.from.node_id)).get_obj();
-
-			const distance = Hnode.get_distance(key, res.from.node_id);
-			const node_info = node_map.get(distance.toString(16));
-			
-			node_info.queried = true; // Why do we set this to true twice?
-			node_info.active = true;
-			node_info.distance = distance;
-
-			// Add the response nodes to the node list, only if they're unique
-
-			// console.log(res.data);
-
+			// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
+			// Again exploit the map property that we can just overwrite old keys
 			res.data.forEach((node_info) => {
-				const distance = Hnode.get_distance(key, node_info.node_id);
+				// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
+				// us a node in a list that we've already talked to and we want to retain its queried status
 
-				if (!node_map.get(distance.toString(16))) {
+				const existing_node = node_map.get(Hnode.get_distance(key, node_info.node_id).toString(16));
+
+				if (!existing_node) {
 					node_info.queried = false;
-					node_info.active = false;
-					node_info.distance = distance;
-					// node_list.insert(node_info, Hnode.get_distance(key, node_info.node_id));
-					node_map.set(distance.toString(16), node_info);
+					node_map.set(Hnode.get_distance(key, node_info.node_id).toString(16), node_info);
 				}
 			});
 
-			// pick alpha nodes from the node list that we have not yet queried and send find_node requests to them
-			// This is super dumb - we traverse the priority queue by popping the min object and re-inserting it
-			// Need to rethink the way we're doing all of this
-			const new_node_infos = [];
-
-			// for (let i = 0; i < node_list.heap_size() && new_node_infos.length < Hnode.ALPHA; i += 1) {
-			// 	const q_node = node_list.extract_min();
-				
-			// 	if (!q_node.get_obj().queried) {
-			// 		new_node_infos.push(q_node.get_obj());
-			// 	}
-
-			// 	node_list.insert(q_node.get_obj(), q_node.get_key());
-			// }
-
-			// Please don't do this, it's slow and bad
-			// A priority queue is bad because the insert() function results in a race condition between each branch of the recursion
-			// it's also not good for traversing values to find those we haven't queried
-			// the hash map is nice because you get constant time lookups
-			// but this sort we have to perform on every recursion is murder
+			// Now we set up for the recursion:  
+			// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
+			// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
 			const sorted = Array.from(node_map.values()).sort((a, b) => {
-				return a.distance > b.distance ? 1 : -1;
+				return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
 			});
 
-			// console.log(sorted);
+			const node_infos = [];
 
-			for (let i = 0; i < sorted.length && new_node_infos.length < Hnode.ALPHA; i += 1) {
+			for (let i = 0; i < sorted.length && node_infos.length < Hnode.ALPHA; i += 1) {
 				if (!sorted[i].queried) {
-					new_node_infos.push(sorted[i]);
+					node_infos.push(sorted[i]);
 				}
 			}
 
-			// console.log(new_node_infos);
+			// Wanna look at the first K_SIZE closest nodes in our map -- if they've all been queried, we're done
+			// We do this here because in the early stages of a network, when there are few nodes, our K number
+			// will be less than 20, and we need to know what it is
+			// gotta do this better though
+			const satisfaction_number = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
 
-			new_node_infos.forEach((node_info) => {
-				node_info.queried = true;
-				node_info.active = false;
-				// node_info.distance = Hnode.get_distance(key, node_info.node_id);
+			//console.log("satisfaction # " + satisfaction_number)
+			//console.log("sorted len " + sorted.length)
+
+			let done = true;
+
+			for (let i = 0; i < satisfaction_number && i < sorted.length; i += 1) {
+				if (!sorted[i].queried) {
+					done = false;
+				}
+			}
+
+			if (done) {
+				return;
+			}
+
+			
+
+			// console.log(ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length)
+
+			// This is interesting - we use the length of _get_nodes_closest to as a means to determine if the total # of nodes
+			// we have ever communicated with is less than K_SIZE, and if so, then how big it is
+			// but why do we need - 1?
+			// if (how_many_active_and_queried >= ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length) {
+			// 	return;
+			// } 
+
+			// console.log(node_infos.length)
+
+			node_infos.forEach((node_info) => {
 				ctx.find_node(key, node_info, _do_node_lookup);
 			});
 		}
@@ -144,15 +146,6 @@ class Hnode {
 		const node_map = new Map();
 		
 		node_infos.forEach((node_info) => {
-			// TODO: This is really hacky - we just add properties to the Hnode_info objects to keep track of 
-			// who we've queried and who is active - can we do this better?
-			node_info.queried = true;
-			node_info.active = false;
-			node_info.distance = Hnode.get_distance(key, node_info.node_id); // Especially distance - shouldn't we just make this part of node info objs?
-
-			node_map.set(node_info.distance.toString(16), node_info);
-
-			// node_list.insert(node_info, Hnode.get_distance(key, node_info.node_id));
 			this.find_node(key, node_info, _do_node_lookup);
 		});
 	}
