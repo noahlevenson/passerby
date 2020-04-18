@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const { Hnode_info } = require("./hnode_info.js");
 const { Hkbucket } = require("./hkbucket.js");
 const { Hmsg } = require("./hmsg.js");
@@ -8,8 +9,9 @@ const { Hmin_priority_queue } = require("./hcontainer.js");
 // Nodes are the nucleus, wiring together a message engine module and transport module
 class Hnode {
 	// TODO: We can make these const-like by making them private and implementing getters
+	static BYTE_WIDTH = 8;
 	static DHT_BIT_WIDTH = 160;
-	static ID_LEN = this.DHT_BIT_WIDTH / 8;
+	static ID_LEN = this.DHT_BIT_WIDTH / this.BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
 
@@ -25,7 +27,7 @@ class Hnode {
 		// TODO: validate that the transport and message eng module are instances of the correct base classes and implement the functionality we rely on
 		this.transport = transport;
 		this.eng = eng;
-		this.node_id = Hmsg.generate_random_key(this.DHT_BIT_WIDTH);  // This is just a temp hack!! Node IDs must be generated properly bro!
+		this.node_id = Hnode.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
 		this.node_info = new Hnode_info({ip_addr: "127.0.0.1", udp_port: 31337, node_id: BigInt(this.node_id)});
 
 		this.kbuckets = new Map();
@@ -46,149 +48,187 @@ class Hnode {
 		return key1 ^ key2;
 	}
 
+	// min and max are the log2 of your desired integer range: 2^min - 2^max
+	// TODO: This is cryptographically insecure and pretty crappy
+	// Let's figure out how to do this properly when we implement a real portable system that doesn't realy on BigInts
+	static generate_random_key_between(min = 0, max = this.DHT_BIT_WIDTH) {
+		let min_bigint = 2n ** BigInt(min);
+		const max_bigint = 2n ** BigInt(max);
+		const diff = max_bigint - min_bigint;
+
+		const bits_needed = Hutil._log2(diff) || 1;
+		const bytes_needed = Math.ceil(bits_needed / this.BYTE_WIDTH);
+		const extra_bits = (bytes_needed * this.BYTE_WIDTH) - bits_needed;
+		const random_bytes_buf = crypto.randomBytes(bytes_needed);
+
+		random_bytes_buf[0] &= (0xFF >> extra_bits);
+
+		return min_bigint + BigInt(`0x${random_bytes_buf.toString("hex")}`);
+	}
+
 	get_kbucket(i) {
 		return this.kbuckets.get(i);
 	}
 
-	bootstrap(node_info) {
+	async refresh_kbucket(b) {
+		// To refresh k-bucket 20 means to pick a random key in the range of 2^20 - 2^21 and do a "node search" on it -- which I'm assuming means do a node lookup? (as opposed to a find_node?) 
+		// because a find_node is a directed RPC 
+		const random_id = Hnode.generate_random_key_between(b, b + 1);
+		this.node_lookup(random_id);
+	}
+
+	async bootstrap(node_info) {
 		const d = Hnode.get_distance(node_info.node_id, this.node_id);
 		const b = Hutil._log2(d);
 
 		this.get_kbucket(b)._push(node_info);
 
-		this.node_lookup(this.node_id);
+		const closest_to_me_sorted = await this.node_lookup(this.node_id);
 
-		
-		// TODO: perform the "refresh" step
+		// Now we refresh every k-bucket further away than the closest neighbor I found
+		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
+		// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
+
+		// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
+		// since the nodes in the network see me as the closest node to myself
+		const distance_to_closest_bro = Hnode.get_distance(closest_to_me_sorted[1].node_id, this.node_id);
+
+		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
+
+		for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {
+			this.refresh_kbucket(i);
+		}
 	}
 
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
 	node_lookup(key) {
-		function _do_node_lookup(res, ctx) {
-			// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
-			const resolve = arguments[0];
-			res = arguments[1];
-			ctx = arguments[2];
+		return new Promise((resolve, reject) => {
+			function _do_node_lookup(res, ctx) {
+				// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
+				const resolve_node_lookup = arguments[0];
+				res = arguments[1];
+				ctx = arguments[2];
 
-			// We've heard back from a node (the sender is in the res.from field). 
-			// If it's already in our map, let's update it to be queried
-			// If it's not already in our map, let's add it as a queried node
+				// We've heard back from a node (the sender is in the res.from field). 
+				// If it's already in our map, let's update it to be queried
+				// If it's not already in our map, let's add it as a queried node
 
-			// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
-			const sender = res.from;
-			sender.queried = true;
-			node_map.set(Hnode.get_distance(key, res.from.node_id).toString(16), sender);
+				// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
+				const sender = res.from;
+				sender.queried = true;
+				node_map.set(Hnode.get_distance(key, res.from.node_id).toString(16), sender);
 
-			// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
-			// Again exploit the map property that we can just overwrite old keys
-			res.data.forEach((node_info) => {
-				// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
-				// us a node in a list that we've already talked to and we want to retain its queried status
+				// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
+				// Again exploit the map property that we can just overwrite old keys
+				res.data.forEach((node_info) => {
+					// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
+					// us a node in a list that we've already talked to and we want to retain its queried status
 
-				const existing_node = node_map.get(Hnode.get_distance(key, node_info.node_id).toString(16));
+					const existing_node = node_map.get(Hnode.get_distance(key, node_info.node_id).toString(16));
 
-				if (!existing_node) {
-					node_info.queried = false;
-					node_map.set(Hnode.get_distance(key, node_info.node_id).toString(16), node_info);
-				}
-			});
+					if (!existing_node) {
+						node_info.queried = false;
+						node_map.set(Hnode.get_distance(key, node_info.node_id).toString(16), node_info);
+					}
+				});
 
-			// Now we set up for the recursion:  
-			// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
-			// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
-			const sorted = Array.from(node_map.values()).sort((a, b) => {
-				return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
-			});
-
-			// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
-
-			if (typeof resolve === "function") {
-				resolve();
-			}
-
-			// Now we want the ALPHA number of unqueried nodes in the closest SIZE_K number of nodes in our node_map
-			// NOTE: similar to the "hail mary" condition below, there's some ambiguity in the paper -- when we 
-			// look for the closest unqueried nodes to query next, do we consider the entire length of node_map, or 
-			// do we essentially think about node_map as being a fixed length equal to our current SIZE_K?
-			const node_infos = [];
-
-			const our_current_k_size_bro = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
-
-			for (let i = 0; i < sorted.length && i < our_current_k_size_bro && node_infos.length < Hnode.ALPHA; i += 1) {
-				if (!sorted[i].queried) {
-					node_infos.push(sorted[i]);
-				}
-			}
-
-			//console.log("satisfaction # " + satisfaction_number)
-			//console.log("sorted len " + sorted.length)
-
-			// Wow this is terrible
-			// It's how we handle the base case: If all SIZE_K of the closest nodes in our node map have been queried, then we're done
-			// and we should return all SIZE_K of the nodes in our node map
-			let done = true;
-
-			for (let i = 0; i < our_current_k_size_bro && i < sorted.length; i += 1) {
-				if (!sorted[i].queried) {
-					done = false;
-				}
-			}
-
-			if (done) {
-				return;
-			}
-
-			const closest_bro = Hnode.get_distance(key, sorted[0].node_id);
-			const resolutions = [];
-
-			node_infos.forEach((node_info) => {
-				resolutions.push(new Promise((resolve, reject) => {
-					ctx.find_node(key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
-						resolve();																      // to the failure callback, because we want to use
-					});																				  // Promise.all() to test for their completion
-				}));
-			});
-
-			// If a full round of find_node instructions has failed to find a node that's any closer than the closest one we'd previously seen,
-			// we send a round of find_node instructions to all of the SIZE_K nodes we haven't already queried
-			// TODO: Is this "hail mary" round supposed to trigger recursions?  I mean, I think so, right?
-			Promise.all(resolutions).then((values) => {
-				const new_sorted = Array.from(node_map.values()).sort((a, b) => {
+				// Now we set up for the recursion:  
+				// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
+				// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
+				const sorted = Array.from(node_map.values()).sort((a, b) => {
 					return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
 				});
 
-				// Here we check the hail mary condition
-				if (Hnode.get_distance(key, new_sorted[0].node_id) >= closest_bro) {
-					const current_k_number = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
-					const k_closest_nodes_we_havent_queried = [];
+				// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
 
-					// TODO: I'm not sure what the original paper calls for: Is our node_map supposed to max out at SIZE_K items?
-					// or are we always supposed to consider an unbounded list of unqeried nodes?
-					// This also applies above where we look for unqueried nodes in the map -- if we limit it to the first SIZE_K 
-					// items, we effectively decide that the node_map is a fixed length of SIZE_K items
-					for (let i = 0; i < new_sorted.length && i < current_k_number && k_closest_nodes_we_havent_queried.length < current_k_number; i += 1) {
-						if (!new_sorted[i].queried) {
-							k_closest_nodes_we_havent_queried.push(new_sorted[i]);
-						}
-					}
-
-					if (k_closest_nodes_we_havent_queried.length > 0 ) {
-						console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
-					}	
-					
-
-					k_closest_nodes_we_havent_queried.forEach((node_info) => {
-						this.find_node(key, node_info, _do_node_lookup.bind(this, null));
-					});
+				if (typeof resolve_node_lookup === "function") {
+					resolve_node_lookup();
 				}
-			});
-		}
+				
+				const our_current_k_size_bro = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
 
-		const node_infos = this._get_nodes_closest_to(key, Hnode.ALPHA);
-		const node_map = new Map();
-		
-		node_infos.forEach((node_info) => {
-			this.find_node(key, node_info, _do_node_lookup.bind(this, null));
+				// Wow this is terrible
+				// It's how we handle the base case: If all SIZE_K of the closest nodes in our node map have been queried, then we're done
+				// and we should return all SIZE_K of the nodes in our node map
+				
+				// You should just be able to do this with one splice statement
+				const returnable = [];
+
+				for (let i = 0; i < our_current_k_size_bro && i < sorted.length; i += 1) {
+					if (sorted[i].queried) {
+						returnable.push(sorted[i]);
+					}
+				}
+
+				if (returnable.length >= our_current_k_size_bro) {
+					resolve(returnable);
+					return;
+				}
+
+				// Now we want the ALPHA number of unqueried nodes in the closest SIZE_K number of nodes in our node_map
+				// NOTE: similar to the "hail mary" condition below, there's some ambiguity in the paper -- when we 
+				// look for the closest unqueried nodes to query next, do we consider the entire length of node_map, or 
+				// do we essentially think about node_map as being a fixed length equal to our current SIZE_K?
+				const node_infos = [];
+
+				for (let i = 0; i < sorted.length && i < our_current_k_size_bro && node_infos.length < Hnode.ALPHA; i += 1) {
+					if (!sorted[i].queried) {
+						node_infos.push(sorted[i]);
+					}
+				}
+
+				const closest_bro = Hnode.get_distance(key, sorted[0].node_id);
+				const resolutions = [];
+
+				node_infos.forEach((node_info) => {
+					resolutions.push(new Promise((resolve, reject) => {
+						ctx.find_node(key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
+							resolve();																      // to the failure callback, because we want to use
+						});																				  // Promise.all() to test for their completion
+					}));
+				});
+
+				// If a full round of find_node instructions has failed to find a node that's any closer than the closest one we'd previously seen,
+				// we send a round of find_node instructions to all of the SIZE_K nodes we haven't already queried
+				// TODO: Is this "hail mary" round supposed to trigger recursions?  I mean, I think so, right?
+				Promise.all(resolutions).then((values) => {
+					const new_sorted = Array.from(node_map.values()).sort((a, b) => {
+						return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
+					});
+
+					// Here we check the hail mary condition
+					if (Hnode.get_distance(key, new_sorted[0].node_id) >= closest_bro) {
+						const current_k_number = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
+						const k_closest_nodes_we_havent_queried = [];
+
+						// TODO: I'm not sure what the original paper calls for: Is our node_map supposed to max out at SIZE_K items?
+						// or are we always supposed to consider an unbounded list of unqeried nodes?
+						// This also applies above where we look for unqueried nodes in the map -- if we limit it to the first SIZE_K 
+						// items, we effectively decide that the node_map is a fixed length of SIZE_K items
+						for (let i = 0; i < new_sorted.length && i < current_k_number && k_closest_nodes_we_havent_queried.length < current_k_number; i += 1) {
+							if (!new_sorted[i].queried) {
+								k_closest_nodes_we_havent_queried.push(new_sorted[i]);
+							}
+						}
+
+						if (k_closest_nodes_we_havent_queried.length > 0 ) {
+							//console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
+						}	
+						
+
+						k_closest_nodes_we_havent_queried.forEach((node_info) => {
+							this.find_node(key, node_info, _do_node_lookup.bind(this, null));
+						});
+					}
+				});
+			}
+
+			const node_infos = this._get_nodes_closest_to(key, Hnode.ALPHA);
+			const node_map = new Map();
+			
+			node_infos.forEach((node_info) => {
+				this.find_node(key, node_info, _do_node_lookup.bind(this, null));
+			});
 		});
 	}
 
@@ -199,7 +239,9 @@ class Hnode {
 	ping(node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.PING,
-			from: new Hnode_info(this.node_info)
+			from: new Hnode_info(this.node_info),
+			res: false,
+			id: Hnode.generate_random_key_between()
 		});
 
 		this.eng.send(msg, node_info, success, timeout);
@@ -209,7 +251,9 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
-			data: [key, val]
+			res: false,
+			data: [key, val],
+			id: Hnode.generate_random_key_between()
 		});
 
 		this.eng.send(msg, node_info, success, timeout);
@@ -219,7 +263,9 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
-			data: key
+			res: false,
+			data: key,
+			id: Hnode.generate_random_key_between()
 		});
 
 		this.eng.send(msg, node_info, success, timeout);
@@ -229,7 +275,9 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
-			data: key
+			res: false,
+			data: key,
+			id: Hnode.generate_random_key_between()
 		});
 
 		this.eng.send(msg, node_info, success, timeout);

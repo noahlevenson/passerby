@@ -1,5 +1,3 @@
-const crypto = require("crypto");
-
 // Class for a hoodnet message object
 class Hmsg {
 	// I think RPC constants should be part of Hnode rather than Hmsg - or we can create some global constants in hoodnet.js
@@ -10,21 +8,26 @@ class Hmsg {
 		FIND_VALUE: 3
 	};
 
-	constructor({rpc = null, from = null, data = null, res = false, id = Hmsg.generate_random_key()} = {}) { // I feel like generate_random_key() should probably be part of Hmsg, not Hnode
+	constructor({rpc = null, from = null, data = null, res = false, id = null} = {}) {
+		// This is mostly for sanity during development - we should always explicitly add an RPC ID to our messages
+		// so that we don't make the mistake of sending a reply with the wrong RPC ID
+		if (id === null) {
+			throw new Error("id field cannot be null my guy");
+		}
+
+		if (rpc === null || from === null || res === null) {
+			throw new Errror("bro what are you doing with this Hmsg, you forgot params");
+		}
+
+		// TODO: We can implement an is_required() function and supply as default parameter like this:
+		// () => { throw new Error("bro you forgot a parameter"}
+		// my_parameter = the above function
+
 		this.rpc = rpc;
 		this.from = from;
 		this.data = data;
 		this.res = res;
 		this.id = id;
-	}
-
-	static generate_random_key(len) {
-		if (!len) {
-			// This is a hack just to keep moving - we need to fix circular dependencies so generate_random_key() doesn't require an argument
-			len = 160 / 8
-		}
-
-		return BigInt(`0x${crypto.randomBytes(len).toString("hex")}`);
 	}
 }
 
