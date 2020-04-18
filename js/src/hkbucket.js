@@ -9,7 +9,7 @@ class Hkbucket {
 		this.#data = new Array(size);
 	}
 
-	push(node_info) {
+	_push(node_info) {
 		this.#data.push(node_info);
 		this.#data.shift();
 	}

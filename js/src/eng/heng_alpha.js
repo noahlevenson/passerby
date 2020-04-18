@@ -33,7 +33,7 @@ class Heng_alpha extends Heng {
 		if (i !== null) {
 			bucket.move_to_tail(i);
 		} else if (!bucket.is_full()) {
-			bucket.push(msg.from);
+			bucket._push(msg.from);
 		} else {
 			this.node.ping(bucket.at(0), (res, ctx) => {
 				const d = Hnode.get_distance(res.from.node_id, ctx.node.node_id);
@@ -45,9 +45,9 @@ class Heng_alpha extends Heng {
 				if (i !== null) {
 					bucket.move_to_tail(i);
 				}
+			}, () => {
+				bucket._push(msg.from);
 			});
-
-			// NEED TO HANDLE THE TIMEOUT CASE!!!!!!!!!
 		}
 		// *********************************************************************************
 		
