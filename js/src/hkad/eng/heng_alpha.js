@@ -21,37 +21,8 @@ class Heng_alpha extends Heng {
 		// Assuming the message is already deserialized & validated to be an Hmsg object!
 
 		// First, update the appropriate k-bucket for the sender's node ID
-	
-		// ******* THIS SHOULD BE MOVED TO A FUNCTION ON THE HNODE *************************
-		// we just call it like:  this.node._update_kbucket(msg.from)
-		const d = Hnode.get_distance(msg.from.node_id, this.node.node_id);
-		const b = Hutil._log2(d);
-		const bucket = this.node.get_kbucket(b);
-
-		const i = bucket.exists(msg.from);
-
-		if (i !== null) {
-			bucket.move_to_tail(i);
-		} else if (!bucket.is_full()) {
-			bucket._push(msg.from);
-		} else {
-			this.node.ping(bucket.at(0), (res, ctx) => {
-				const d = Hnode.get_distance(res.from.node_id, ctx.node.node_id);
-				const b = Hutil._log2(d);
-				const bucket = ctx.node.get_kbucket(b);
-
-				const i = bucket.exists(res.from);
-
-				if (i !== null) {
-					bucket.move_to_tail(i);
-				}
-			}, () => {
-				bucket._push(msg.from);
-			});
-		}
-		// *********************************************************************************
+		this.node._update_kbucket(msg);
 		
-
 		if (msg.res) {
 			// console.log(`Node ${this.node.node_info.node_id.toString(16)} received a res from node ${msg.from.node_id.toString(16)}`)
 			this.res.emit(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, msg);
@@ -93,7 +64,7 @@ class Heng_alpha extends Heng {
 			});
 		}
 
-		this.node.transport.out(msg, node_info);	
+		this.node.trans.out(msg, node_info);	
 	}
 }
 

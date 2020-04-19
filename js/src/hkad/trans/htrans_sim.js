@@ -24,7 +24,7 @@ class Htrans_sim extends Htrans {
 		const peer = Htrans_sim.peer_list.get(node_info.node_id.toString());
 
 		if (peer) {
-			peer.transport.in(msg);
+			peer.trans.in(msg);
 		} 
 	}
 }

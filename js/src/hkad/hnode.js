@@ -6,7 +6,8 @@ const { Hutil } = require("./hutil.js");
 const { Hmin_priority_queue } = require("./hcontainer.js"); 
 
 // A hoodnet DHT node
-// Nodes are the nucleus, wiring together a message engine module and transport module
+// Nodes are the nucleus, wiring together a message engine module and 
+ module
 class Hnode {
 	// TODO: We can make these const-like by making them private and implementing getters
 	static BYTE_WIDTH = 8;
@@ -23,9 +24,9 @@ class Hnode {
 		[Hmsg.RPC.FIND_VALUE, this._res_find_value]
 	]);
 
-	constructor({transport = null, eng = null} = {}) {
+	constructor({trans = null, eng = null} = {}) {
 		// TODO: validate that the transport and message eng module are instances of the correct base classes and implement the functionality we rely on
-		this.transport = transport;
+		this.trans = trans;
 		this.eng = eng;
 		this.node_id = Hnode.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
 		this.node_info = new Hnode_info({ip_addr: "127.0.0.1", udp_port: 31337, node_id: BigInt(this.node_id)});
@@ -41,7 +42,7 @@ class Hnode {
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our transport reference and call its out() method
-		this.transport.network.on("message", this.eng.on_message.bind(this.eng)) // Here we have the node wire up the transport to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
+		this.trans.network.on("message", this.eng.on_message.bind(this.eng)) // Here we have the node wire up the transport to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
 	}
 
 	static get_distance(key1, key2) {
@@ -70,38 +71,48 @@ class Hnode {
 		return this.kbuckets.get(i);
 	}
 
-	async refresh_kbucket(b) {
+	async _refresh_kbucket(b) {
 		// To refresh k-bucket 20 means to pick a random key in the range of 2^20 - 2^21 and do a "node search" on it -- which I'm assuming means do a node lookup? (as opposed to a find_node?) 
 		// because a find_node is a directed RPC 
 		const random_id = Hnode.generate_random_key_between(b, b + 1);
-		this.node_lookup(random_id);
+		await this._node_lookup(random_id);
 	}
 
-	async join(node_info) {
-		const d = Hnode.get_distance(node_info.node_id, this.node_id);
+	_update_kbucket(msg) {
+		const d = Hnode.get_distance(msg.from.node_id, this.node_id);
 		const b = Hutil._log2(d);
+		const bucket = this.get_kbucket(b);
 
-		this.get_kbucket(b)._push(node_info);
+		// I'm worried about a race condition here
+		const i = bucket.exists(msg.from);
 
-		const closest_to_me_sorted = await this.node_lookup(this.node_id);
-
-		// Now we refresh every k-bucket further away than the closest neighbor I found
-		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
-		// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
-
-		// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
-		// since the nodes in the network see me as the closest node to myself
-		const distance_to_closest_bro = Hnode.get_distance(closest_to_me_sorted[1].node_id, this.node_id);
-
-		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
-
-		for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {
-			this.refresh_kbucket(i);
+		if (i !== null) {
+			bucket.move_to_tail(i);
+			return;
 		}
+
+		if (!bucket.is_full()) {
+			bucket._push(msg.from);
+			return;
+		}
+
+		this._req_ping(bucket.at(0), (res, ctx) => {
+			const d = Hnode.get_distance(res.from.node_id, ctx.node_id);
+			const b = Hutil._log2(d);
+			const bucket = ctx.get_kbucket(b);
+
+			const i = bucket.exists(res.from);
+
+			if (i !== null) {
+				bucket.move_to_tail(i);
+			}
+		}, () => {
+			bucket._push(msg.from);
+		});
 	}
 
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
-	node_lookup(key) {
+	_node_lookup(key) {
 		return new Promise((resolve_node_lookup, reject_node_lookup) => {
 			function _do_node_lookup(res, ctx) {
 
@@ -184,7 +195,7 @@ class Hnode {
 
 				node_infos.forEach((node_info) => {
 					resolutions.push(new Promise((resolve, reject) => {
-						ctx.find_node(key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
+						ctx._req_find_node(key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
 							resolve();																      // to the failure callback, because we want to use
 						});																				  // Promise.all() to test for their completion
 					}));
@@ -214,12 +225,12 @@ class Hnode {
 						}
 
 						if (k_closest_nodes_we_havent_queried.length > 0 ) {
-							console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
+							// console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
 						}	
 						
 
 						k_closest_nodes_we_havent_queried.forEach((node_info) => {
-							this.find_node(key, node_info, _do_node_lookup.bind(this, null));
+							this._req_find_node(key, node_info, _do_node_lookup.bind(this, null));
 						});
 					}
 				});
@@ -229,7 +240,7 @@ class Hnode {
 			const node_map = new Map();
 			
 			node_infos.forEach((node_info) => {
-				this.find_node(key, node_info, _do_node_lookup.bind(this, null));
+				this._req_find_node(key, node_info, _do_node_lookup.bind(this, null));
 			});
 		});
 	}
@@ -238,7 +249,7 @@ class Hnode {
 	// If you want to make an RPC req, you call the appropriate RPC function and specify what you want to want to do with the response in a callback -- 
 	// your Heng module is responsible for figuring out how to keep track of the process (some Heng modules might keep messages as state in a queue and implement GC for timeouts, some might just use promises...)
 	// Similarly, your Heng module is responsible for determining what is an incoming RPC req for us to answer, and it forwards it to our _on_req() function
-	ping(node_info, success, timeout) {
+	_req_ping(node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.PING,
 			from: new Hnode_info(this.node_info),
@@ -249,7 +260,7 @@ class Hnode {
 		this.eng.send(msg, node_info, success, timeout);
 	}
 
-	store(key, val, node_info, success, timeout) {
+	_req_store(key, val, node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
@@ -261,7 +272,7 @@ class Hnode {
 		this.eng.send(msg, node_info, success, timeout);
 	}
 
-	find_node(key, node_info, success, timeout) {
+	_req_find_node(key, node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
@@ -273,7 +284,7 @@ class Hnode {
 		this.eng.send(msg, node_info, success, timeout);
 	}
 
-	find_value(key, node_info, success, timeout) {
+	_req_find_value(key, node_info, success, timeout) {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
@@ -340,7 +351,7 @@ class Hnode {
 		this.eng.send(res, msg.from)
 	}
 
-	_get_nodes_closest_to(key, max) {
+	_get_nodes_closest_to(key, max = Hnode.K_SIZE) {
 		const d = Hnode.get_distance(key, this.node_id);
 		const b = Hutil._log2(d);
 
@@ -364,6 +375,49 @@ class Hnode {
 		}	
 
 		return nodes;
+	}
+
+	// **** PUBLIC API ****
+
+	async join(node_info) {
+		return new Promise(async (resolve, reject) => {
+			// TODO: Replace this message with our proper logging function
+			console.log(`Joining network as ${this.node_id } via bootstrap node ${node_info.node_id}...`);
+
+			const d = Hnode.get_distance(node_info.node_id, this.node_id);
+			const b = Hutil._log2(d);
+
+			this.get_kbucket(b)._push(node_info);
+
+			const closest_to_me_sorted = await this._node_lookup(this.node_id);
+
+			// Now we refresh every k-bucket further away than the closest neighbor I found
+			// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
+			// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
+
+			// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
+			// since the nodes in the network see me as the closest node to myself
+			const distance_to_closest_bro = Hnode.get_distance(closest_to_me_sorted[1].node_id, this.node_id);
+			const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
+
+			for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {
+				await this._refresh_kbucket(i);
+			}
+
+			console.log(`Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+			resolve();
+		});
+	}
+
+	async store(key, val) {
+		const kclosest = await this._node_lookup(key);
+
+		kclosest.forEach((node_info) => {
+			// TODO: Pass a timeout function that just logs the fact that we couldn't store at that node
+			this._req_store(key, val, node_info, (res, ctx) => {
+				console.log(`Store result: ${res.data}`);
+			});
+		});
 	}
 }
 

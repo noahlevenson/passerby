@@ -9,7 +9,7 @@ const { Htrans_sim } = require("./trans/htrans_sim.js");
 // Make a bootstrap node
 const beng = new Heng_alpha();
 const btrans = new Htrans_sim();
-const bootstrap_node = new Hnode({eng: beng, transport: btrans});
+const bootstrap_node = new Hnode({eng: beng, trans: btrans});
 
 
 
@@ -20,7 +20,7 @@ const my_preferred_message_eng = new Heng_alpha();
 const my_local_simulator = new Htrans_sim();
 
 // Create a node for me, the storefront client
-const client_node = new Hnode({eng: my_preferred_message_eng, transport: my_local_simulator});
+const client_node = new Hnode({eng: my_preferred_message_eng, trans: my_local_simulator});
 
 // Add me to the local simulator
 my_local_simulator.add_peer(client_node);
@@ -37,21 +37,26 @@ console.log(`BOOSTRAP NODE: ${bootstrap_node.node_info.node_id}`)
 
 
 // Now let's add some other nodes to the simulated network
-for (let i = 0; i < 500; i += 1) {
+for (let i = 0; i < 500
+	; i += 1) {
 	const message_eng = new Heng_alpha();
 	const local_simulator = new Htrans_sim();
-	const node = new Hnode({eng: message_eng, transport: local_simulator});
+	const node = new Hnode({eng: message_eng, trans: local_simulator});
 
 	my_local_simulator.add_peer(node);
 
 	node.join(bootstrap_node.node_info);
 
-	console.log(`A peer node has bootstraped: ${node.node_info.node_id}`)
+	// console.log(`A peer node has joined: ${node.node_info.node_id}`)
 }
 
 
+(async function doshit() {
+	await client_node.join(bootstrap_node.node_info);
 
-client_node.join(bootstrap_node.node_info);
+	client_node.store(BigInt(500), "Hey it's some arbitrary data bro");
+})()
+
 
 // for (let i = BigInt(0); i < (2n ** BigInt(Hnode.DHT_BIT_WIDTH)); i += BigInt(1)) {
 // 	client_node.node_lookup(i).then((list) => {
