@@ -1,13 +1,8 @@
 "use strict";
 
-const crypto = require("crypto"); // DELETE ME!!!!!
-
 const { Hnode } = require("./hnode.js");
 const { Heng_alpha } = require("./eng/heng_alpha.js");
 const { Htrans_sim } = require("./trans/htrans_sim.js");
-
-
-const { Hmin_priority_queue } = require("./hcontainer.js")
 
 // Is the hoodnet.js file necessary in the distribution? Do want to maybe move some global constants here?
 
@@ -24,47 +19,54 @@ const my_preferred_message_eng = new Heng_alpha();
 // Create a transport module
 const my_local_simulator = new Htrans_sim();
 
-// Create a node for me
-const me = new Hnode({eng: my_preferred_message_eng, transport: my_local_simulator});
+// Create a node for me, the storefront client
+const client_node = new Hnode({eng: my_preferred_message_eng, transport: my_local_simulator});
 
 // Add me to the local simulator
-my_local_simulator.add_peer(me);
+my_local_simulator.add_peer(client_node);
 
 // Add the bootstrap node too
 my_local_simulator.add_peer(bootstrap_node);
 
 
 
-console.log(`ME: ${me.node_info.node_id}`)
+console.log(`ME: ${client_node.node_info.node_id}`)
 console.log(`BOOSTRAP NODE: ${bootstrap_node.node_info.node_id}`)
 
 
 
 
-
-
 // Now let's add some other nodes to the simulated network
-for (let i = 0; i < 100; i += 1) {
+for (let i = 0; i < 500; i += 1) {
 	const message_eng = new Heng_alpha();
 	const local_simulator = new Htrans_sim();
 	const node = new Hnode({eng: message_eng, transport: local_simulator});
 
 	my_local_simulator.add_peer(node);
 
-	node.bootstrap(bootstrap_node.node_info);
+	node.join(bootstrap_node.node_info);
 
-	console.log(`A peer node has joined: ${node.node_info.node_id}`)
+	console.log(`A peer node has bootstraped: ${node.node_info.node_id}`)
 }
 
 
 
-me.bootstrap(bootstrap_node.node_info);
+client_node.join(bootstrap_node.node_info);
+
+// for (let i = BigInt(0); i < (2n ** BigInt(Hnode.DHT_BIT_WIDTH)); i += BigInt(1)) {
+// 	client_node.node_lookup(i).then((list) => {
+// 		if (list && 
+// 			list[0].node_id === i) {
+// 			console.log(`A node exists at ${i}`)
+// 		}
+// 	});
+// }
 
 
 
 // // console.log(bootstrap_node._get_nodes_closest_to(BigInt(0), 100));
 
-// console.log(me._get_nodes_closest_to(BigInt(0), 10000000).length);
+// console.log(client_node._get_nodes_closest_to(BigInt(0), 20).length);
 
 
 

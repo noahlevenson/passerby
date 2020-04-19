@@ -77,7 +77,7 @@ class Hnode {
 		this.node_lookup(random_id);
 	}
 
-	async bootstrap(node_info) {
+	async join(node_info) {
 		const d = Hnode.get_distance(node_info.node_id, this.node_id);
 		const b = Hutil._log2(d);
 
@@ -102,12 +102,14 @@ class Hnode {
 
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
 	node_lookup(key) {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve_node_lookup, reject_node_lookup) => {
 			function _do_node_lookup(res, ctx) {
+
 				// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
-				const resolve_node_lookup = arguments[0];
+				const resolve_find_nodes = arguments[0];
 				res = arguments[1];
 				ctx = arguments[2];
+
 
 				// We've heard back from a node (the sender is in the res.from field). 
 				// If it's already in our map, let's update it to be queried
@@ -141,8 +143,8 @@ class Hnode {
 
 				// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
 
-				if (typeof resolve_node_lookup === "function") {
-					resolve_node_lookup();
+				if (typeof resolve_find_nodes === "function") {
+					resolve_find_nodes();
 				}
 				
 				const our_current_k_size_bro = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
@@ -161,7 +163,7 @@ class Hnode {
 				}
 
 				if (returnable.length >= our_current_k_size_bro) {
-					resolve(returnable);
+					resolve_node_lookup(returnable);
 					return;
 				}
 
@@ -212,7 +214,7 @@ class Hnode {
 						}
 
 						if (k_closest_nodes_we_havent_queried.length > 0 ) {
-							//console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
+							console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
 						}	
 						
 
@@ -333,6 +335,11 @@ class Hnode {
 		});
 	}
 
+	_on_req(msg) {
+		const res = this.RPC_RES_EXEC.get(msg.rpc).bind(this)(msg);
+		this.eng.send(res, msg.from)
+	}
+
 	_get_nodes_closest_to(key, max) {
 		const d = Hnode.get_distance(key, this.node_id);
 		const b = Hutil._log2(d);
@@ -357,11 +364,6 @@ class Hnode {
 		}	
 
 		return nodes;
-	}
-
-	_on_req(msg) {
-		const res = this.RPC_RES_EXEC.get(msg.rpc).bind(this)(msg);
-		this.eng.send(res, msg.from)
 	}
 }
 
