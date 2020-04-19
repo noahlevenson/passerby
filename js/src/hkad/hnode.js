@@ -3,20 +3,21 @@ const { Hnode_info } = require("./hnode_info.js");
 const { Hkbucket } = require("./hkbucket.js");
 const { Hmsg } = require("./hmsg.js");
 const { Hutil } = require("./hutil.js");
-const { Hmin_priority_queue } = require("./hcontainer.js"); 
 
-// A hoodnet DHT node
-// Nodes are the nucleus, wiring together a message engine module and 
- module
+// A hoodnet Kademlia DHT node
 class Hnode {
-	// TODO: We can make these const-like by making them private and implementing getters
 	static BYTE_WIDTH = 8;
 	static DHT_BIT_WIDTH = 160;
 	static ID_LEN = this.DHT_BIT_WIDTH / this.BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
 
-	// Dislike that this isn't static, but need to access the instanced handler functions?
+	trans;
+	eng;
+	node_id;
+	node_info;
+	kbuckets;
+	data;
 	RPC_RES_EXEC = new Map([
 		[Hmsg.RPC.PING, this._res_ping],
 		[Hmsg.RPC.STORE, this._res_store],
@@ -42,10 +43,10 @@ class Hnode {
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our transport reference and call its out() method
-		this.trans.network.on("message", this.eng.on_message.bind(this.eng)) // Here we have the node wire up the transport to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
+		this.trans.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the transport to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
 	}
 
-	static get_distance(key1, key2) {
+	static _get_distance(key1, key2) {
 		return key1 ^ key2;
 	}
 
@@ -79,7 +80,7 @@ class Hnode {
 	}
 
 	_update_kbucket(msg) {
-		const d = Hnode.get_distance(msg.from.node_id, this.node_id);
+		const d = Hnode._get_distance(msg.from.node_id, this.node_id);
 		const b = Hutil._log2(d);
 		const bucket = this.get_kbucket(b);
 
@@ -97,7 +98,7 @@ class Hnode {
 		}
 
 		this._req_ping(bucket.at(0), (res, ctx) => {
-			const d = Hnode.get_distance(res.from.node_id, ctx.node_id);
+			const d = Hnode._get_distance(res.from.node_id, ctx.node_id);
 			const b = Hutil._log2(d);
 			const bucket = ctx.get_kbucket(b);
 
@@ -115,12 +116,10 @@ class Hnode {
 	_node_lookup(key) {
 		return new Promise((resolve_node_lookup, reject_node_lookup) => {
 			function _do_node_lookup(res, ctx) {
-
 				// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
 				const resolve_find_nodes = arguments[0];
 				res = arguments[1];
 				ctx = arguments[2];
-
 
 				// We've heard back from a node (the sender is in the res.from field). 
 				// If it's already in our map, let's update it to be queried
@@ -129,7 +128,7 @@ class Hnode {
 				// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
 				const sender = res.from;
 				sender.queried = true;
-				node_map.set(Hnode.get_distance(key, res.from.node_id).toString(16), sender);
+				node_map.set(Hnode._get_distance(key, res.from.node_id).toString(16), sender);
 
 				// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
 				// Again exploit the map property that we can just overwrite old keys
@@ -137,11 +136,11 @@ class Hnode {
 					// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
 					// us a node in a list that we've already talked to and we want to retain its queried status
 
-					const existing_node = node_map.get(Hnode.get_distance(key, node_info.node_id).toString(16));
+					const existing_node = node_map.get(Hnode._get_distance(key, node_info.node_id).toString(16));
 
 					if (!existing_node) {
 						node_info.queried = false;
-						node_map.set(Hnode.get_distance(key, node_info.node_id).toString(16), node_info);
+						node_map.set(Hnode._get_distance(key, node_info.node_id).toString(16), node_info);
 					}
 				});
 
@@ -149,7 +148,7 @@ class Hnode {
 				// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
 				// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
 				const sorted = Array.from(node_map.values()).sort((a, b) => {
-					return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
+					return Hnode._get_distance(key, a.node_id) > Hnode._get_distance(key, b.node_id) ? 1 : -1;
 				});
 
 				// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
@@ -190,7 +189,7 @@ class Hnode {
 					}
 				}
 
-				const closest_bro = Hnode.get_distance(key, sorted[0].node_id);
+				const closest_bro = Hnode._get_distance(key, sorted[0].node_id);
 				const resolutions = [];
 
 				node_infos.forEach((node_info) => {
@@ -206,11 +205,11 @@ class Hnode {
 				// TODO: Is this "hail mary" round supposed to trigger recursions?  I mean, I think so, right?
 				Promise.all(resolutions).then((values) => {
 					const new_sorted = Array.from(node_map.values()).sort((a, b) => {
-						return Hnode.get_distance(key, a.node_id) > Hnode.get_distance(key, b.node_id) ? 1 : -1;
+						return Hnode._get_distance(key, a.node_id) > Hnode._get_distance(key, b.node_id) ? 1 : -1;
 					});
 
 					// Here we check the hail mary condition
-					if (Hnode.get_distance(key, new_sorted[0].node_id) >= closest_bro) {
+					if (Hnode._get_distance(key, new_sorted[0].node_id) >= closest_bro) {
 						const current_k_number = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
 						const k_closest_nodes_we_havent_queried = [];
 
@@ -257,7 +256,7 @@ class Hnode {
 			id: Hnode.generate_random_key_between()
 		});
 
-		this.eng.send(msg, node_info, success, timeout);
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_store(key, val, node_info, success, timeout) {
@@ -269,7 +268,7 @@ class Hnode {
 			id: Hnode.generate_random_key_between()
 		});
 
-		this.eng.send(msg, node_info, success, timeout);
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_node(key, node_info, success, timeout) {
@@ -281,7 +280,7 @@ class Hnode {
 			id: Hnode.generate_random_key_between()
 		});
 
-		this.eng.send(msg, node_info, success, timeout);
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_value(key, node_info, success, timeout) {
@@ -293,7 +292,7 @@ class Hnode {
 			id: Hnode.generate_random_key_between()
 		});
 
-		this.eng.send(msg, node_info, success, timeout);
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_res_ping(req) {
@@ -348,11 +347,11 @@ class Hnode {
 
 	_on_req(msg) {
 		const res = this.RPC_RES_EXEC.get(msg.rpc).bind(this)(msg);
-		this.eng.send(res, msg.from)
+		this.eng._send(res, msg.from)
 	}
 
 	_get_nodes_closest_to(key, max = Hnode.K_SIZE) {
-		const d = Hnode.get_distance(key, this.node_id);
+		const d = Hnode._get_distance(key, this.node_id);
 		const b = Hutil._log2(d);
 
 		const nodes = [];
@@ -384,7 +383,7 @@ class Hnode {
 			// TODO: Replace this message with our proper logging function
 			console.log(`Joining network as ${this.node_id } via bootstrap node ${node_info.node_id}...`);
 
-			const d = Hnode.get_distance(node_info.node_id, this.node_id);
+			const d = Hnode._get_distance(node_info.node_id, this.node_id);
 			const b = Hutil._log2(d);
 
 			this.get_kbucket(b)._push(node_info);
@@ -397,7 +396,7 @@ class Hnode {
 
 			// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
 			// since the nodes in the network see me as the closest node to myself
-			const distance_to_closest_bro = Hnode.get_distance(closest_to_me_sorted[1].node_id, this.node_id);
+			const distance_to_closest_bro = Hnode._get_distance(closest_to_me_sorted[1].node_id, this.node_id);
 			const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
 
 			for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {

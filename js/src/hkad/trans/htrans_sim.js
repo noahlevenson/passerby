@@ -8,23 +8,19 @@ class Htrans_sim extends Htrans {
 		super();
 	}
 
-	add_peer(peer) {
-		Htrans_sim.peer_list.set(peer.node_id.toString(), peer);
+	_add_peer(peer) {
+		Htrans_sim.peer_list.set(peer.node_id.toString(16), peer);
 	}
 
-	get_peers() {
+	_get_peers() {
 		return Array.from(Htrans_sim.peer_list.values());
 	}
 
-	// in(msg) {
-		
-	// }
-
-	out(msg, node_info) {
-		const peer = Htrans_sim.peer_list.get(node_info.node_id.toString());
+	_out(msg, node_info) {
+		const peer = Htrans_sim.peer_list.get(node_info.node_id.toString(16));
 
 		if (peer) {
-			peer.trans.in(msg);
+			peer.trans._in(msg);
 		} 
 	}
 }

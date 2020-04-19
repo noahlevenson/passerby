@@ -23,10 +23,10 @@ const my_local_simulator = new Htrans_sim();
 const client_node = new Hnode({eng: my_preferred_message_eng, trans: my_local_simulator});
 
 // Add me to the local simulator
-my_local_simulator.add_peer(client_node);
+my_local_simulator._add_peer(client_node);
 
 // Add the bootstrap node too
-my_local_simulator.add_peer(bootstrap_node);
+my_local_simulator._add_peer(bootstrap_node);
 
 
 
@@ -37,13 +37,12 @@ console.log(`BOOSTRAP NODE: ${bootstrap_node.node_info.node_id}`)
 
 
 // Now let's add some other nodes to the simulated network
-for (let i = 0; i < 500
-	; i += 1) {
+for (let i = 0; i < 500; i += 1) {
 	const message_eng = new Heng_alpha();
 	const local_simulator = new Htrans_sim();
 	const node = new Hnode({eng: message_eng, trans: local_simulator});
 
-	my_local_simulator.add_peer(node);
+	my_local_simulator._add_peer(node);
 
 	node.join(bootstrap_node.node_info);
 

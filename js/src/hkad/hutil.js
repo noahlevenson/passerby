@@ -24,18 +24,6 @@ class Hutil {
 			return Math.abs(a - n) - Math.abs(b - n);
 		});
 	}
-
-	// TODO: This is just here as part of our NON CRYPTOGRAPHICALLY SECURE random key generator
-	// remove this crap and make a secure system
-	// Little endian addressing
-	static _set_bit(buffer, idx, off) {
-		let mask = Buffer.alloc(1);
-
-		mask[0] = 0x01;
-		mask[0] <<= off;
-
-		buffer[idx] |= mask[0];
-	}
 }
 
 module.exports.Hutil = Hutil;

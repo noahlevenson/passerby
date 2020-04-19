@@ -1,23 +1,21 @@
 const EventEmitter = require("events");
 const { Heng } = require("../heng.js");
-const { Hmsg } = require("../hmsg.js");
-const { Hnode } = require("../hnode.js"); // BAD circular dependency - gotta move functions off of Hnode
-const { Hutil } = require("../hutil.js");
-
 
 // Heng_alpha is a hoodnet message engine module that takes an event-driven approach and uses promises to avoid keeping message state
 class Heng_alpha extends Heng {
 	static TIMEOUT = 5000;
 	static RES_EVENT_PREFIX = "r+";
+	
+	res;
 
 	constructor() {
 		super();
-		this.res = new EventEmitter();  // "Response" is more accurate than res, this should be changed everywhere
+		this.res = new EventEmitter();
 
 		// I want to see this.node in the constructor for code comprehension
 	}
 	
-	on_message(msg) {
+	_on_message(msg) {
 		// Assuming the message is already deserialized & validated to be an Hmsg object!
 
 		// First, update the appropriate k-bucket for the sender's node ID
@@ -37,13 +35,11 @@ class Heng_alpha extends Heng {
 									// Hnode wouldn't listen for Heng req events, but rather, Heng would similarly do the work of just magically making them appear in the protocol layer?
 	}
 
-	// Currently we only listen for responses if the outgoing message is not a res
-	// Not sure if there's some cases where we want to send a res and continue to listen for a res
-	send(msg, node_info, success, timeout)  {
+	_send(msg, node_info, success, timeout)  {
 		if (!msg.res) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
-					console.log(`req timed out for msg ${msg.id.toString(16)}`);
+					// console.log(`req timed out for msg ${msg.id.toString(16)}`);
 					this.res.removeAllListeners(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`);
 					reject(); // Maybe we should reject with a proper error code etc
 				}, Heng_alpha.TIMEOUT);
@@ -64,7 +60,7 @@ class Heng_alpha extends Heng {
 			});
 		}
 
-		this.node.trans.out(msg, node_info);	
+		this.node.trans._out(msg, node_info);	
 	}
 }
 
