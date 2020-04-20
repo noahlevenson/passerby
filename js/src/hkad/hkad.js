@@ -37,7 +37,7 @@ console.log(`BOOSTRAP NODE: ${bootstrap_node.node_info.node_id}`)
 
 
 // Now let's add some other nodes to the simulated network
-for (let i = 0; i < 500; i += 1) {
+for (let i = 0; i < 1000; i += 1) {
 	const message_eng = new Heng_alpha();
 	const local_simulator = new Htrans_sim();
 	const node = new Hnode({eng: message_eng, trans: local_simulator});

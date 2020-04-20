@@ -1,5 +1,6 @@
 const EventEmitter = require("events");
 const { Heng } = require("../heng.js");
+const { Hmsg } = require("../hmsg.js");
 
 // Heng_alpha is a hoodnet message engine module that takes an event-driven approach and uses promises to avoid keeping message state
 class Heng_alpha extends Heng {
@@ -21,7 +22,7 @@ class Heng_alpha extends Heng {
 		// First, update the appropriate k-bucket for the sender's node ID
 		this.node._update_kbucket(msg);
 		
-		if (msg.res) {
+		if (msg.type === Hmsg.TYPE.RES) {
 			// console.log(`Node ${this.node.node_info.node_id.toString(16)} received a res from node ${msg.from.node_id.toString(16)}`)
 			this.res.emit(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, msg);
 			return;
@@ -35,8 +36,9 @@ class Heng_alpha extends Heng {
 									// Hnode wouldn't listen for Heng req events, but rather, Heng would similarly do the work of just magically making them appear in the protocol layer?
 	}
 
+	// When we send a message, if the message is a request, we set up listeners and handlers for a potential response
 	_send(msg, node_info, success, timeout)  {
-		if (!msg.res) {
+		if (msg.type === Hmsg.TYPE.REQ) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
 					// console.log(`req timed out for msg ${msg.id.toString(16)}`);

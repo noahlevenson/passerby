@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { Hnode_info } = require("./hnode_info.js");
 const { Hkbucket } = require("./hkbucket.js");
 const { Hmsg } = require("./hmsg.js");
+const { Hmsg_data } = require("./hmsg_data.js");
 const { Hutil } = require("./hutil.js");
 
 // A hoodnet Kademlia DHT node
@@ -32,7 +33,7 @@ class Hnode {
 		this.node_id = Hnode.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
 		this.node_info = new Hnode_info({ip_addr: "127.0.0.1", udp_port: 31337, node_id: BigInt(this.node_id)});
 
-		this.kbuckets = new Map();
+		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
 		
 		for (let i = 0; i < Hnode.DHT_BIT_WIDTH; i += 1) {
 			this.kbuckets.set(i, new Hkbucket({size: Hnode.K_SIZE}));
@@ -132,7 +133,7 @@ class Hnode {
 
 				// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
 				// Again exploit the map property that we can just overwrite old keys
-				res.data.forEach((node_info) => {
+				res.data.payload.forEach((node_info) => {
 					// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
 					// us a node in a list that we've already talked to and we want to retain its queried status
 
@@ -224,7 +225,7 @@ class Hnode {
 						}
 
 						if (k_closest_nodes_we_havent_queried.length > 0 ) {
-							// console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
+							console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
 						}	
 						
 
@@ -252,7 +253,7 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.PING,
 			from: new Hnode_info(this.node_info),
-			res: false,
+			type: Hmsg.TYPE.REQ,
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -263,8 +264,8 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
-			res: false,
-			data: [key, val],
+			type: Hmsg.TYPE.REQ,
+			data: new Hmsg_data({type: Hmsg_data.TYPE.PAIR, payload: [key, val]}),
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -275,8 +276,8 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
-			res: false,
-			data: key,
+			type: Hmsg.TYPE.REQ,
+			data: new Hmsg_data({type: Hmsg_data.TYPE.KEY, payload: [key]}),
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -287,8 +288,8 @@ class Hnode {
 		const msg = new Hmsg({
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
-			res: false,
-			data: key,
+			type: Hmsg.TYPE.REQ,
+			data: new Hmsg_data({type: Hmsg_data.TYPE.KEY, payload: [key]}),
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -299,48 +300,50 @@ class Hnode {
 		return new Hmsg({
 			rpc: Hmsg.RPC.PING,
 			from: new Hnode_info(this.node_info),
-			res: true,
-			data: "PONG",
+			type: Hmsg.TYPE.RES,
+			data: new Hmsg_data({type: Hmsg_data.TYPE.STRING, payload: ["PONG"]}),
 			id: req.id
 		});
 	}
 
 	_res_store(req) {
-		this.data.set(req.data[0].toString(16), req.data[1]);
+		this.data.set(req.data.payload[0].toString(16), req.data.payload[1]);
 
 		return new Hmsg({
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
-			res: true,
-			data: "OK",
+			type: Hmsg.TYPE.RES,
+			data: new Hmsg_data({type: Hmsg_data.TYPE.STRING, payload: ["OK"]}),
 			id: req.id
 		});
 	}
 
 	_res_find_node(req) {
-		const nodes = this._get_nodes_closest_to(req.data, Hnode.K_SIZE);
+		const nodes = this._get_nodes_closest_to(req.data.payload[0], Hnode.K_SIZE);
 
 		return new Hmsg({
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
-			res: true,
-			data: nodes,
+			type: Hmsg.TYPE.RES,
+			data: new Hmsg_data({type: Hmsg_data.TYPE.NODE_LIST, payload: nodes}),
 			id: req.id
 		});
 	}
 
 	_res_find_value(req) {
-		let data = this.data.get(req.data.toString(16));
+		let payload = this.data.get(req.data.payload[0].toString(16));
+		let type = Hmsg_data.TYPE.VAL;
 		
 		if (!data) {
-			data = this._get_nodes_closest_to(req.data, Hnode.K_SIZE);
+			payload = this._get_nodes_closest_to(req.data.payload[0], Hnode.K_SIZE);
+			type = Hmsg_data.TYPE.NODE_LIST;
 		}
 
 		return new Hmsg({
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
-			res: true,
-			data: data,
+			type: Hmsg.TYPE.RES,
+			data: new Hmsg_data({type: type, payload: payload}),
 			id: req.id
 		});
 	}
@@ -414,7 +417,7 @@ class Hnode {
 		kclosest.forEach((node_info) => {
 			// TODO: Pass a timeout function that just logs the fact that we couldn't store at that node
 			this._req_store(key, val, node_info, (res, ctx) => {
-				console.log(`Store result: ${res.data}`);
+				console.log(`Store result: ${res.data.payload}`);
 			});
 		});
 	}

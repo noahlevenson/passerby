@@ -1,6 +1,5 @@
 // Class for a hoodnet message object
 class Hmsg {
-	// I think RPC constants should be part of Hnode rather than Hmsg - or we can create some global constants in hoodnet.js
 	static RPC = {
 		PING: 0,
 		STORE: 1,
@@ -8,14 +7,25 @@ class Hmsg {
 		FIND_VALUE: 3
 	};
 
-	constructor({rpc = null, from = null, data = null, res = false, id = null} = {}) {
+	static TYPE = {
+		REQ: 0,
+		RES: 1
+	};
+
+	rpc;
+	from;
+	data;
+	type;
+	id;
+
+	constructor({rpc = null, from = null, data = null, type = null, id = null} = {}) {
 		// This is mostly for sanity during development - we should always explicitly add an RPC ID to our messages
 		// so that we don't make the mistake of sending a reply with the wrong RPC ID
 		if (id === null) {
 			throw new Error("id field cannot be null my guy");
 		}
 
-		if (rpc === null || from === null || res === null) {
+		if (rpc === null || from === null || type === null) {
 			throw new Errror("bro what are you doing with this Hmsg, you forgot params");
 		}
 
@@ -26,7 +36,7 @@ class Hmsg {
 		this.rpc = rpc;
 		this.from = from;
 		this.data = data;
-		this.res = res;
+		this.type = type;
 		this.id = id;
 	}
 }
