@@ -1,15 +1,14 @@
 const crypto = require("crypto");
+const { Hutil } = require("../hutil/hutil.js"); // Hutil is correctly named because its a top level module - the rest below need to be renamed 
 const { Hnode_info } = require("./hnode_info.js");
 const { Hkbucket } = require("./hkbucket.js");
 const { Hmsg } = require("./hmsg.js");
 const { Hdata } = require("./hdata.js");
-const { Hutil } = require("./hutil.js");
 
 // A hoodnet Kademlia DHT node
 class Hnode {
-	static BYTE_WIDTH = 8;
 	static DHT_BIT_WIDTH = 160;
-	static ID_LEN = this.DHT_BIT_WIDTH / this.BYTE_WIDTH;
+	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
 
@@ -60,8 +59,8 @@ class Hnode {
 		const diff = max_bigint - min_bigint;
 
 		const bits_needed = Hutil._log2(diff) || 1;
-		const bytes_needed = Math.ceil(bits_needed / this.BYTE_WIDTH);
-		const extra_bits = (bytes_needed * this.BYTE_WIDTH) - bits_needed;
+		const bytes_needed = Math.ceil(bits_needed / Hutil.SYS_BYTE_WIDTH);
+		const extra_bits = (bytes_needed * Hutil.SYS_BYTE_WIDTH) - bits_needed;
 		const random_bytes_buf = crypto.randomBytes(bytes_needed);
 
 		random_bytes_buf[0] &= (0xFF >> extra_bits);
