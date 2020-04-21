@@ -114,13 +114,21 @@ class Hnode {
 	}
 
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
-	_node_lookup(key) {
+	_node_lookup(key, find_rpc = this._req_find_node) {
 		return new Promise((resolve_node_lookup, reject_node_lookup) => {
 			function _do_node_lookup(res, ctx) {
 				// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
 				const resolve_find_nodes = arguments[0];
 				res = arguments[1];
 				ctx = arguments[2];
+
+				// If we received a value type, that means this was a FIND instruction and we received the jackpot - terminate immediately
+				if (res.data.type === Hmsg_data.TYPE.VAL) {
+					resolve_node_lookup(res.data.payload);
+					return;
+
+					// TODO: Are we worried about any unresolved promises we may have left dangling?
+				}
 
 				// We've heard back from a node (the sender is in the res.from field). 
 				// If it's already in our map, let's update it to be queried
@@ -195,7 +203,7 @@ class Hnode {
 
 				node_infos.forEach((node_info) => {
 					resolutions.push(new Promise((resolve, reject) => {
-						ctx._req_find_node(key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
+						ctx[find_rpc.name](key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
 							resolve();																      // to the failure callback, because we want to use
 						});																				  // Promise.all() to test for their completion
 					}));
@@ -230,7 +238,7 @@ class Hnode {
 						
 
 						k_closest_nodes_we_havent_queried.forEach((node_info) => {
-							this._req_find_node(key, node_info, _do_node_lookup.bind(this, null));
+							this[find_rpc.name](key, node_info, _do_node_lookup.bind(this, null));
 						});
 					}
 				});
@@ -240,7 +248,7 @@ class Hnode {
 			const node_map = new Map();
 			
 			node_infos.forEach((node_info) => {
-				this._req_find_node(key, node_info, _do_node_lookup.bind(this, null));
+				this[find_rpc.name](key, node_info, _do_node_lookup.bind(this, null));
 			});
 		});
 	}
@@ -331,10 +339,10 @@ class Hnode {
 	}
 
 	_res_find_value(req) {
-		let payload = this.data.get(req.data.payload[0].toString(16));
+		let payload = [this.data.get(req.data.payload[0].toString(16))];
 		let type = Hmsg_data.TYPE.VAL;
 		
-		if (!data) {
+		if (!payload[0]) {
 			payload = this._get_nodes_closest_to(req.data.payload[0], Hnode.K_SIZE);
 			type = Hmsg_data.TYPE.NODE_LIST;
 		}
@@ -420,6 +428,15 @@ class Hnode {
 				console.log(`Store result: ${res.data.payload}`);
 			});
 		});
+	}
+
+	async find(key) {
+		const kclosest = await this._node_lookup(key, this._req_find_value);
+
+		// Now we have to figure out how to discern between a result that gave us a value
+		// and a result that gave us a node list
+
+		console.log(kclosest)
 	}
 }
 
