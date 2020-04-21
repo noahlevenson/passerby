@@ -423,6 +423,8 @@ class Hnode {
 	}
 
 	async store(key, val) {
+		// TODO: How can we make this return a promise? Currently we have no way of awaiting individual STORE RPC results, and that's probably
+		// good because we don't want to be coupled to an Heng implementation...
 		const result = await this._node_lookup(key);
 		const kclosest = result.payload;
 
@@ -435,16 +437,10 @@ class Hnode {
 	}
 
 	async find(key) {
-		const result = await this._node_lookup(key, this._req_find_value);
-		const payload = result.payload;
-
-		// Now we have to figure out how to discern between a result that gave us a value
-		// and a result that gave us a node list
-
-		// You'll want to wrap this one in a promise and return an indicator of whether we found a value
-		// or just a list of nodes closest to the value
-
-		console.log(payload)
+		return new Promise(async (resolve, reject) => {
+			const result = await this._node_lookup(key, this._req_find_value);
+			resolve(result);
+		});
 	}
 }
 
