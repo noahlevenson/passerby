@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { Hnode_info } = require("./hnode_info.js");
 const { Hkbucket } = require("./hkbucket.js");
 const { Hmsg } = require("./hmsg.js");
-const { Hmsg_data } = require("./hmsg_data.js");
+const { Hdata } = require("./hdata.js");
 const { Hutil } = require("./hutil.js");
 
 // A hoodnet Kademlia DHT node
@@ -123,8 +123,8 @@ class Hnode {
 				ctx = arguments[2];
 
 				// If we received a value type, that means this was a FIND instruction and we received the jackpot - terminate immediately
-				if (res.data.type === Hmsg_data.TYPE.VAL) {
-					resolve_node_lookup(res.data.payload);
+				if (res.data.type === Hdata.TYPE.VAL) {
+					resolve_node_lookup(new Hdata({type: Hdata.TYPE.VAL, payload: res.data.payload}));
 					return;
 
 					// TODO: Are we worried about any unresolved promises we may have left dangling?
@@ -182,7 +182,7 @@ class Hnode {
 				}
 
 				if (returnable.length >= our_current_k_size_bro) {
-					resolve_node_lookup(returnable);
+					resolve_node_lookup(new Hdata({type: Hdata.TYPE.NODE_LIST, payload: returnable}));
 					return;
 				}
 
@@ -273,7 +273,7 @@ class Hnode {
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.REQ,
-			data: new Hmsg_data({type: Hmsg_data.TYPE.PAIR, payload: [key, val]}),
+			data: new Hdata({type: Hdata.TYPE.PAIR, payload: [key, val]}),
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -285,7 +285,7 @@ class Hnode {
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.REQ,
-			data: new Hmsg_data({type: Hmsg_data.TYPE.KEY, payload: [key]}),
+			data: new Hdata({type: Hdata.TYPE.KEY, payload: [key]}),
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -297,7 +297,7 @@ class Hnode {
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.REQ,
-			data: new Hmsg_data({type: Hmsg_data.TYPE.KEY, payload: [key]}),
+			data: new Hdata({type: Hdata.TYPE.KEY, payload: [key]}),
 			id: Hnode.generate_random_key_between()
 		});
 
@@ -309,7 +309,7 @@ class Hnode {
 			rpc: Hmsg.RPC.PING,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.RES,
-			data: new Hmsg_data({type: Hmsg_data.TYPE.STRING, payload: ["PONG"]}),
+			data: new Hdata({type: Hdata.TYPE.STRING, payload: ["PONG"]}),
 			id: req.id
 		});
 	}
@@ -321,7 +321,7 @@ class Hnode {
 			rpc: Hmsg.RPC.STORE,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.RES,
-			data: new Hmsg_data({type: Hmsg_data.TYPE.STRING, payload: ["OK"]}),
+			data: new Hdata({type: Hdata.TYPE.STRING, payload: ["OK"]}),
 			id: req.id
 		});
 	}
@@ -333,25 +333,25 @@ class Hnode {
 			rpc: Hmsg.RPC.FIND_NODE,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.RES,
-			data: new Hmsg_data({type: Hmsg_data.TYPE.NODE_LIST, payload: nodes}),
+			data: new Hdata({type: Hdata.TYPE.NODE_LIST, payload: nodes}),
 			id: req.id
 		});
 	}
 
 	_res_find_value(req) {
 		let payload = [this.data.get(req.data.payload[0].toString(16))];
-		let type = Hmsg_data.TYPE.VAL;
+		let type = Hdata.TYPE.VAL;
 		
 		if (!payload[0]) {
 			payload = this._get_nodes_closest_to(req.data.payload[0], Hnode.K_SIZE);
-			type = Hmsg_data.TYPE.NODE_LIST;
+			type = Hdata.TYPE.NODE_LIST;
 		}
 
 		return new Hmsg({
 			rpc: Hmsg.RPC.FIND_VALUE,
 			from: new Hnode_info(this.node_info),
 			type: Hmsg.TYPE.RES,
-			data: new Hmsg_data({type: type, payload: payload}),
+			data: new Hdata({type: type, payload: payload}),
 			id: req.id
 		});
 	}
@@ -399,7 +399,8 @@ class Hnode {
 
 			this.get_kbucket(b)._push(node_info);
 
-			const closest_to_me_sorted = await this._node_lookup(this.node_id);
+			const result = await this._node_lookup(this.node_id);
+			const closest_to_me_sorted = result.payload;
 
 			// Now we refresh every k-bucket further away than the closest neighbor I found
 			// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
@@ -415,12 +416,15 @@ class Hnode {
 			}
 
 			console.log(`Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+
+			// TODO:  Resolve with a Hresult object
 			resolve();
 		});
 	}
 
 	async store(key, val) {
-		const kclosest = await this._node_lookup(key);
+		const result = await this._node_lookup(key);
+		const kclosest = result.payload;
 
 		kclosest.forEach((node_info) => {
 			// TODO: Pass a timeout function that just logs the fact that we couldn't store at that node
@@ -431,12 +435,16 @@ class Hnode {
 	}
 
 	async find(key) {
-		const kclosest = await this._node_lookup(key, this._req_find_value);
+		const result = await this._node_lookup(key, this._req_find_value);
+		const payload = result.payload;
 
 		// Now we have to figure out how to discern between a result that gave us a value
 		// and a result that gave us a node list
 
-		console.log(kclosest)
+		// You'll want to wrap this one in a promise and return an indicator of whether we found a value
+		// or just a list of nodes closest to the value
+
+		console.log(payload)
 	}
 }
 

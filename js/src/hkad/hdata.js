@@ -1,5 +1,5 @@
-// Class for a hoodnet message data object
-class Hmsg_data {
+// Class for a hoodnet data object
+class Hdata {
 	static TYPE = {
 		STRING: 0,
 		NODE_LIST: 1,
@@ -21,4 +21,4 @@ class Hmsg_data {
 	}
 }
 
-module.exports.Hmsg_data = Hmsg_data;
+module.exports.Hdata = Hdata;
