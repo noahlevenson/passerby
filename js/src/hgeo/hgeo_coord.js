@@ -3,10 +3,10 @@ const { Hutil } = require("../hutil/hutil.js");
 // Class for an hgeo latitude / longitude coordinate
 class Hgeo_coord {
 	static LIMITS = {
-		LONG_MAX: 180,
-		LONG_MIN: -180,
 		LAT_MAX: 90,
-		LAT_MIN: -90
+		LAT_MIN: -90,
+		LONG_MAX: 180,
+		LONG_MIN: -180
 	};
 
 	lat;
@@ -31,14 +31,13 @@ class Hgeo_coord {
 
 	// b = bit depth per dimension
 	linearize(b = 40) {
-		const lat = Hutil.normalize_int(this.lat + Math.abs(Hgeo_coord.LIMITS.LAT_MIN), b);
-		const long = Hutil.normalize_int(this.long + Math.abs(Hgeo_coord.LIMITS.LONG_MIN), b);
+		const lat = Hutil._float_to_normalized_int(this.lat + Math.abs(Hgeo_coord.LIMITS.LAT_MIN), 
+			Hgeo_coord.LIMITS.LONG_MAX + Math.abs(Hgeo_coord.LIMITS.LONG_MIN), b);
 		
-
-		// console.log(lat)
-		// console.log(long)
-
-		// return Hutil.z_linearize(long, lat);
+		const long = Hutil._float_to_normalized_int(this.long + Math.abs(Hgeo_coord.LIMITS.LONG_MIN), 
+			Hgeo_coord.LIMITS.LONG_MAX + Math.abs(Hgeo_coord.LIMITS.LONG_MIN), b);
+		
+		return Hutil._z_linearize_2d(lat, long, b);
 	}
 }
 
