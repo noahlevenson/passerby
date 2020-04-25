@@ -19,7 +19,7 @@ class Hpht_node {
 	}
 
 	is_leaf() {
-		return (this.children[0x00] !== null && this.children[0x01] !== null); // TODO: We only must check one because a node can't have only one child
+		return (this.children[0x00] === null && this.children[0x01] === null); // TODO: We only must check one because a node can't have only one child
 	}
 }
 

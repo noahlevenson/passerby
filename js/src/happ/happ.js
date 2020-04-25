@@ -85,6 +85,9 @@ async function doit() {
 
 	await larosa_pht.init();
 
+	const res = await larosa_pht.lookup_lin(Hnode.generate_random_key_between(0, 80));
+
+	console.log(res);
 	
 
 	
