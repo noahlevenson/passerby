@@ -15,7 +15,13 @@ const larosa = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
 console.log(larosa);
 
-const result = larosa.linearize()
+console.log(larosa.linearize())
 
-console.log(result);
+const neighbor = new Hgeo_coord({lat: 40.9018662, long: -73.7912736})
+
+console.log(neighbor)
+
+console.log(neighbor.linearize())
+
+
 

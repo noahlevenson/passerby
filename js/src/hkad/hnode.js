@@ -388,7 +388,7 @@ class Hnode {
 
 	// **** PUBLIC API ****
 
-	async join(node_info) {
+	async bootstrap(node_info) {
 		return new Promise(async (resolve, reject) => {
 			// TODO: Replace this message with our proper logging function
 			console.log(`Joining network as ${this.node_id } via bootstrap node ${node_info.node_id}...`);
@@ -414,14 +414,14 @@ class Hnode {
 				await this._refresh_kbucket(i);
 			}
 
-			console.log(`Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+			console.log(`[HKAD] Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
 
-			// TODO:  Resolve with a Hresult object
+			// TODO:  Resolve with a result
 			resolve();
 		});
 	}
 
-	async store(key, val) {
+	async put(key, val) {
 		// TODO: How can we make this return a promise? Currently we have no way of awaiting individual STORE RPC results, and that's probably
 		// good because we don't want to be coupled to an Heng implementation...
 		const result = await this._node_lookup(key);
@@ -430,12 +430,12 @@ class Hnode {
 		kclosest.forEach((node_info) => {
 			// TODO: Pass a timeout function that just logs the fact that we couldn't store at that node
 			this._req_store(key, val, node_info, (res, ctx) => {
-				console.log(`Store result: ${res.data.payload}`);
+				// console.log(`Store result: ${res.data.payload}`);
 			});
 		});
 	}
 
-	async find(key) {
+	async get(key) {
 		return new Promise(async (resolve, reject) => {
 			const result = await this._node_lookup(key, this._req_find_value);
 			resolve(result);

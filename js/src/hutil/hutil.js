@@ -1,11 +1,14 @@
+const crypto = require("crypto");
+
 // Utility functions
 class Hutil {
 	static SYS_BYTE_WIDTH = 8;
 
-	_is_number(n) {
-		if (typeof n !== "number") {
-			throw new TypeError("Value must be a number");
-		}
+	// Returns a hex string
+	static _sha1(data) {
+		const hash = crypto.createHash("SHA1"); // TODO: this encoding string is host dependent, 'openssl list -digest-algorithms'
+		hash.update(data);
+		return hash.digest("hex");
 	}
 
 	// This is actually only returning the integer part of the log2, right?
@@ -46,7 +49,7 @@ class Hutil {
 
 	// Get 2D Z-curve linearization for positive values x and y, where b is the bit depth of each dimension
 	// Currently takes Number types and returns a BigInt, but we may want to roll our own Buffer-based binary format
-	static _z_linearize_2d(x = Hutil._is_number(), y = Hutil._is_number(), b = Hutil._is_number()) {
+	static _z_linearize_2d(x, y, b) {
 		// TODO: Validate inputs
 		let xx = BigInt(x);
 		let yy = BigInt(y);
