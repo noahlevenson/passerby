@@ -46,20 +46,24 @@ my_local_simulator._add_peer(bootstrap_node);
 
 
 // Now let's add some other nodes to the simulated network
-for (let i = 0; i < 100; i += 1) {
-	(async function() {
-		const message_eng = new Heng_alpha();
-		const local_simulator = new Htrans_sim();
-		const node = new Hnode({eng: message_eng, trans: local_simulator});
-		my_local_simulator._add_peer(node);
-		await node.bootstrap(bootstrap_node.node_info);
+new Promise((resolve, reject) => {
+	for (let i = 0; i < 10; i += 1) {
+		(async function() {
+			const message_eng = new Heng_alpha();
+			const local_simulator = new Htrans_sim();
+			const node = new Hnode({eng: message_eng, trans: local_simulator});
+			my_local_simulator._add_peer(node);
+			await node.bootstrap(bootstrap_node.node_info);
 
-		// console.log(`A peer node has joined: ${node.node_info.node_id}`)
-	})();	
-}
+			// console.log(`A peer node has joined: ${node.node_info.node_id}`)
+		})();	
+	}
 
-// now that we have a network of peers established, let's do our tests
-doit();
+	resolve();
+}).then(() => {
+	doit();
+});
+
 
 async function doit() {
 
@@ -91,32 +95,49 @@ async function doit() {
 	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
 	// This should be an "add_menu()" command at the highest protocol level
-	await larosa_pht.insert(our_location.linearize(), "Pepperoni pizza and salad and shit bro, this is our menu right here");
+	// await larosa_pht.insert(our_location.linearize(), "Pepperoni pizza and salad and shit bro, this is our menu right here");
 
 
 
-	const res2 = await larosa_pht.lookup_lin(our_location.linearize());
-
-	console.log(res2)
-
-	console.log(res2.get(our_location.linearize()));
 
 
+
+	// console.log(res2.get(our_location.linearize()));
+
+	// await larosa_pht._print_stats();
+
+	for (let i = 0; i < 100; i += 1) {
+		await larosa_pht.insert(BigInt(i), i);
+	}
+
+
+
+
+
+	await larosa_pht._debug_print_stats();
+
+
+	// const root_node = await larosa_pht._debug_get_root_node();
+
+	// console.log(root_node);
+
+
+	// const child0 = await larosa_pht.lookup_lin(root_node.children[0x00]);
+
+	// console.log(child0);
 	
-	await larosa_pht._print_stats();
 
-	await larosa_pht.insert(BigInt(31337), "Some other shit dog");
+	// await larosa_pht.insert(BigInt(31337), "Some other shit dog");
 
-	await larosa_pht._print_stats();
+	// await larosa_pht._print_stats();
 
-	await larosa_pht.insert(BigInt(0xdeadbeef), "Some other shit dog");
+	// await larosa_pht.insert(BigInt(0xdeadbeef), "Some other shit dog");
 	
-	await larosa_pht._print_stats();
+	// await larosa_pht._print_stats();
 
-	await larosa_pht.insert(BigInt(3133777), "Some other shit dogsdfsdfsdfsdf");
+	// await larosa_pht.insert(BigInt(3133777), "Some other shit dogsdfsdfsdfsdf");
 
-	await larosa_pht._print_stats();
-
+	// await larosa_pht._print_stats();
 
 
 

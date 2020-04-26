@@ -7,10 +7,10 @@ class Hpht_node {
 	ptr_right;
 	data;
 
-	constructor({label = null, root = false} = {}) {
+	constructor({label = null} = {}) {
 		// TODO: validation
-		if (typeof label !== "bigint" && root === false) {
-			throw new TypeError("Argument 'label' must be BigInt unless root === true");
+		if (typeof label !== "string") {
+			throw new TypeError("Argument 'label' must be string");
 		}
 
 		this.children = {
@@ -47,6 +47,10 @@ class Hpht_node {
 		}
 
 		return this.data.get(key.toString(16));
+	}
+
+	get_all_pairs() {
+		return Array.from(this.data.entries());
 	}
 }
 

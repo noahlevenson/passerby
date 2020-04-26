@@ -389,57 +389,61 @@ class Hnode {
 	// **** PUBLIC API ****
 
 	async bootstrap(node_info) {
-		return new Promise(async (resolve, reject) => {
-			// TODO: Replace this message with our proper logging function
-			console.log(`Joining network as ${this.node_id } via bootstrap node ${node_info.node_id}...`);
+		// TODO: Replace this message with our proper logging function
+		console.log(`[HKAD] Joining network as ${this.node_id} via bootstrap node ${node_info.node_id}...`);
 
-			const d = Hnode._get_distance(node_info.node_id, this.node_id);
-			const b = Hutil._log2(d);
+		const d = Hnode._get_distance(node_info.node_id, this.node_id);
+		const b = Hutil._log2(d);
 
-			this.get_kbucket(b)._push(node_info);
+		this.get_kbucket(b)._push(node_info);
 
-			const result = await this._node_lookup(this.node_id);
-			const closest_to_me_sorted = result.payload;
+		const result = await this._node_lookup(this.node_id);
+		const closest_to_me_sorted = result.payload;
 
-			// Now we refresh every k-bucket further away than the closest neighbor I found
-			// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
-			// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
+		// Now we refresh every k-bucket further away than the closest neighbor I found
+		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
+		// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
 
-			// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
-			// since the nodes in the network see me as the closest node to myself
-			const distance_to_closest_bro = Hnode._get_distance(closest_to_me_sorted[1].node_id, this.node_id);
-			const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
+		// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
+		// since the nodes in the network see me as the closest node to myself
+		const distance_to_closest_bro = Hnode._get_distance(closest_to_me_sorted[1].node_id, this.node_id);
+		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
 
-			for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {
-				await this._refresh_kbucket(i);
-			}
+		for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {
+			await this._refresh_kbucket(i);
+		}
 
-			console.log(`[HKAD] Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+		console.log(`[HKAD] Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
 
-			// TODO:  Resolve with a result
-			resolve();
-		});
+		// TODO:  Resolve with a result?
+		return;
 	}
 
 	async put(key, val) {
-		// TODO: How can we make this return a promise? Currently we have no way of awaiting individual STORE RPC results, and that's probably
-		// good because we don't want to be coupled to an Heng implementation...
 		const result = await this._node_lookup(key);
 		const kclosest = result.payload;
+		const resolutions = [];
+		let successful = 0;
 
 		kclosest.forEach((node_info) => {
-			// TODO: Pass a timeout function that just logs the fact that we couldn't store at that node
-			this._req_store(key, val, node_info, (res, ctx) => {
-				// console.log(`Store result: ${res.data.payload}`);
-			});
+			resolutions.push(new Promise((resolve, reject) => {
+				this._req_store(key, val, node_info, (res, ctx) => {
+					successful += 1;
+					resolve();
+				}, () => {
+					resolve();
+				});
+			}));
 		});
+
+		await Promise.all(resolutions);
+		// console.log(`[HKAD] PUT key ${key} (${successful} / ${resolutions.length} OK)`)
+		return;
 	}
 
 	async get(key) {
-		return new Promise(async (resolve, reject) => {
-			const result = await this._node_lookup(key, this._req_find_value);
-			resolve(result);
-		});
+		const result = await this._node_lookup(key, this._req_find_value);
+		return result;
 	}
 }
 

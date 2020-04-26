@@ -65,6 +65,14 @@ class Hutil {
 
 		return l;
 	}
+
+	// Get binary string representation of a BigInt, leftmost bit is LSB
+	// b is the number of bits to consider -- it adds trailing '0' bits
+	// because we want 0 and 000 to be different strings for our PHT labels
+	static _bigint_to_bin_str(n, b) {
+		// TODO: validation
+		return n.toString(2).split("").reverse().join("").padEnd(b, "0");
+	}
 }
 
 module.exports.Hutil = Hutil;
