@@ -36,11 +36,51 @@ class Hpht {
 		this.index_attr = index_attr
 	}
 
+	// Print PHT stats for debugging
+	// This can be much simpler, I'm sure of it
+	_print_stats() {
+		return new Promise(async (resolve, reject) => {
+			async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
+				nodes += 1;
+
+				if (pht_node.is_leaf()) {
+					leaves += 1;
+				}
+
+				keys += pht_node.size();
+
+				if (pht_node.children[0x00] !== null) {
+					const child0 = await this.lookup_lin(pht_node.children[0x00]);
+					({nodes, keys, leaves} = await _walk.bind(this)(child0, nodes, keys, leaves));
+				}
+
+				if (pht_node.children[0x01] !== null) {
+					const child1 = await this.lookup_lin(pht_node.children[0x01]);
+					({nodes, keys, leaves} = await _walk.bind(this)(child1, nodes, keys, leaves));
+				}
+
+				return {nodes: nodes, keys: keys, leaves: leaves};
+			}
+
+			const label_hash = this._get_label_hash();
+			const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+
+			if (hdata.type !== Hdata.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+				console.log(`[HPHT] Stats error: no root node found!`);
+			} else {
+				const res = await 
+				_walk.bind(this)(hdata.payload[0]);
+				console.log(`[HPHT] Stats -- nodes: ${res.nodes}, leaves: ${res.leaves}, keys: ${res.keys}`);
+			}
+
+			resolve();
+		});	
+	}
+
 	// Data as a string
 	_get_label_hash(data = "") {
 		return BigInt(`0x${Hutil._sha1(this.index_attr + data)}`);
 	}
-
 
 	init() {
 		return new Promise(async (resolve, reject) => {
@@ -56,23 +96,25 @@ class Hpht {
 			} else {
 				console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
 
-				const root = new Hpht_node();
+				// TODO: All the BigInt(0) and BigInt(1) is confusing
+
+				const root = new Hpht_node({root: true});
 				root.children[0x00] = BigInt(0);
 				root.children[0x01] = BigInt(1);
 
-				const l0 = new Hpht_node();
+				const l0 = new Hpht_node({label: BigInt(0)});
 				l0.ptr_right = BigInt(1);
 
-				const l1 = new Hpht_node();
+				const l1 = new Hpht_node({label: BigInt(1)});
 				l1.ptr_left = BigInt(0);
 
 				const root_label_hash = this._get_label_hash();
 				const l0_label_hash = this._get_label_hash(BigInt(0).toString());
 				const l1_label_hash = this._get_label_hash(BigInt(1).toString());
 
-				this.dht_node.put.bind(this.dht_node)(l0_label_hash, l0); // TODO: Confirm successful result or stop on failure
-				this.dht_node.put.bind(this.dht_node)(l1_label_hash, l1); // TODO: Confirm successful result or stop on failure
-				this.dht_node.put.bind(this.dht_node)(root_label_hash, root); // TODO: Confirm successful result or stop on failure
+				this.dht_node.put.bind(this.dht_node)(l0_label_hash, l0); // TODO: Await successful result or stop on failure
+				this.dht_node.put.bind(this.dht_node)(l1_label_hash, l1); // TODO: Await successful result or stop on failure
+				this.dht_node.put.bind(this.dht_node)(root_label_hash, root); // TODO: Await successful result or stop on failure
 			}
 
 			resolve();
@@ -108,6 +150,28 @@ class Hpht {
 	// TODO: implement me
 	lookup_bin(key) {
 
+	}
+
+	insert(key, val) {
+		return new Promise(async (resolve, reject) => {
+			const leaf = await this.lookup_lin(key);
+
+			if (leaf === null) {
+				// TODO: Either this PHT never got intialized with an index attr or this is a fatal error - the graph is broken
+				throw new Error("Fatal error: PHT graph error");
+			}
+
+			if (leaf.size() < Hpht.B) {
+				leaf.put(key, val);
+				const label_hash = this._get_label_hash(leaf.label.toString());
+				this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
+				console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})`)
+			}
+
+			// TODO: HANDLE THE SPLIT CASE!!!!!
+
+			resolve();
+		});
 	}
 }
 

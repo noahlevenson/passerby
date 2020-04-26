@@ -25,7 +25,9 @@
 const { Hnode } = require("../hkad/hnode.js");
 const { Heng_alpha } = require("../hkad/eng/heng_alpha.js");
 const { Htrans_sim } = require("../hkad/trans/htrans_sim.js");
+const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we include the hgeo module top level source file? Gotta figure out a plan 
 const { Hpht } = require("../hpht/hpht.js");
+
 
 const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
@@ -64,13 +66,13 @@ async function doit() {
 	// Create a message engine module
 	const my_preferred_message_eng = new Heng_alpha();
 
-	// Create a node for me, Pizzeria La Rosa
+	// Create a DHT node for me, Pizzeria La Rosa
 	const larosa = new Hnode({eng: my_preferred_message_eng, trans: my_local_simulator});
 
 	// Add me to the local simulator
 	my_local_simulator._add_peer(larosa);
 
-	// Bootstrap me and join the network
+	// Bootstrap my DHT node and join the network
 	await larosa.bootstrap(bootstrap_node.node_info);
 
 	// Create a PHT interface for La Rosa
@@ -81,14 +83,42 @@ async function doit() {
 		dht_node: larosa
 	});
 
+	// Init the PHT interface (idempotently checks for root structure)
+	await larosa_pht.init();
 	await larosa_pht.init();
 
-	await larosa_pht.init();
+	// Create geo object for our location in the real world -- this should happen before we bootstrap the DHT node, and we should bootstrap using the linearization of this object as our NODE ID
+	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
-	const res = await larosa_pht.lookup_lin(Hnode.generate_random_key_between(0, 80));
+	// This should be an "add_menu()" command at the highest protocol level
+	await larosa_pht.insert(our_location.linearize(), "Pepperoni pizza and salad and shit bro, this is our menu right here");
 
-	console.log(res);
+
+
+	const res2 = await larosa_pht.lookup_lin(our_location.linearize());
+
+	console.log(res2)
+
+	console.log(res2.get(our_location.linearize()));
+
+
 	
+	await larosa_pht._print_stats();
+
+	await larosa_pht.insert(BigInt(31337), "Some other shit dog");
+
+	await larosa_pht._print_stats();
+
+	await larosa_pht.insert(BigInt(0xdeadbeef), "Some other shit dog");
+	
+	await larosa_pht._print_stats();
+
+	await larosa_pht.insert(BigInt(3133777), "Some other shit dogsdfsdfsdfsdf");
+
+	await larosa_pht._print_stats();
+
+
+
 
 	
 
