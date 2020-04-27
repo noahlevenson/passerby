@@ -438,7 +438,7 @@ class Hnode {
 
 		await Promise.all(resolutions);
 		// console.log(`[HKAD] PUT key ${key} (${successful} / ${resolutions.length} OK)`)
-		return;
+		return successful > 0 ? true : false;
 	}
 
 	async get(key) {

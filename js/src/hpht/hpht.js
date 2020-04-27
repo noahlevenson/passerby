@@ -95,36 +95,35 @@ class Hpht {
 	}
 
 	async init() {
-		// TODO: use proper logging functions
 		console.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
 
-		// TODO: Use binary search version
 		const label_hash = this._get_label_hash();
 		const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
 		if (hdata.type === Hdata.TYPE.VAL && hdata.payload[0] instanceof Hpht_node) {
 			console.log(`[HPHT] Root node found! Created ${hdata.payload[0].created}`);
-		} else {
-			console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
+			return;
+		}
 
-			// TODO: All the BigInt(0) and BigInt(1) is confusing
+		console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
+		const root = new Hpht_node({label: ""});
 
-			const root = new Hpht_node({label: ""});
-			root.children[0x00] = Hutil._bigint_to_bin_str(BigInt(0), 1);
-			root.children[0x01] = Hutil._bigint_to_bin_str(BigInt(1), 1);
+		const child0 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(0), 1)});
+		const child1 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(1), 1)});
 
-			const l0_label = Hutil._bigint_to_bin_str(BigInt(0), 1);
-			const l0 = new Hpht_node({label: l0_label});
-			
-			const l1_label = Hutil._bigint_to_bin_str(BigInt(1), 1);
-			const l1 = new Hpht_node({label: l1_label});
-			
-			l0.ptr_right = l1_label;
-			l1.ptr_left = l0_label;
+		child0.ptr_right = child1.label;
+		child1.ptr_left = child0.label;
+		
+		root.children[0x00] = child0.label;
+		root.children[0x01] = child1.label;
 
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(l0_label), l0); // TODO: Await successful result or stop on failure
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(l1_label), l1); // TODO: Await successful result or stop on failure
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root); // TODO: Await successful result or stop on failure
+		const results = [];
+		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0));
+		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1));
+		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root));
+
+		if (results.some((result) => { return !result })) {
+			console.log(`[HPHT] WARNING! COULD NOT CREATE NEW ROOT STRUCTURE FOR INDEX ATTR ${this.index_attr}!`);
 		}
 	}
 
@@ -139,7 +138,6 @@ class Hpht {
 		for (let i = 0; i < Hpht.BIT_DEPTH; i += 1) {
 			const pi_k = key & mask;
 			const label_hash = this._get_label_hash(Hutil._bigint_to_bin_str(pi_k, i));
-
 			const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
 			if (hdata.type === Hdata.TYPE.VAL) {
@@ -166,8 +164,8 @@ class Hpht {
 		const leaf = await this.lookup_lin(key);
 
 		if (leaf === null) {
-			// TODO: Either this PHT never got intialized with an index attr or this is a fatal error - the graph is broken
-			throw new Error("Fatal error: PHT graph error");
+			// If we can't find the leaf node for a key, our graph is likely corrupted
+			throw new Error("Fatal PHT graph error");
 		}
 
 		if (leaf.size() < Hpht.B) {

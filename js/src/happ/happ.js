@@ -106,13 +106,9 @@ async function doit() {
 
 	// await larosa_pht._print_stats();
 
-	for (let i = 0; i < 100; i += 1) {
+	for (let i = 0; i < 256; i += 1) {
 		await larosa_pht.insert(BigInt(i), i);
 	}
-
-
-
-
 
 	await larosa_pht._debug_print_stats();
 
@@ -125,7 +121,7 @@ async function doit() {
 	// const child0 = await larosa_pht.lookup_lin(root_node.children[0x00]);
 
 	// console.log(child0);
-	
+
 
 	// await larosa_pht.insert(BigInt(31337), "Some other shit dog");
 
