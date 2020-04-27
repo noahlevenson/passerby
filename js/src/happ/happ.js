@@ -47,7 +47,7 @@ my_local_simulator._add_peer(bootstrap_node);
 
 // Now let's add some other nodes to the simulated network
 new Promise((resolve, reject) => {
-	for (let i = 0; i < 10; i += 1) {
+	for (let i = 0; i < 200; i += 1) {
 		(async function() {
 			const message_eng = new Heng_alpha();
 			const local_simulator = new Htrans_sim();
@@ -67,6 +67,8 @@ new Promise((resolve, reject) => {
 
 async function doit() {
 
+
+
 	// Create a message engine module
 	const my_preferred_message_eng = new Heng_alpha();
 
@@ -78,6 +80,7 @@ async function doit() {
 
 	// Bootstrap my DHT node and join the network
 	await larosa.bootstrap(bootstrap_node.node_info);
+
 
 	// Create a PHT interface for La Rosa
 	const larosa_pht = new Hpht({
@@ -106,11 +109,28 @@ async function doit() {
 
 	// await larosa_pht._print_stats();
 
-	for (let i = 0; i < 256; i += 1) {
+	for (let i = 0; i < 100; i += 1) {
 		await larosa_pht.insert(BigInt(i), i);
 	}
 
 	await larosa_pht._debug_print_stats();
+
+	await larosa_pht._debug_print_stats();
+
+	await larosa_pht._debug_print_stats();
+
+	await larosa_pht._debug_print_stats();
+
+	await larosa_pht._debug_print_stats();
+
+	await larosa_pht._debug_print_stats();
+
+	await larosa_pht._debug_print_stats();
+
+	my_local_simulator._debug_dump_network_state();
+
+	
+	
 
 
 	// const root_node = await larosa_pht._debug_get_root_node();

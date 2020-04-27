@@ -222,7 +222,7 @@ class Hnode {
 						const k_closest_nodes_we_havent_queried = [];
 
 						// TODO: I'm not sure what the original paper calls for: Is our node_map supposed to max out at SIZE_K items?
-						// or are we always supposed to consider an unbounded list of unqeried nodes?
+						// or are we always supposed to consider an unbounded list of unqueried nodes?
 						// This also applies above where we look for unqueried nodes in the map -- if we limit it to the first SIZE_K 
 						// items, we effectively decide that the node_map is a fixed length of SIZE_K items
 						for (let i = 0; i < new_sorted.length && i < current_k_number && k_closest_nodes_we_havent_queried.length < current_k_number; i += 1) {

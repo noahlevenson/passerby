@@ -42,7 +42,17 @@ class Hpht {
 		async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
 			if (pht_node.children[0x00] !== null && pht_node.children[0x01] !== null) {
 				const hdata0 = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(pht_node.children[0x00]), ...this.dht_lookup_args);
+				
+				if (hdata0.type !== Hdata.TYPE.VAL || !(hdata0.payload[0] instanceof Hpht_node)) {
+					throw new Error("Fatal PHT graph error");
+				}
+
 				const hdata1 = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(pht_node.children[0x01]), ...this.dht_lookup_args);
+
+				if (hdata1.type !== Hdata.TYPE.VAL || !(hdata1.payload[0] instanceof Hpht_node)) {
+					throw new Error("Fatal PHT graph error");
+				}
+
 				const child0 = hdata0.payload[0];
 				const child1 = hdata1.payload[0];
 				({nodes, keys, leaves} = await _walk.bind(this)(child0, nodes, keys, leaves));
@@ -159,7 +169,7 @@ class Hpht {
 
 	}
 
-	async insert(key, val) {
+	async insert_old(key, val) {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
 
@@ -172,7 +182,7 @@ class Hpht {
 			leaf.put(key, val);
 			const label_hash = this._get_label_hash(leaf.label);
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-			console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`)
+			console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
 		} else {
 			// Split case
 			// TODO: this is the staggered version where only one split is allowed per insertion
@@ -203,6 +213,113 @@ class Hpht {
 			});
 
 			await this.insert(key, val);
+		}
+	}
+
+	async insert(key, val) {
+		// TODO: validation - key must be a BigInt etc.
+		const leaf = await this.lookup_lin(key);
+
+		if (leaf === null) {
+			// If we can't find the leaf node for a key, our graph is likely corrupted
+			throw new Error("Fatal PHT graph error");
+		}
+
+		if (leaf.size() < Hpht.B) {
+			leaf.put(key, val);
+			const label_hash = this._get_label_hash(leaf.label);
+			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
+			console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
+		} else {
+			// First, get the longest common prefix of all B + 1 keys
+			// Get an array of all B + 1 (key, val) pairs with all keys as BigInts
+			const pairs = leaf.get_all_pairs();
+
+			pairs.forEach((pair, i, arr) => {
+				arr[i] = [BigInt(`0x${pair[0]}`), pair[1]];
+			});
+			
+			pairs.push([key, val]);
+
+			// Get an array of the binary strings for each (key, val) pair
+			const key_bin_strings = [];
+
+			pairs.forEach((pair) => {
+				key_bin_strings.push(Hutil._bigint_to_bin_str(pair[0], Hpht.BIT_DEPTH));
+			});
+
+			// console.log(key_bin_strings);
+
+			// Since we used _bigint_to_bin_str to make our bin strings the same length, we don't have to get too fancy here
+			// TODO: This is a crappy linear search solution - there's a better way using binary search
+			// Let's pull this out and put it in Hutil
+			let i = 0;
+
+			while (i < Hpht.BIT_DEPTH) {
+				let match = key_bin_strings.every((str) => {
+					return str[i] === key_bin_strings[0][i];
+				});
+
+				if (!match) {
+					break;
+				}
+
+				i += 1;
+			}
+
+			console.log(`LCS: ${i}`)
+
+			// console.log(i);
+			// console.log(`Depth of current leaf node: ${leaf.label.length}`)
+
+			// i is the length of the longest common prefix - we need our new child nodes to be one level deeper than that
+			// remember, the depth of a given node is equal to the length of its label (not including the index attr)
+			let child0, child1;
+			let old_leaf = leaf;
+			let d = leaf.label.length; 
+
+			while (d <= i) {
+				child0 = new Hpht_node({label: `${old_leaf.label}0`});
+				child1 = new Hpht_node({label: `${old_leaf.label}1`});
+
+				console.log(`[HPHT] Splitting leaf ${old_leaf.label} into ${child0.label} + ${child1.label}\n`)
+
+				// THIS IS FUCKING BROKEN
+				// child0.ptr_left = leaf.ptr_left;
+				// child0.ptr_right = child1.label;
+				// child1.ptr_left = child0.label;
+				// child1.ptr_right = leaf.ptr_right;
+
+				const interior_node = new Hpht_node({label: old_leaf.label});
+				interior_node.children[0x00] = child0.label;
+				interior_node.children[0x01] = child1.label;
+
+				// if we need to iterate, old leaf must be the child node from above that has the label that is equal to
+				// the longest common prefix of the keys (or just the last digit of the longest common prefix -- right?)
+				old_leaf = child0.label[i - 1] === key_bin_strings[0][i - 1] ? child0 : child1;
+
+				// PUT the new child leaf nodes and stomp the old leaf node, which is now an interior node
+				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
+				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
+				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(interior_node.label), interior_node);
+
+				d += 1;
+			}
+
+			// Now you're ready to distribute keys into the new children
+			// TODO: This is really begging for concurrency problems - since we PUT all nodes in the loop above,
+			// we always have to PUT the final leaf nodes twice - once without keys and once with the keys inserted
+			pairs.forEach((pair, idx, arr) => {
+				// Sort them into the new children by their ith bit? 
+				// TODO: It's brittle + dumb to use the parallel bin string array
+				const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
+				child_ref.put(pair[0], pair[1]);
+
+				console.log(`[HPHT] Redistributed key ${pair[0]} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
+			});
+
+			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
+			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
 		}
 	}
 }
