@@ -47,7 +47,7 @@ my_local_simulator._add_peer(bootstrap_node);
 
 // Now let's add some other nodes to the simulated network
 new Promise((resolve, reject) => {
-	for (let i = 0; i < 200; i += 1) {
+	for (let i = 0; i < 100; i += 1) {
 		(async function() {
 			const message_eng = new Heng_alpha();
 			const local_simulator = new Htrans_sim();
@@ -75,8 +75,11 @@ async function doit() {
 	// Create a DHT node for me, Pizzeria La Rosa
 	const larosa = new Hnode({eng: my_preferred_message_eng, trans: my_local_simulator});
 
+
 	// Add me to the local simulator
 	my_local_simulator._add_peer(larosa);
+
+	
 
 	// Bootstrap my DHT node and join the network
 	await larosa.bootstrap(bootstrap_node.node_info);
@@ -94,6 +97,8 @@ async function doit() {
 	await larosa_pht.init();
 	await larosa_pht.init();
 
+	// larosa._debug_watch(larosa_pht._get_label_hash("01"));
+
 	// Create geo object for our location in the real world -- this should happen before we bootstrap the DHT node, and we should bootstrap using the linearization of this object as our NODE ID
 	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
@@ -109,23 +114,23 @@ async function doit() {
 
 	// await larosa_pht._print_stats();
 
-	for (let i = 0; i < 100; i += 1) {
+	for (let i = 0; i < 10000; i += 1) {
 		await larosa_pht.insert(BigInt(i), i);
 	}
 
 	await larosa_pht._debug_print_stats();
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
 	my_local_simulator._debug_dump_network_state();
 

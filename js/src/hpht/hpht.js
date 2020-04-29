@@ -267,7 +267,7 @@ class Hpht {
 				i += 1;
 			}
 
-			console.log(`LCS: ${i}`)
+			// console.log(`LCS: ${i}`)
 
 			// console.log(i);
 			// console.log(`Depth of current leaf node: ${leaf.label.length}`)

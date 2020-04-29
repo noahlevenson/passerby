@@ -12,6 +12,7 @@ class Hnode {
 	static K_SIZE = 20;
 	static ALPHA = 3;
 
+	DEBUG;
 	trans;
 	eng;
 	node_id;
@@ -27,6 +28,10 @@ class Hnode {
 
 	constructor({trans = null, eng = null} = {}) {
 		// TODO: validate that the transport and message eng module are instances of the correct base classes and implement the functionality we rely on
+		this.DEBUG = {
+			WATCH: null,
+		};
+
 		this.trans = trans;
 		this.eng = eng;
 		this.node_id = Hnode.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
@@ -68,6 +73,15 @@ class Hnode {
 		return min_bigint + BigInt(`0x${random_bytes_buf.toString("hex")}`);
 	}
 
+	_debug_watch(key) {
+		if (typeof key !== "bigint") {
+			throw new TypeError("Argument 'key' must be BigInt");
+		}
+
+		this.DEBUG.WATCH = key;
+	}
+
+	// Get a REFERENCE to a kbucket
 	get_kbucket(i) {
 		return this.kbuckets.get(i);
 	}
@@ -246,9 +260,15 @@ class Hnode {
 			const node_infos = this._get_nodes_closest_to(key, Hnode.ALPHA);
 			const node_map = new Map();
 			
+			// console.log(`key: ${key}`)
+
 			node_infos.forEach((node_info) => {
+				// console.log(node_info.node_id)
+
 				this[find_rpc.name](key, node_info, _do_node_lookup.bind(this, null));
 			});
+
+			// console.log("***")
 		});
 	}
 
@@ -368,20 +388,33 @@ class Hnode {
 		const search_order = Hutil._sort_by_distance_from(Array.from(this.kbuckets.keys()), b);
 
 		for (let i = 0; i < search_order.length && nodes.length < max; i += 1) {
-			const bucket = this.get_kbucket(search_order[i]);
+			// TODO: So, because our k-bucket implementation sucks so bad, we have this hack--
+			// we extract the non-undefined values from the kbucket so that we can sort them by distance
+			// (because by default, they're sorted in reverse order of time last seen)
+			// this 'bucket' we create here just holds references to the node_info objects in the kbucket
+			// Since we don't iterate through the actual kbucket, we also solve concurrency issues - but this is pure garbage
+			const bucket = this.get_kbucket(search_order[i]).copy_to_arr();
 
-			// Gotta think here -- we currently have an annoying system where k-buckets are created at a fixed size
-			// and populated with undefineds until they reach capacity, because I'm worried about getting bucket.length
-			// and iterating through a k-bucket potentially while a message event is pushing new values into the k-bucket
-			// but there's gotta be a better way bro
-			for (let j = bucket.length() - 1; j >= 0 && nodes.length < max; j -= 1) {	
-				const node_info = bucket.at(j);
+			// console.log(bucket)
 
-				if (node_info) {
-					nodes.push(new Hnode_info(node_info));
-				}
+			// Sort the bucket by distance from the key -- this is duplicated code, doesn't belong here, requires too much knowledge
+			// of Hnode_info structure -- please make this better sir
+			bucket.sort((a, b) => {
+				return Hnode._get_distance(key, a.node_id) > Hnode._get_distance(key, b.node_id) ? 1 : -1;
+			})
+
+			// console.log(bucket)
+
+			for (let j = 0; j < bucket.length && nodes.length < max; j += 1) {
+				nodes.push(new Hnode_info(bucket[j]));
 			}
 		}	
+
+		if (this.DEBUG.WATCH === key) {
+			console.log(`\n[HKAD] DEBUG.WATCH:`);
+			console.log(`[HKAD] key lookup: ${key}`);
+			console.log(`[HKAD] closest node: ${nodes[0].node_id}`);
+		}
 
 		return nodes;
 	}

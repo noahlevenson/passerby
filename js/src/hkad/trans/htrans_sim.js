@@ -49,6 +49,7 @@ class Htrans_sim extends Htrans {
 			}
 		});
 
+		console.log(`********************************************`);
 		console.log(`[HKAD] HTRANS_SIM _DEBUG_DUMP_NETWORK_STATE:`);
 		console.log(`[HKAD] Total peers: ${Htrans_sim.peer_list.size}`);
 		console.log(`[HKAD] Total data objects: ${total_data_objects} (avg ${(total_data_objects / Htrans_sim.peer_list.size).toFixed(1)} data objects per peer)`);

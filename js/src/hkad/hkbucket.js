@@ -6,7 +6,11 @@ class Hkbucket {
 	constructor({size} = {}) {
 		// TODO: If no size, throw error
 		this.#size = size;
-		this.#data = new Array(size);
+		this.#data = [];
+
+		for (let i = 0; i < this.#size; i += 1) {
+			this.#data.push(undefined);
+		}
 	}
 
 	_push(node_info) {
@@ -33,9 +37,11 @@ class Hkbucket {
 	}
 
 	is_full() {
-		return this.#data.some((elem) => {
-			elem !== undefined;
+		const res = this.#data.every((node_info) => {
+			return node_info !== undefined;
 		});
+
+		return res;
 	}
 
 	length() {
@@ -44,6 +50,20 @@ class Hkbucket {
 
 	print() {
 		console.log(this.#data);
+	}
+
+	// This is a gross hack, let's rethink the entire kbucket implementation to avoid this
+	// Also, it's not even a deep copy -- it's just refs to the node_info objects
+	copy_to_arr() {
+		const arr = [];
+
+		for (let i = this.#data.length - 1; i >= 0; i -= 1) {
+			if (this.#data[i]) {
+				arr.push(this.#data[i]);
+			}
+		}
+
+		return arr;
 	}
 }
 
