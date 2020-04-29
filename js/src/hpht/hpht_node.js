@@ -38,7 +38,7 @@ class Hpht_node {
 			throw new TypeError("Argument 'key' must be BigInt");
 		}
 
-		this.data.set(key.toString(16), val);
+		return this.data.set(key.toString(16), val);
 	}
 
 	get(key) {
@@ -47,6 +47,10 @@ class Hpht_node {
 		}
 
 		return this.data.get(key.toString(16));
+	}
+
+	delete(key) {
+		return this.data.delete(key.toString(16));
 	}
 
 	get_all_pairs() {

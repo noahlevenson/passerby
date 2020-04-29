@@ -114,7 +114,7 @@ async function doit() {
 
 	// await larosa_pht._print_stats();
 
-	for (let i = 0; i < 500; i += 1) {
+	for (let i = 0; i < 1000; i += 1) {
 		await larosa_pht.insert(BigInt(i), i);
 	}
 
@@ -131,6 +131,15 @@ async function doit() {
 	// await larosa_pht._debug_print_stats();
 
 	// await larosa_pht._debug_print_stats();
+
+	my_local_simulator._debug_dump_network_state();
+
+
+	for (let i = 1000; i >= 0; i -= 1) {
+		await larosa_pht.delete(BigInt(i));
+	}
+
+	await larosa_pht._debug_print_stats();
 
 	my_local_simulator._debug_dump_network_state();
 

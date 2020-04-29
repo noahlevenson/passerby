@@ -176,12 +176,14 @@ class Hpht {
 	}
 
 	// Insert a key, value pair into the PHT, splitting leaf nodes and extending the depth of the tree as required
+	// Returns true on success, false on failure
 	async insert(key, val) {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
 
 		if (leaf === null) {
 			// If we can't find the leaf node for a key, our graph is likely corrupted
+			// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
 			throw new Error("Fatal PHT graph error");
 		}
 
@@ -264,6 +266,7 @@ class Hpht {
 				}
 
 				// PUT the new child leaf nodes and stomp the old leaf node, which is now an interior node
+				// TODO: Should we alert the caller if any of the PUTs failed? Either return false (bad pattern) or reject this whole promise (better?)
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(interior_node.label), interior_node);
@@ -273,6 +276,83 @@ class Hpht {
 				old_leaf = child0.label[i - 1] === key_bin_strings[0][i - 1] ? child0 : child1;
 
 				d += 1;
+			}
+
+			// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
+		}
+	}
+
+	async delete(key) {
+		// TODO: validation - key must be a BigInt etc.
+		const leaf = await this.lookup_lin(key);
+
+		if (leaf === null) {
+			// Key not found
+			// TODO: this should be handled using whatever global pattern we decide on for operation failures - either true/false, or reject the promise
+			return false;
+		}
+
+		// OK so what are the different things that can happen here?  
+		// you can remove a key from a leaf node and the leaf node has more keys in it
+		// you can remove a key from a leaf node and the leaf node has 0 keys in it, but the leaf node's sibling has some keys
+		// you can remove a key from a a leaf node and the leaf node has 0 keys in it and the leaf node's siblings have 0 keys - so these must be collapsed
+		if (!leaf.delete(key)) {
+			// The key wasn't found in the leaf node it's supposed to be found in
+			// TODO: Do we want to handle this? Throw an error or return an error?
+			// It could also be a temporary race condition...
+		}
+
+		if (leaf.size() > 0) {
+			const label_hash = this._get_label_hash(leaf.label);
+			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
+			console.log(`[HPHT] Deleted key ${key} from PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
+		} else {
+			// Here's the case where we may have to remove some nodes
+			let old_leaf = leaf;
+			
+			// We don't allow deletion of the depth 1 nodes -- maybe this is dumb, and we should allow deletion until only the root node remains?
+			// If we decide to do that, then our init() function should only create a root node, not the depth 1 nodes
+			while (old_leaf.label.length > 1) {
+				const sibling_label = `${old_leaf.label.substring(0, old_leaf.label.length - 1)}${old_leaf.label[old_leaf.label.length - 1] === "0" ? "1" : "0"}`;
+				const sibling_hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(sibling_label), ...this.dht_lookup_args);
+
+				if (sibling_hdata.type !== Hdata.TYPE.VAL || !(sibling_hdata.payload[0] instanceof Hpht_node)) {
+					// If we can't find the leaf node for a key, our graph is likely corrupted
+					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
+					throw new Error("Fatal PHT graph error");
+				}
+
+				const sibling = sibling_hdata.payload[0];
+
+				if (sibling.size() > 0) {
+					// Our sibling has keys, so we can't remove the nodes at this level
+					break;
+				}
+
+				// Our sibling also has 0 keys, we gotta delete this level, adjust our parent, and iterate!
+				// TODO: Currently our DHT has no DELETE() operation, so we can't actually remove the PHT node from the network... but maybe we want it?
+				const parent_label = old_leaf.label.substring(0, old_leaf.label.length - 1);
+				const parent_hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(parent_label), ...this.dht_lookup_args);
+
+				if (parent_hdata.type !== Hdata.TYPE.VAL || !(parent_hdata.payload[0] instanceof Hpht_node)) {
+					// If we can't find the leaf node for a key, our graph is likely corrupted
+					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
+					throw new Error("Fatal PHT graph error");
+				}
+
+				const parent = parent_hdata.payload[0];
+
+				parent.children[0x00] = null;
+				parent.children[0x01] = null;
+
+				// THIS IS FUCKING BROKEN - DON'T FORGET TO ADJUST OUR PARENT NODE'S POINTERS
+				// parent.ptr_left;
+				// parent.ptr_right;
+
+				console.log(`[HPHT] Merging leaves ${old_leaf.label} + ${sibling.label} into ${parent.label})\n`);
+				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.label), parent);
+
+				old_leaf = parent;
 			}
 		}
 	}
