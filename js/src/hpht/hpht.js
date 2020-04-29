@@ -170,9 +170,33 @@ class Hpht {
 		return null;
 	}	
 
-	// TODO: implement me
-	lookup_bin(key) {
+	// Find the PHT leaf node responsible for housing a given key - binary search edition
+	// Returns null if there's no leaf node associated with that key
+	// TODO: Currently this is much slower than linear lookup, likely because of the BigInt computations 
+	// We eventually need to get this working faster and implement it as the default search, with a parallelized linear lookup as the backup
+	async lookup_bin(key) {
+		let p = 0;
+		let r = Hpht.BIT_DEPTH - 1; // Is this off by one?
+	
+		while (p <= r) {
+			let q = Math.floor((p + r) / 2);
+			const mask = ((2n ** BigInt(Hpht.BIT_DEPTH)) - 1n) >> (BigInt(Hpht.BIT_DEPTH) - BigInt(q));
+			const pq_k = key & mask;
+			const label_hash = this._get_label_hash(Hutil._bigint_to_bin_str(pq_k, q));
+			const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+			
+			if (hdata.type === Hdata.TYPE.VAL && hdata.payload[0] instanceof Hpht_node) {
+				if (hdata.payload[0].is_leaf()) {
+					return hdata.payload[0];
+				}
 
+				p = q + 1;
+			} else {
+				r = q - 1;
+			}
+		}
+
+		return null;
 	}
 
 	// Insert a key, value pair into the PHT, splitting leaf nodes and extending the depth of the tree as required
@@ -349,7 +373,7 @@ class Hpht {
 				// parent.ptr_left;
 				// parent.ptr_right;
 
-				console.log(`[HPHT] Merging leaves ${old_leaf.label} + ${sibling.label} into ${parent.label})\n`);
+				console.log(`[HPHT] Merging leaves ${old_leaf.label} + ${sibling.label} into ${parent.label}\n`);
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.label), parent);
 
 				old_leaf = parent;

@@ -30,7 +30,7 @@ class Hutil {
 		return i - 1;
 	}
 
-	// Comparator function to sort elements in array arr by their euclidean distance from number n
+	// Sort elements in array arr by their euclidean distance from number n
 	static _sort_by_distance_from(arr, n) {
 		return arr.sort((a, b) => {
 			return Math.abs(a - n) - Math.abs(b - n);

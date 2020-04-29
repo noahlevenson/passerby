@@ -246,7 +246,7 @@ class Hnode {
 						}
 
 						if (k_closest_nodes_we_havent_queried.length > 0 ) {
-							console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
+							// console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
 						}	
 						
 
