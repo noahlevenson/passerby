@@ -8,13 +8,13 @@ const { Hpht_node } = require("./hpht_node.js");
 // Currently, Hpht is essentially glue code that builds atop hkad - it's tightly coupled to the hkad implementation
 // A noble goal would be to make Hpht more generalized for any underlying DHT implementation
 class Hpht {
-	static BIT_DEPTH = 80; // What's the bit depth of our input keys? Currently out Hgeo linearizations are 80 bit
+	static BIT_DEPTH = 80; // Set this to the bit depth of our input keys - currently out Hgeo linearizations are 80 bit
 	static B = 4; // Max keys per leaf - what's the most optimized value for this? I think smallish B values better distribute the data in the network
 
-	dht_node;
-	dht_lookup; // We assume that the dht_lookup function returns a promise
-	dht_lookup_args; // Any args that must be passed to the DHT lookup function to make it perform a value lookup
-	index_attr;
+	dht_node; // reference to the DHT node associated with this PHT interface
+	dht_lookup; // reference to the above node's lookup function
+	dht_lookup_args; // an array of args that must be passed to the above DHT lookup function to make it perform a value-based lookup
+	index_attr; // Some unique string identifier for the attribute that we're indexing with this PHT interface
 	
 	constructor({index_attr = null, dht_node = null, dht_lookup = null, dht_lookup_args = []} = {}) {
 		// TODO: validation
@@ -36,8 +36,7 @@ class Hpht {
 		this.index_attr = index_attr
 	}
 
-	// Print PHT stats for debugging
-	// This can be much simpler, I'm sure of it
+	// DEBUG: Print PHT stats - this walks the entire tree and prints everything we know about it
 	async _debug_print_stats() {
 		async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
 			if (pht_node.children[0x00] !== null && pht_node.children[0x01] !== null) {
@@ -83,6 +82,7 @@ class Hpht {
 		console.log(`[HPHT] TOTAL STATS - nodes: ${res.nodes}, leaves: ${res.leaves}, keys: ${res.keys}\n`);	
 	}
 
+	// DEBUG: Get the root node, or null if we can't find it
 	async _debug_get_root_node() {
 		const label_hash = this._get_label_hash();
 		const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
@@ -94,8 +94,9 @@ class Hpht {
 		return hdata.payload[0];
 	}
 
-	// Data as a string
-	// Passing no argument gets the label hash for the root node
+	// Get the hash of a PHT node label (the hash of a PHT node label is the key used to locate it in the DHT)
+	// In our implementation, we concatenate the index attribute and the PHT node's binary label at hash time
+	// Supplying no argument will get you the label hash of the PHT root node
 	_get_label_hash(data = "") {
 		if (typeof data !== "string") {
 			throw new TypeError("Argument 'data' must be string");
@@ -104,6 +105,9 @@ class Hpht {
 		return BigInt(`0x${Hutil._sha1(this.index_attr + data)}`);
 	}
 
+	// Init a new PHT structure - this is how you create the root node structure, and some peer in the network
+	// needs to call it before any peers can start participating in the PHT associated with a given index attribute
+	// It's idempotent - subsequent calls to init() will log the creation time of the existing root node
 	async init() {
 		console.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
 
@@ -137,6 +141,8 @@ class Hpht {
 		}
 	}
 
+	// Find the PHT leaf node responsible for housing a given key - linear search edition
+	// Returns null if there's no leaf node associated with that key
 	async lookup_lin(key) {
 		// TODO: validation
 		if (typeof key !== "bigint") {
@@ -169,53 +175,7 @@ class Hpht {
 
 	}
 
-	async insert_old(key, val) {
-		// TODO: validation - key must be a BigInt etc.
-		const leaf = await this.lookup_lin(key);
-
-		if (leaf === null) {
-			// If we can't find the leaf node for a key, our graph is likely corrupted
-			throw new Error("Fatal PHT graph error");
-		}
-
-		if (leaf.size() < Hpht.B) {
-			leaf.put(key, val);
-			const label_hash = this._get_label_hash(leaf.label);
-			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-			console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
-		} else {
-			// Split case
-			// TODO: this is the staggered version where only one split is allowed per insertion
-			// it reduces costs in the worst case, but it can violate the PHT invariants (leafs can store more than B keys)
-			// Do we want to implement the more correct version that can cause cascaded splits?
-			const child0 = new Hpht_node({label: `${leaf.label}0`});
-			const child1 = new Hpht_node({label: `${leaf.label}1`});
-
-			console.log(`[HPHT] Splitting leaf ${leaf.label} into ${child0.label} + ${child1.label}\n`)
-
-			child0.ptr_left = leaf.ptr_left;
-			child0.ptr_right = child1.label;
-			child1.ptr_left = child0.label;
-			child1.ptr_right = leaf.ptr_right;
-
-			const old_leaf = new Hpht_node({label: leaf.label});
-			old_leaf.children[0x00] = child0.label;
-			old_leaf.children[0x01] = child1.label;
-
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(old_leaf.label), old_leaf);
-
-			const pairs = leaf.get_all_pairs();
-
-			pairs.forEach(async (pair) => {
-				await this.insert(BigInt(`0x${pair[0]}`), pair[1]);
-			});
-
-			await this.insert(key, val);
-		}
-	}
-
+	// Insert a key, value pair into the PHT, splitting leaf nodes and extending the depth of the tree as required
 	async insert(key, val) {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
@@ -231,7 +191,11 @@ class Hpht {
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
 			console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
 		} else {
-			// First, get the longest common prefix of all B + 1 keys
+			// NOTE: THIS IS THE "UNLIMITED SPLIT" VERSION OF BUCKET SPLITTING - THE PAPER ALSO SPECIFIES A FASTER "STAGGERED UPDATES"
+			// MODEL WHERE EACH INSERT IS LIMITED TO ONE BUCKET SPLIT, BUT WHICH COULD RESULT IN VIOLATING PHT INVARIANTS
+			// DO WE WANT TO IMPLEMENT THE FASTER ONE?
+
+			// To figure out how much deeper we need to go, we need to get the longest common prefix of all B + 1 keys
 			// Get an array of all B + 1 (key, val) pairs with all keys as BigInts
 			const pairs = leaf.get_all_pairs();
 
@@ -247,8 +211,6 @@ class Hpht {
 			pairs.forEach((pair) => {
 				key_bin_strings.push(Hutil._bigint_to_bin_str(pair[0], Hpht.BIT_DEPTH));
 			});
-
-			// console.log(key_bin_strings);
 
 			// Since we used _bigint_to_bin_str to make our bin strings the same length, we don't have to get too fancy here
 			// TODO: This is a crappy linear search solution - there's a better way using binary search
@@ -266,11 +228,6 @@ class Hpht {
 
 				i += 1;
 			}
-
-			// console.log(`LCS: ${i}`)
-
-			// console.log(i);
-			// console.log(`Depth of current leaf node: ${leaf.label.length}`)
 
 			// i is the length of the longest common prefix - we need our new child nodes to be one level deeper than that
 			// remember, the depth of a given node is equal to the length of its label (not including the index attr)
@@ -294,32 +251,29 @@ class Hpht {
 				interior_node.children[0x00] = child0.label;
 				interior_node.children[0x01] = child1.label;
 
-				// if we need to iterate, old leaf must be the child node from above that has the label that is equal to
-				// the longest common prefix of the keys (or just the last digit of the longest common prefix -- right?)
-				old_leaf = child0.label[i - 1] === key_bin_strings[0][i - 1] ? child0 : child1;
+				// If we've reached our final depth, then the children are leaf nodes, so let's distribute the keys to them
+				if (d === i) {
+					pairs.forEach((pair, idx, arr) => {
+						// Sort them into the new children by their ith bit? 
+						// TODO: It's brittle + dumb to use the parallel bin string array
+						const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
+						child_ref.put(pair[0], pair[1]);
+
+						console.log(`[HPHT] Redistributed key ${pair[0]} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
+					});
+				}
 
 				// PUT the new child leaf nodes and stomp the old leaf node, which is now an interior node
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(interior_node.label), interior_node);
 
+				// if we need to iterate, old leaf must be the child node from above that has the label that is equal to
+				// the longest common prefix of the keys (or just the last digit of the longest common prefix -- right?)
+				old_leaf = child0.label[i - 1] === key_bin_strings[0][i - 1] ? child0 : child1;
+
 				d += 1;
 			}
-
-			// Now you're ready to distribute keys into the new children
-			// TODO: This is really begging for concurrency problems - since we PUT all nodes in the loop above,
-			// we always have to PUT the final leaf nodes twice - once without keys and once with the keys inserted
-			pairs.forEach((pair, idx, arr) => {
-				// Sort them into the new children by their ith bit? 
-				// TODO: It's brittle + dumb to use the parallel bin string array
-				const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
-				child_ref.put(pair[0], pair[1]);
-
-				console.log(`[HPHT] Redistributed key ${pair[0]} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
-			});
-
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
-			await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
 		}
 	}
 }

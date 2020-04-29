@@ -47,7 +47,7 @@ my_local_simulator._add_peer(bootstrap_node);
 
 // Now let's add some other nodes to the simulated network
 new Promise((resolve, reject) => {
-	for (let i = 0; i < 100; i += 1) {
+	for (let i = 0; i < 200; i += 1) {
 		(async function() {
 			const message_eng = new Heng_alpha();
 			const local_simulator = new Htrans_sim();
@@ -114,7 +114,7 @@ async function doit() {
 
 	// await larosa_pht._print_stats();
 
-	for (let i = 0; i < 10000; i += 1) {
+	for (let i = 0; i < 500; i += 1) {
 		await larosa_pht.insert(BigInt(i), i);
 	}
 
