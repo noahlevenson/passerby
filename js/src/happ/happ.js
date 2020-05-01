@@ -66,9 +66,6 @@ new Promise((resolve, reject) => {
 
 
 async function doit() {
-
-
-
 	// Create a message engine module
 	const my_preferred_message_eng = new Heng_alpha();
 
@@ -103,41 +100,81 @@ async function doit() {
 	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
 	// This should be an "add_menu()" command at the highest protocol level
-	// await larosa_pht.insert(our_location.linearize(), "Pepperoni pizza and salad and shit bro, this is our menu right here");
+	await larosa_pht.insert(our_location.linearize(), "Pizzeria La Rosa");
+
+
+	// Add some other restaurants that are not within our window!!!!!
+	const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
+	await larosa_pht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
+
+	const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
+	await larosa_pht.insert(pinos.linearize(), "Pino's La Forchetta");
+
+	const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
+	await larosa_pht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
+	
+	// THIS WILL BE SHIT YOU IMPLEMENT AT THE PROTOCOL LAYER:
+	// latmin, longmin is always gonna be the bottom left corner
+	// latmax, longmax is always gonna be the top right corner
+
+	// this map subwindow describes a large area that encompasses la rosa, the north bronx, mount vernon, larchmont
+	let bottom_left = new Hgeo_coord({lat: 40.86956, long: -73.86881});
+	let top_right = new Hgeo_coord({lat: 40.93391, long: -73.70985}); 
+
+	let min = bottom_left.linearize();
+	let max = top_right.linearize();
+
+	let res = await larosa_pht.range_query_2d(min, max);
+
+	console.log(res);
+
+
+	// this map subwindow describes a smallish area that encompasses most of park slope and some of gowanus
+	bottom_left = new Hgeo_coord({lat: 40.66203, long: -74.00236});
+	top_right = new Hgeo_coord({lat: 40.67219, long: -73.96271}); 
+
+	min = bottom_left.linearize();
+	max = top_right.linearize();
+
+	res = await larosa_pht.range_query_2d(min, max);
+
+	console.log(res);
 
 
 
 
 
 
-	// console.log(res2.get(our_location.linearize()));
 
-	// await larosa_pht._print_stats();
+	// Write a thing to myself here explaining how range query works at the protocol level - why does it work? what work
+	// does the protocol layer have to do to assemble and get a range query?
 
-	for (let i = 0; i < 1000; i += 1) {
-		await larosa_pht.insert(BigInt(i), i);
-	}
 
-	await larosa_pht._debug_print_stats();
+
+
+
+
+
+
+	// console.log(min);
+	// console.log(max);
+
+
+
+	// for (let i = 0; i < 1000; i += 1) {
+	// 	await larosa_pht.insert(BigInt(i), i);
+	// }
 
 	// await larosa_pht._debug_print_stats();
 
-	// await larosa_pht._debug_print_stats();
+	
 
-	// await larosa_pht._debug_print_stats();
-
-	// await larosa_pht._debug_print_stats();
-
-	// await larosa_pht._debug_print_stats();
-
-	// await larosa_pht._debug_print_stats();
-
-	my_local_simulator._debug_dump_network_state();
+	// my_local_simulator._debug_dump_network_state();
 
 
-	for (let i = 1000; i >= 0; i -= 1) {
-		await larosa_pht.delete(BigInt(i));
-	}
+	// for (let i = 1000; i >= 0; i -= 1) {
+	// 	await larosa_pht.delete(BigInt(i));
+	// }
 
 	await larosa_pht._debug_print_stats();
 

@@ -1,10 +1,11 @@
 // Class for a PHT node
+// TODO: I feel like this class, and all classes, should really have getters and setters for everything, and we should stop accessing members directly
+// But maybe we can wait to see where the JS standard for private members lands -- is it going to be adopted? It's what I want to use
 class Hpht_node {
 	created;
 	label;
 	children;
-	ptr_left;
-	ptr_right;
+	ptrs;
 	data;
 
 	constructor({label = null} = {}) {
@@ -18,11 +19,40 @@ class Hpht_node {
 			0x01: null
 		};
 
-		this.ptr_left = null;
-		this.ptr_right = null;
+		this.ptrs = {
+			"left:": null,
+			"right": null
+		};	
+
 		this.data = new Map();
 		this.label = label;
 		this.created = new Date();
+	}	
+
+	// For some reason I wrote a setter for the pointers, we need to do this for children too
+	set_ptrs({left = null, right = null} = {}) {
+		if (typeof left !== "string" && left !== null) {
+			throw new TypeError("Argument 'left' must be string or null");
+		}
+
+		if (typeof right !== "string" && right !== null) {
+			throw new TypeError("Argument 'left' must be string or null");
+		}
+
+		this.ptrs.left = left;
+		this.ptrs.right = right;
+	}
+
+	ptr_left() {
+		return this.ptrs.left;
+	}
+
+	ptr_right() {
+		return this.ptrs.right;
+	}
+
+	get_label() {
+		return this.label;
 	}
 
 	is_leaf() {

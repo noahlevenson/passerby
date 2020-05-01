@@ -125,8 +125,8 @@ class Hpht {
 		const child0 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(0), 1)});
 		const child1 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(1), 1)});
 
-		child0.ptr_right = child1.label;
-		child1.ptr_left = child0.label;
+		child0.set_ptrs({left: null, right: child1.get_label()});
+		child1.set_ptrs({left: child0.get_label(), right: null});
 		
 		root.children[0x00] = child0.label;
 		root.children[0x01] = child1.label;
@@ -240,7 +240,7 @@ class Hpht {
 
 			// Since we used _bigint_to_bin_str to make our bin strings the same length, we don't have to get too fancy here
 			// TODO: This is a crappy linear search solution - there's a better way using binary search
-			// Let's pull this out and put it in Hutil
+			// TODO: There's now an Hutil function that returns LCP -- we should be using that dummy
 			let i = 0;
 
 			while (i < Hpht.BIT_DEPTH) {
@@ -267,11 +267,8 @@ class Hpht {
 
 				console.log(`[HPHT] Splitting leaf ${old_leaf.label} into ${child0.label} + ${child1.label}\n`)
 
-				// THIS IS FUCKING BROKEN
-				// child0.ptr_left = leaf.ptr_left;
-				// child0.ptr_right = child1.label;
-				// child1.ptr_left = child0.label;
-				// child1.ptr_right = leaf.ptr_right;
+				child0.set_ptrs({left: old_leaf.ptr_left(), right: child1.get_label()});
+				child1.set_ptrs({left: child0.get_label(), right: old_leaf.ptr_right()});
 
 				const interior_node = new Hpht_node({label: old_leaf.label});
 				interior_node.children[0x00] = child0.label;
@@ -324,6 +321,8 @@ class Hpht {
 			// The key wasn't found in the leaf node it's supposed to be found in
 			// TODO: Do we want to handle this? Throw an error or return an error?
 			// It could also be a temporary race condition...
+			// At best, there's no reason to PUT this node back to the PHT, since we didn't actually modify its state...
+			return;
 		}
 
 		if (leaf.size() > 0) {
@@ -370,8 +369,11 @@ class Hpht {
 				parent.children[0x01] = null;
 
 				// THIS IS FUCKING BROKEN - DON'T FORGET TO ADJUST OUR PARENT NODE'S POINTERS
-				// parent.ptr_left;
-				// parent.ptr_right;
+				// get the children's parent
+				// get the left child's left neighbor
+				// get the right child's right neighbor
+				// set the left neighbor's right neighbor to parent
+				// set the right neighbor's left neighbor to parent
 
 				console.log(`[HPHT] Merging leaves ${old_leaf.label} + ${sibling.label} into ${parent.label}\n`);
 				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.label), parent);
@@ -379,6 +381,91 @@ class Hpht {
 				old_leaf = parent;
 			}
 		}
+	}
+
+	// TODO: implement me
+	// 1D range query assumes the keys are just keys (as opposed to linearizations of some multidimensional data)
+	// We don't use 1D range query to query geohash index attributes, which are linearizations of 2D data, but
+	// maybe in the future we may want to use a PHT interface to index some 1-dimensional attribute
+	async range_query_1d(minkey, maxkey) {
+
+	}
+
+	// 2D range query assumes that each key is a linearizations of some 2D data, and currently it makes
+	// the gross assumption that we've used our Hutil._z_linearize_2d() function to produce the linearization
+	// TODO: How should this work, how do we keep it generalized and loosely coupled?
+	async range_query_2d(minkey, maxkey) {
+		async function _do_range_query_2d(pht_node, prefix, data = []) {
+			// Bro this shit is horrible - we should catch the base case first -- this is structured insanely 
+			if (pht_node.is_leaf()) {
+				// "apply the range query to all items within this node and report the result"
+				// i think that just means the items in this node represent the entirety of what must be returned by the range query
+				return pht_node.get_all_pairs().filter((pair) => {
+					const key = BigInt(`0x${pair[0]}`);
+					return key >= minkey && key <= maxkey;
+				});
+			} 
+
+			// is there any overlap between the rectangular region defined by the subtree's prefix and the range of the original query?
+			// TODO: is this an insane way to do this?  Can't we just learn this by comparing the 0's and 1's???
+			const min_region = BigInt(`0b${key_strings[0].substring(0, prefix.length + 1)}`);
+			const max_region = BigInt(`0b${key_strings[1].substring(0, prefix.length + 1)}`);
+
+			const child0_label = `${prefix}0`;
+			const child1_label = `${prefix}1`;
+
+			const child0_rect = BigInt(`0b${child0_label}`);
+			const child1_rect = BigInt(`0b${child1_label}`);
+
+			// TODO: This needs to actually be parallelized for speed
+			if (child0_rect >= min_region && child0_rect <= max_region) {
+				// Recurse 
+				const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(child0_label), ...this.dht_lookup_args);
+
+				if (hdata.type !== Hdata.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+					throw new Error("Fatal PHT graph error");
+				}
+
+				data = data.concat(await _do_range_query_2d.bind(this)(hdata.payload[0], child0_label, data));
+			}
+
+			if (child1_rect >= min_region && child1_rect <= max_region) {
+				// Recurse
+				const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(child1_label), ...this.dht_lookup_args);
+
+				if (hdata.type !== Hdata.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+					throw new Error("Fatal PHT graph error");
+				}
+
+				data = data.concat(await _do_range_query_2d.bind(this)(hdata.payload[0], child1_label, data));
+			}
+			
+			return data;
+		}
+
+		if (typeof minkey !== "bigint" || typeof maxkey !== "bigint") {
+			throw new TypeError("Arguments 'minkey' and 'maxkey' must be BigInt");
+		}
+
+		if (minkey >= maxkey) {
+			throw new RangeError("'minkey' must be less than 'maxkey'");
+		}
+
+		// First, get the longest common binary prefix of these keys
+		const key_strings = [];
+		key_strings.push(Hutil._bigint_to_bin_str(minkey, Hpht.BIT_DEPTH));
+		key_strings.push(Hutil._bigint_to_bin_str(maxkey, Hpht.BIT_DEPTH));
+		let lcp = Hutil._get_lcp(key_strings);
+
+		// Now get the PHT node labeled with that prefix
+		const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(lcp), ...this.dht_lookup_args);
+
+		if (hdata.type !== Hdata.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+			throw new Error("Fatal PHT graph error");
+		}
+
+		// Perform recursive parallel traversal of this PHT node
+		return await _do_range_query_2d.bind(this)(hdata.payload[0], lcp);
 	}
 }
 
