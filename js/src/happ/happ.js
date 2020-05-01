@@ -26,6 +26,7 @@ const { Hnode } = require("../hkad/hnode.js");
 const { Heng_alpha } = require("../hkad/eng/heng_alpha.js");
 const { Htrans_sim } = require("../hkad/trans/htrans_sim.js");
 const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we include the hgeo module top level source file? Gotta figure out a plan 
+const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 
 
@@ -118,27 +119,17 @@ async function doit() {
 	// latmax, longmax is always gonna be the top right corner
 
 	// this map subwindow describes a large area that encompasses la rosa, the north bronx, mount vernon, larchmont
-	let bottom_left = new Hgeo_coord({lat: 40.86956, long: -73.86881});
-	let top_right = new Hgeo_coord({lat: 40.93391, long: -73.70985}); 
+	const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
+	const res1 = await larosa_pht.range_query_2d(westchester.get_min().linearize(), westchester.get_max().linearize());
 
-	let min = bottom_left.linearize();
-	let max = top_right.linearize();
-
-	let res = await larosa_pht.range_query_2d(min, max);
-
-	console.log(res);
+	console.log(res1);
 
 
 	// this map subwindow describes a smallish area that encompasses most of park slope and some of gowanus
-	bottom_left = new Hgeo_coord({lat: 40.66203, long: -74.00236});
-	top_right = new Hgeo_coord({lat: 40.67219, long: -73.96271}); 
+	const park_slope = new Hgeo_rect({bottom: 40.66203, left: -74.00236, top: 40.67219, right: -73.96271});
+	const res2 = await larosa_pht.range_query_2d(park_slope.get_min().linearize(), park_slope.get_max().linearize());
 
-	min = bottom_left.linearize();
-	max = top_right.linearize();
-
-	res = await larosa_pht.range_query_2d(min, max);
-
-	console.log(res);
+	console.log(res2);
 
 
 
