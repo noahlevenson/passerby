@@ -1,5 +1,5 @@
 // Class for a hoodnet message object
-class Hmsg {
+class Hkad_msg {
 	static RPC = {
 		PING: 0,
 		STORE: 1,
@@ -26,7 +26,7 @@ class Hmsg {
 		}
 
 		if (rpc === null || from === null || type === null) {
-			throw new Errror("bro what are you doing with this Hmsg, you forgot params");
+			throw new Errror("bro what are you doing with this Hkad_msg, you forgot params");
 		}
 
 		// TODO: We can implement an is_required() function and supply as default parameter like this:
@@ -41,4 +41,4 @@ class Hmsg {
 	}
 }
 
-module.exports.Hmsg = Hmsg;
+module.exports.Hkad_msg = Hkad_msg;

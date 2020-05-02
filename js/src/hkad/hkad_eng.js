@@ -1,5 +1,5 @@
 // Base class for a hoodnet message engine
-class Heng {
+class Hkad_eng {
 	node;
 
 	constructor() {
@@ -15,4 +15,4 @@ class Heng {
 	}
 }
 
-module.exports.Heng = Heng;
+module.exports.Hkad_eng = Hkad_eng;

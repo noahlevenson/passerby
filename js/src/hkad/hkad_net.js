@@ -1,7 +1,7 @@
 const EventEmitter = require("events");
 
-// Base class for a hoodnet transport module
-class Htrans {
+// Base class for a hoodnet network module
+class Hkad_net {
 	network;
 
 	constructor() {
@@ -17,4 +17,4 @@ class Htrans {
 	}
 }
 
-module.exports.Htrans = Htrans;
+module.exports.Hkad_net = Hkad_net;

@@ -1,9 +1,9 @@
 const EventEmitter = require("events");
-const { Heng } = require("../heng.js");
-const { Hmsg } = require("../hmsg.js");
+const { Hkad_eng } = require("../hkad_eng.js");
+const { Hkad_msg } = require("../hkad_msg.js");
 
-// Heng_alpha is a hoodnet message engine module that takes an event-driven approach and uses promises to avoid keeping message state
-class Heng_alpha extends Heng {
+// Hkad_eng_alpha is a hoodnet message engine module that takes an event-driven approach and uses promises to avoid keeping message state
+class Hkad_eng_alpha extends Hkad_eng {
 	static TIMEOUT = 5000;
 	static RES_EVENT_PREFIX = "r+";
 	
@@ -17,14 +17,14 @@ class Heng_alpha extends Heng {
 	}
 	
 	_on_message(msg) {
-		// Assuming the message is already deserialized & validated to be an Hmsg object!
+		// Assuming the message is already deserialized & validated to be an Hkad_msg object!
 
 		// First, update the appropriate k-bucket for the sender's node ID
 		this.node._update_kbucket(msg);
 		
-		if (msg.type === Hmsg.TYPE.RES) {
+		if (msg.type === Hkad_msg.TYPE.RES) {
 			// console.log(`Node ${this.node.node_info.node_id.toString(16)} received a res from node ${msg.from.node_id.toString(16)}`)
-			this.res.emit(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, msg);
+			this.res.emit(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id}`, msg);
 			return;
 		}
 
@@ -38,15 +38,15 @@ class Heng_alpha extends Heng {
 
 	// When we send a message, if the message is a request, we set up listeners and handlers for a potential response
 	_send(msg, node_info, success, timeout)  {
-		if (msg.type === Hmsg.TYPE.REQ) {
+		if (msg.type === Hkad_msg.TYPE.REQ) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
 					// console.log(`req timed out for msg ${msg.id.toString(16)}`);
-					this.res.removeAllListeners(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`);
+					this.res.removeAllListeners(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id}`);
 					reject(); // Maybe we should reject with a proper error code etc
-				}, Heng_alpha.TIMEOUT);
+				}, Hkad_eng_alpha.TIMEOUT);
 
-				this.res.once(`${Heng_alpha.RES_EVENT_PREFIX}${msg.id}`, (res_msg) => {
+				this.res.once(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id}`, (res_msg) => {
 					clearTimeout(timeout_id);
 
 					if (typeof success === "function") {
@@ -66,4 +66,4 @@ class Heng_alpha extends Heng {
 	}
 }
 
-module.exports.Heng_alpha = Heng_alpha;
+module.exports.Hkad_eng_alpha = Hkad_eng_alpha;

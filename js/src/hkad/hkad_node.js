@@ -1,12 +1,12 @@
 const crypto = require("crypto");
 const { Hutil } = require("../hutil/hutil.js"); // Hutil is correctly named because its a top level module - the rest below need to be renamed 
-const { Hnode_info } = require("./hnode_info.js");
-const { Hkbucket } = require("./hkbucket.js");
-const { Hmsg } = require("./hmsg.js");
-const { Hdata } = require("./hdata.js");
+const { Hkad_node_info } = require("./hkad_node_info.js");
+const { Hkad_kbucket } = require("./hkad_kbucket.js");
+const { Hkad_msg } = require("./hkad_msg.js");
+const { Hkad_data } = require("./hkad_data.js");
 
 // A hoodnet Kademlia DHT node
-class Hnode {
+class Hkad_node {
 	static DHT_BIT_WIDTH = 160;
 	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
@@ -20,10 +20,10 @@ class Hnode {
 	kbuckets;
 	data;
 	RPC_RES_EXEC = new Map([
-		[Hmsg.RPC.PING, this._res_ping],
-		[Hmsg.RPC.STORE, this._res_store],
-		[Hmsg.RPC.FIND_NODE, this._res_find_node],
-		[Hmsg.RPC.FIND_VALUE, this._res_find_value]
+		[Hkad_msg.RPC.PING, this._res_ping],
+		[Hkad_msg.RPC.STORE, this._res_store],
+		[Hkad_msg.RPC.FIND_NODE, this._res_find_node],
+		[Hkad_msg.RPC.FIND_VALUE, this._res_find_value]
 	]);
 
 	constructor({trans = null, eng = null} = {}) {
@@ -34,13 +34,13 @@ class Hnode {
 
 		this.trans = trans;
 		this.eng = eng;
-		this.node_id = Hnode.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
-		this.node_info = new Hnode_info({ip_addr: "127.0.0.1", udp_port: 31337, node_id: BigInt(this.node_id)});
+		this.node_id = Hkad_node.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
+		this.node_info = new Hkad_node_info({ip_addr: "127.0.0.1", udp_port: 31337, node_id: BigInt(this.node_id)});
 
 		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
 		
-		for (let i = 0; i < Hnode.DHT_BIT_WIDTH; i += 1) {
-			this.kbuckets.set(i, new Hkbucket({size: Hnode.K_SIZE}));
+		for (let i = 0; i < Hkad_node.DHT_BIT_WIDTH; i += 1) {
+			this.kbuckets.set(i, new Hkad_kbucket({size: Hkad_node.K_SIZE}));
 		}
 
 		// This is our local data store -- I guess we're rehashing keys but whatever
@@ -89,12 +89,12 @@ class Hnode {
 	async _refresh_kbucket(b) {
 		// To refresh k-bucket 20 means to pick a random key in the range of 2^20 - 2^21 and do a "node search" on it -- which I'm assuming means do a node lookup? (as opposed to a find_node?) 
 		// because a find_node is a directed RPC 
-		const random_id = Hnode.generate_random_key_between(b, b + 1);
+		const random_id = Hkad_node.generate_random_key_between(b, b + 1);
 		await this._node_lookup(random_id);
 	}
 
 	_update_kbucket(msg) {
-		const d = Hnode._get_distance(msg.from.node_id, this.node_id);
+		const d = Hkad_node._get_distance(msg.from.node_id, this.node_id);
 		const b = Hutil._log2(d);
 		const bucket = this.get_kbucket(b);
 
@@ -112,7 +112,7 @@ class Hnode {
 		}
 
 		this._req_ping(bucket.at(0), (res, ctx) => {
-			const d = Hnode._get_distance(res.from.node_id, ctx.node_id);
+			const d = Hkad_node._get_distance(res.from.node_id, ctx.node_id);
 			const b = Hutil._log2(d);
 			const bucket = ctx.get_kbucket(b);
 
@@ -136,8 +136,8 @@ class Hnode {
 				ctx = arguments[2];
 
 				// If we received a value type, that means this was a FIND instruction and we received the jackpot - terminate immediately
-				if (res.data.type === Hdata.TYPE.VAL) {
-					resolve_node_lookup(new Hdata({type: Hdata.TYPE.VAL, payload: res.data.payload}));
+				if (res.data.type === Hkad_data.TYPE.VAL) {
+					resolve_node_lookup(new Hkad_data({type: Hkad_data.TYPE.VAL, payload: res.data.payload}));
 					return;
 
 					// TODO: Are we worried about any unresolved promises we may have left dangling?
@@ -150,7 +150,7 @@ class Hnode {
 				// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
 				const sender = res.from;
 				sender.queried = true;
-				node_map.set(Hnode._get_distance(key, res.from.node_id).toString(16), sender);
+				node_map.set(Hkad_node._get_distance(key, res.from.node_id).toString(16), sender);
 
 				// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
 				// Again exploit the map property that we can just overwrite old keys
@@ -158,11 +158,11 @@ class Hnode {
 					// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
 					// us a node in a list that we've already talked to and we want to retain its queried status
 
-					const existing_node = node_map.get(Hnode._get_distance(key, node_info.node_id).toString(16));
+					const existing_node = node_map.get(Hkad_node._get_distance(key, node_info.node_id).toString(16));
 
 					if (!existing_node) {
 						node_info.queried = false;
-						node_map.set(Hnode._get_distance(key, node_info.node_id).toString(16), node_info);
+						node_map.set(Hkad_node._get_distance(key, node_info.node_id).toString(16), node_info);
 					}
 				});
 
@@ -170,7 +170,7 @@ class Hnode {
 				// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
 				// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
 				const sorted = Array.from(node_map.values()).sort((a, b) => {
-					return Hnode._get_distance(key, a.node_id) > Hnode._get_distance(key, b.node_id) ? 1 : -1;
+					return Hkad_node._get_distance(key, a.node_id) > Hkad_node._get_distance(key, b.node_id) ? 1 : -1;
 				});
 
 				// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
@@ -179,7 +179,7 @@ class Hnode {
 					resolve_find_nodes();
 				}
 				
-				const our_current_k_size_bro = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
+				const our_current_k_size_bro = ctx._get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
 
 				// Wow this is terrible
 				// It's how we handle the base case: If all SIZE_K of the closest nodes in our node map have been queried, then we're done
@@ -195,7 +195,7 @@ class Hnode {
 				}
 
 				if (returnable.length >= our_current_k_size_bro) {
-					resolve_node_lookup(new Hdata({type: Hdata.TYPE.NODE_LIST, payload: returnable}));
+					resolve_node_lookup(new Hkad_data({type: Hkad_data.TYPE.NODE_LIST, payload: returnable}));
 					return;
 				}
 
@@ -205,13 +205,13 @@ class Hnode {
 				// do we essentially think about node_map as being a fixed length equal to our current SIZE_K?
 				const node_infos = [];
 
-				for (let i = 0; i < sorted.length && i < our_current_k_size_bro && node_infos.length < Hnode.ALPHA; i += 1) {
+				for (let i = 0; i < sorted.length && i < our_current_k_size_bro && node_infos.length < Hkad_node.ALPHA; i += 1) {
 					if (!sorted[i].queried) {
 						node_infos.push(sorted[i]);
 					}
 				}
 
-				const closest_bro = Hnode._get_distance(key, sorted[0].node_id);
+				const closest_bro = Hkad_node._get_distance(key, sorted[0].node_id);
 				const resolutions = [];
 
 				node_infos.forEach((node_info) => {
@@ -227,12 +227,12 @@ class Hnode {
 				// TODO: Is this "hail mary" round supposed to trigger recursions?  I mean, I think so, right?
 				Promise.all(resolutions).then((values) => {
 					const new_sorted = Array.from(node_map.values()).sort((a, b) => {
-						return Hnode._get_distance(key, a.node_id) > Hnode._get_distance(key, b.node_id) ? 1 : -1;
+						return Hkad_node._get_distance(key, a.node_id) > Hkad_node._get_distance(key, b.node_id) ? 1 : -1;
 					});
 
 					// Here we check the hail mary condition
-					if (Hnode._get_distance(key, new_sorted[0].node_id) >= closest_bro) {
-						const current_k_number = ctx._get_nodes_closest_to(key, Hnode.K_SIZE).length;
+					if (Hkad_node._get_distance(key, new_sorted[0].node_id) >= closest_bro) {
+						const current_k_number = ctx._get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
 						const k_closest_nodes_we_havent_queried = [];
 
 						// TODO: I'm not sure what the original paper calls for: Is our node_map supposed to max out at SIZE_K items?
@@ -257,7 +257,7 @@ class Hnode {
 				});
 			}
 
-			const node_infos = this._get_nodes_closest_to(key, Hnode.ALPHA);
+			const node_infos = this._get_nodes_closest_to(key, Hkad_node.ALPHA);
 			const node_map = new Map();
 			
 			// console.log(`key: ${key}`)
@@ -277,58 +277,58 @@ class Hnode {
 	// your Heng module is responsible for figuring out how to keep track of the process (some Heng modules might keep messages as state in a queue and implement GC for timeouts, some might just use promises...)
 	// Similarly, your Heng module is responsible for determining what is an incoming RPC req for us to answer, and it forwards it to our _on_req() function
 	_req_ping(node_info, success, timeout) {
-		const msg = new Hmsg({
-			rpc: Hmsg.RPC.PING,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.REQ,
-			id: Hnode.generate_random_key_between()
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.PING,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			id: Hkad_node.generate_random_key_between()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_store(key, val, node_info, success, timeout) {
-		const msg = new Hmsg({
-			rpc: Hmsg.RPC.STORE,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.REQ,
-			data: new Hdata({type: Hdata.TYPE.PAIR, payload: [key, val]}),
-			id: Hnode.generate_random_key_between()
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.STORE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
+			id: Hkad_node.generate_random_key_between()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_node(key, node_info, success, timeout) {
-		const msg = new Hmsg({
-			rpc: Hmsg.RPC.FIND_NODE,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.REQ,
-			data: new Hdata({type: Hdata.TYPE.KEY, payload: [key]}),
-			id: Hnode.generate_random_key_between()
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.FIND_NODE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
+			id: Hkad_node.generate_random_key_between()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_value(key, node_info, success, timeout) {
-		const msg = new Hmsg({
-			rpc: Hmsg.RPC.FIND_VALUE,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.REQ,
-			data: new Hdata({type: Hdata.TYPE.KEY, payload: [key]}),
-			id: Hnode.generate_random_key_between()
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.FIND_VALUE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
+			id: Hkad_node.generate_random_key_between()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_res_ping(req) {
-		return new Hmsg({
-			rpc: Hmsg.RPC.PING,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.RES,
-			data: new Hdata({type: Hdata.TYPE.STRING, payload: ["PONG"]}),
+		return new Hkad_msg({
+			rpc: Hkad_msg.RPC.PING,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.RES,
+			data: new Hkad_data({type: Hkad_data.TYPE.STRING, payload: ["PONG"]}),
 			id: req.id
 		});
 	}
@@ -336,41 +336,41 @@ class Hnode {
 	_res_store(req) {
 		this.data.set(req.data.payload[0].toString(16), req.data.payload[1]);
 
-		return new Hmsg({
-			rpc: Hmsg.RPC.STORE,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.RES,
-			data: new Hdata({type: Hdata.TYPE.STRING, payload: ["OK"]}),
+		return new Hkad_msg({
+			rpc: Hkad_msg.RPC.STORE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.RES,
+			data: new Hkad_data({type: Hkad_data.TYPE.STRING, payload: ["OK"]}),
 			id: req.id
 		});
 	}
 
 	_res_find_node(req) {
-		const nodes = this._get_nodes_closest_to(req.data.payload[0], Hnode.K_SIZE);
+		const nodes = this._get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
 
-		return new Hmsg({
-			rpc: Hmsg.RPC.FIND_NODE,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.RES,
-			data: new Hdata({type: Hdata.TYPE.NODE_LIST, payload: nodes}),
+		return new Hkad_msg({
+			rpc: Hkad_msg.RPC.FIND_NODE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.RES,
+			data: new Hkad_data({type: Hkad_data.TYPE.NODE_LIST, payload: nodes}),
 			id: req.id
 		});
 	}
 
 	_res_find_value(req) {
 		let payload = [this.data.get(req.data.payload[0].toString(16))];
-		let type = Hdata.TYPE.VAL;
+		let type = Hkad_data.TYPE.VAL;
 		
 		if (!payload[0]) {
-			payload = this._get_nodes_closest_to(req.data.payload[0], Hnode.K_SIZE);
-			type = Hdata.TYPE.NODE_LIST;
+			payload = this._get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
+			type = Hkad_data.TYPE.NODE_LIST;
 		}
 
-		return new Hmsg({
-			rpc: Hmsg.RPC.FIND_VALUE,
-			from: new Hnode_info(this.node_info),
-			type: Hmsg.TYPE.RES,
-			data: new Hdata({type: type, payload: payload}),
+		return new Hkad_msg({
+			rpc: Hkad_msg.RPC.FIND_VALUE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.RES,
+			data: new Hkad_data({type: type, payload: payload}),
 			id: req.id
 		});
 	}
@@ -380,8 +380,8 @@ class Hnode {
 		this.eng._send(res, msg.from)
 	}
 
-	_get_nodes_closest_to(key, max = Hnode.K_SIZE) {
-		const d = Hnode._get_distance(key, this.node_id);
+	_get_nodes_closest_to(key, max = Hkad_node.K_SIZE) {
+		const d = Hkad_node._get_distance(key, this.node_id);
 		const b = Hutil._log2(d);
 
 		const nodes = [];
@@ -398,15 +398,15 @@ class Hnode {
 			// console.log(bucket)
 
 			// Sort the bucket by distance from the key -- this is duplicated code, doesn't belong here, requires too much knowledge
-			// of Hnode_info structure -- please make this better sir
+			// of Hkad_node_info structure -- please make this better sir
 			bucket.sort((a, b) => {
-				return Hnode._get_distance(key, a.node_id) > Hnode._get_distance(key, b.node_id) ? 1 : -1;
+				return Hkad_node._get_distance(key, a.node_id) > Hkad_node._get_distance(key, b.node_id) ? 1 : -1;
 			})
 
 			// console.log(bucket)
 
 			for (let j = 0; j < bucket.length && nodes.length < max; j += 1) {
-				nodes.push(new Hnode_info(bucket[j]));
+				nodes.push(new Hkad_node_info(bucket[j]));
 			}
 		}	
 
@@ -425,7 +425,7 @@ class Hnode {
 		// TODO: Replace this message with our proper logging function
 		console.log(`[HKAD] Joining network as ${this.node_id} via bootstrap node ${node_info.node_id}...`);
 
-		const d = Hnode._get_distance(node_info.node_id, this.node_id);
+		const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
 		const b = Hutil._log2(d);
 
 		this.get_kbucket(b)._push(node_info);
@@ -439,10 +439,10 @@ class Hnode {
 
 		// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
 		// since the nodes in the network see me as the closest node to myself
-		const distance_to_closest_bro = Hnode._get_distance(closest_to_me_sorted[1].node_id, this.node_id);
+		const distance_to_closest_bro = Hkad_node._get_distance(closest_to_me_sorted[1].node_id, this.node_id);
 		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
 
-		for (let i = closest_bro_bucket + 1; i < Hnode.DHT_BIT_WIDTH; i += 1) {
+		for (let i = closest_bro_bucket + 1; i < Hkad_node.DHT_BIT_WIDTH; i += 1) {
 			await this._refresh_kbucket(i);
 		}
 
@@ -480,4 +480,4 @@ class Hnode {
 	}
 }
 
-module.exports.Hnode = Hnode;
+module.exports.Hkad_node = Hkad_node;

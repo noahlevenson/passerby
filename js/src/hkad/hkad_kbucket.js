@@ -1,5 +1,5 @@
 // Class for a hoodnet k-bucket
-class Hkbucket {
+class Hkad_kbucket {
 	#size;
 	#data;
 
@@ -67,4 +67,4 @@ class Hkbucket {
 	}
 }
 
-module.exports.Hkbucket = Hkbucket;
+module.exports.Hkad_kbucket = Hkad_kbucket;

@@ -1,5 +1,5 @@
 // Class for a hoodnet data object
-class Hdata {
+class Hkad_data {
 	static TYPE = {
 		STRING: 0,
 		NODE_LIST: 1,
@@ -21,4 +21,4 @@ class Hdata {
 	}
 }
 
-module.exports.Hdata = Hdata;
+module.exports.Hkad_data = Hkad_data;

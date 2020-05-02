@@ -1,5 +1,5 @@
 // Class for a hoodnet node info object
-class Hnode_info {
+class Hkad_node_info {
 	constructor({addr = null, port = null, node_id = null} = {}) {
 		this.addr = addr;
 		this.port = port;
@@ -7,4 +7,4 @@ class Hnode_info {
 	}
 }
 
-module.exports.Hnode_info = Hnode_info;
+module.exports.Hkad_node_info = Hkad_node_info;

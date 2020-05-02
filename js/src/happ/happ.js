@@ -22,9 +22,9 @@
 
 "use strict";
 
-const { Hnode } = require("../hkad/hnode.js");
-const { Heng_alpha } = require("../hkad/eng/heng_alpha.js");
-const { Htrans_sim } = require("../hkad/trans/htrans_sim.js");
+const { Hkad_node } = require("../hkad/hkad_node.js");
+const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
+const { Hkad_net_sim } = require("../hkad/net/hkad_net_sim.js");
 const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we include the hgeo module top level source file? Gotta figure out a plan 
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
@@ -35,12 +35,12 @@ const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 // Is the hoodnet.js file necessary in the distribution? Do want to maybe move some global constants here?
 
 // Make a bootstrap node
-const beng = new Heng_alpha();
-const btrans = new Htrans_sim();
-const bootstrap_node = new Hnode({eng: beng, trans: btrans});
+const beng = new Hkad_eng_alpha();
+const btrans = new Hkad_net_sim();
+const bootstrap_node = new Hkad_node({eng: beng, trans: btrans});
 
 // Create a simulator transport module
-const my_local_simulator = new Htrans_sim();
+const my_local_simulator = new Hkad_net_sim();
 
 // Add the bootstrap node to the local simulator
 my_local_simulator._add_peer(bootstrap_node);
@@ -50,9 +50,9 @@ my_local_simulator._add_peer(bootstrap_node);
 new Promise((resolve, reject) => {
 	for (let i = 0; i < 200; i += 1) {
 		(async function() {
-			const message_eng = new Heng_alpha();
-			const local_simulator = new Htrans_sim();
-			const node = new Hnode({eng: message_eng, trans: local_simulator});
+			const message_eng = new Hkad_eng_alpha();
+			const local_simulator = new Hkad_net_sim();
+			const node = new Hkad_node({eng: message_eng, trans: local_simulator});
 			my_local_simulator._add_peer(node);
 			await node.bootstrap(bootstrap_node.node_info);
 
@@ -68,10 +68,10 @@ new Promise((resolve, reject) => {
 
 async function doit() {
 	// Create a message engine module
-	const my_preferred_message_eng = new Heng_alpha();
+	const my_preferred_message_eng = new Hkad_eng_alpha();
 
 	// Create a DHT node for me, Pizzeria La Rosa
-	const larosa = new Hnode({eng: my_preferred_message_eng, trans: my_local_simulator});
+	const larosa = new Hkad_node({eng: my_preferred_message_eng, trans: my_local_simulator});
 
 
 	// Add me to the local simulator
@@ -122,14 +122,31 @@ async function doit() {
 	const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
 	const res1 = await larosa_pht.range_query_2d(westchester.get_min().linearize(), westchester.get_max().linearize());
 
-	console.log(res1);
 
+	console.log("WESTCHESTER:");
+	console.log(res1);
 
 	// this map subwindow describes a smallish area that encompasses most of park slope and some of gowanus
 	const park_slope = new Hgeo_rect({bottom: 40.66203, left: -74.00236, top: 40.67219, right: -73.96271});
 	const res2 = await larosa_pht.range_query_2d(park_slope.get_min().linearize(), park_slope.get_max().linearize());
 
+	console.log("PARK SLOPE:");
 	console.log(res2);
+
+	// this map subwindow describes a small area that encompasses a region of prospect heights
+	const prospect_heights = new Hgeo_rect({bottom: 40.65347, left: -73.96451, top: 40.66929, right: -73.92451});
+	const res3 = await larosa_pht.range_query_2d(prospect_heights.get_min().linearize(), prospect_heights.get_max().linearize());
+
+	console.log("PROSPECT HEIGHTS:");
+	console.log(res3);
+
+	// this map subwindow describes a small region of south brooklyn encompassing L&B Spumoni Gardens
+	const south_bk = new Hgeo_rect({bottom: 40.59046, left: -73.99054, top: 40.59838, right: -73.97054});
+	const res4 = await larosa_pht.range_query_2d(south_bk.get_min().linearize(), south_bk.get_max().linearize());
+
+	console.log("SOUTH BROOKLYN:");
+	console.log(res4);
+
 
 
 
@@ -228,7 +245,7 @@ async function doit() {
 	// (async function pht_test() {
 	// 	await larosa.join(bootstrap_node.node_info);
 
-	// 	const res = await larosa_pht.lookup_lin(Hnode.generate_random_key_between(0, 80));
+	// 	const res = await larosa_pht.lookup_lin(Hkad_node.generate_random_key_between(0, 80));
 
 	// 	console.log(res);
 
