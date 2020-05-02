@@ -1,7 +1,7 @@
 const { Hkad_net } = require("../hkad_net.js");
 const { Hutil } = require("../../hutil/hutil.js");
 
-// Hkad_net_sim is a hoodnet transport module that implements a local network simulator
+// Hkad_net_sim is an HKAD network module that implements a local network simulator
 class Hkad_net_sim extends Hkad_net {
 	static peer_list = new Map();
 
@@ -61,7 +61,7 @@ class Hkad_net_sim extends Hkad_net {
 		const peer = Hkad_net_sim.peer_list.get(node_info.node_id.toString(16));
 
 		if (peer) {
-			peer.trans._in(msg);
+			peer.net._in(msg);
 		} 
 	}
 }

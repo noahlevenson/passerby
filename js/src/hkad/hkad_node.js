@@ -8,12 +8,13 @@ const { Hkad_data } = require("./hkad_data.js");
 // A hoodnet Kademlia DHT node
 class Hkad_node {
 	static DHT_BIT_WIDTH = 160;
+
 	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
 
 	DEBUG;
-	trans;
+	net;
 	eng;
 	node_id;
 	node_info;
@@ -26,16 +27,22 @@ class Hkad_node {
 		[Hkad_msg.RPC.FIND_VALUE, this._res_find_value]
 	]);
 
-	constructor({trans = null, eng = null} = {}) {
-		// TODO: validate that the transport and message eng module are instances of the correct base classes and implement the functionality we rely on
+	// REMEMBER TO DELETE port BELOW, WE DON'T USE IT, ITS FOR TESTING ONLY
+	constructor({net = null, eng = null, port = null} = {}) {
+		// TODO: validate that the net and message eng module are instances of the correct base classes and implement the functionality we rely on
 		this.DEBUG = {
 			WATCH: null,
 		};
 
-		this.trans = trans;
+		this.net = net;
 		this.eng = eng;
+
 		this.node_id = Hkad_node.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
-		this.node_info = new Hkad_node_info({ip_addr: "127.0.0.1", udp_port: 31337, node_id: BigInt(this.node_id)});
+
+		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
+		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
+		// but for our first one-machine network tests, we'll just manually supply a port...
+		this.node_info = new Hkad_node_info({addr: "localhost", port: port, node_id: BigInt(this.node_id)});
 
 		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
 		
@@ -47,8 +54,8 @@ class Hkad_node {
 		this.data = new Map();
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
-		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our transport reference and call its out() method
-		this.trans.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the transport to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
+		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our net module reference and call its out() method
+		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the network module to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
 	}
 
 	static _get_distance(key1, key2) {

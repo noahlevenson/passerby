@@ -29,6 +29,8 @@ const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we incl
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 
+const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
+
 
 const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
@@ -36,10 +38,10 @@ const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
 // Make a bootstrap node
 const beng = new Hkad_eng_alpha();
-const btrans = new Hkad_net_sim();
-const bootstrap_node = new Hkad_node({eng: beng, trans: btrans});
+const bnet = new Hkad_net_sim();
+const bootstrap_node = new Hkad_node({eng: beng, net: bnet});
 
-// Create a simulator transport module
+// Create a simulator net module
 const my_local_simulator = new Hkad_net_sim();
 
 // Add the bootstrap node to the local simulator
@@ -52,7 +54,7 @@ new Promise((resolve, reject) => {
 		(async function() {
 			const message_eng = new Hkad_eng_alpha();
 			const local_simulator = new Hkad_net_sim();
-			const node = new Hkad_node({eng: message_eng, trans: local_simulator});
+			const node = new Hkad_node({eng: message_eng, net: local_simulator});
 			my_local_simulator._add_peer(node);
 			await node.bootstrap(bootstrap_node.node_info);
 
@@ -71,7 +73,7 @@ async function doit() {
 	const my_preferred_message_eng = new Hkad_eng_alpha();
 
 	// Create a DHT node for me, Pizzeria La Rosa
-	const larosa = new Hkad_node({eng: my_preferred_message_eng, trans: my_local_simulator});
+	const larosa = new Hkad_node({eng: my_preferred_message_eng, net: my_local_simulator});
 
 
 	// Add me to the local simulator
@@ -148,6 +150,8 @@ async function doit() {
 	console.log(res4);
 
 
+
+	const udp = new Htrans_udp();
 
 
 

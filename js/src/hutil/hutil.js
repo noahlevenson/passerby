@@ -3,6 +3,23 @@ const crypto = require("crypto");
 // Utility functions
 class Hutil {
 	static SYS_BYTE_WIDTH = 8;
+	static HEX_STR_PREFIX = "0x";
+
+	// JSON serializer for BigInt type - this is set on the BigInt prototype at the HAPP layer
+	static _bigint_to_json() {
+		return `${Hutil.HEX_STR_PREFIX}${this.toString(16)}`;
+	}
+
+	// BigInt reviver function - this is applied at the individual application NET layer to revive long hex values
+	// In a world where we have other implementations written in other languages, long hex values actually remain portable
+	// we'd just need to chop off the HEX_STR_PREFIX and then revive them as whatever format works -- likely just a buffer of bytes
+	static _bigint_revive(key, val) {
+		if (typeof val === "string" && val.substring(0, 2) === Hutil.HEX_STR_PREFIX) {
+			return BigInt(val);
+		}
+
+		return val;
+	}
 
 	// Returns a hex string
 	static _sha1(data) {

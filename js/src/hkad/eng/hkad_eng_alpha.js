@@ -62,7 +62,8 @@ class Hkad_eng_alpha extends Hkad_eng {
 			});
 		}
 
-		this.node.trans._out(msg, node_info);	
+		// This is an Hkad_msg going out to our net module
+		this.node.net._out(msg, node_info);	
 	}
 }
 
