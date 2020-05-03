@@ -38,7 +38,7 @@ async function doit() {
 	// Create a PHT interface for La Rosa
 	const larosa_pht = new Hpht({
 		index_attr: "___h00dn3t.geoha$h!!",
-		dht_lookup: larosa._node_lookup, 
+		dht_lookup_func: larosa._node_lookup, 
 		dht_lookup_args: [larosa._req_find_value], 
 		dht_node: larosa
 	});
@@ -50,20 +50,20 @@ async function doit() {
 
 
 	// Create geo object for our location in the real world -- this should happen before we bootstrap the DHT node, and we should bootstrap using the linearization of this object as our NODE ID
-	// const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
+	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
-	// // This should be an "add_menu()" command at the highest protocol level
-	// await larosa_pht.insert(our_location.linearize(), "Pizzeria La Rosa");
+	// This should be an "add_menu()" command at the highest protocol level
+	await larosa_pht.insert(our_location.linearize(), "Pizzeria La Rosa");
 
 
-	// // Add some other restaurants that are not within our window!!!!!
-	// const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-	// await larosa_pht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
+	// Add some other restaurants that are not within our window!!!!!
+	const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
+	await larosa_pht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
 
-	// const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-	// await larosa_pht.insert(pinos.linearize(), "Pino's La Forchetta");
+	const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
+	await larosa_pht.insert(pinos.linearize(), "Pino's La Forchetta");
 
-	// const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-	// await larosa_pht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
+	const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
+	await larosa_pht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
 	
 }

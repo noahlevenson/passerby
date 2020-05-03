@@ -16,12 +16,16 @@ class Hkad_net_solo extends Hkad_net {
 		}
 
 		this.trans = trans;
-		this.trans.network.on(this.trans.inbound_event_name, this._on_message.bind(this));
+		this.trans.network.on("message", this._on_message.bind(this));
 	}
 
 	_on_message(htrans_msg) {
 		// This htrans_msg is delivered from the HTRANS module, so it's an Htrans object where the msg is a Buffer
 		// TODO: Need to figure out how to discern HKAD messages if/when we multiplex protocols
+		// How do we know that htrans_msg.msg is a buffer that we should try to stringify and parse using the bigint reviver function?
+		// maybe we have to try to transform it this way to learn that it's not actually an Hkad_msg object, but we need
+		// a rigorous way of testing whether some object is an Hkad_msg object...
+		// A SIMPLE way to do it: Make Htrans_msg our over-the-wire format -- only send Htrans_msg's, and give them a TYPE field: KAD or STUN
 		try {
 			const msg = new Hkad_msg(JSON.parse(htrans_msg.msg.toString(), Hutil._bigint_revive));
 			this._in(msg);

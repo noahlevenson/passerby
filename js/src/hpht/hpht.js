@@ -12,17 +12,17 @@ class Hpht {
 	static B = 4; // Max keys per leaf - what's the most optimized value for this? I think smallish B values better distribute the data in the network
 
 	dht_node; // reference to the DHT node associated with this PHT interface
-	dht_lookup; // reference to the above node's lookup function
+	dht_lookup_func; // reference to the above node's lookup function
 	dht_lookup_args; // an array of args that must be passed to the above DHT lookup function to make it perform a value-based lookup
 	index_attr; // Some unique string identifier for the attribute that we're indexing with this PHT interface
 	
-	constructor({index_attr = null, dht_node = null, dht_lookup = null, dht_lookup_args = []} = {}) {
+	constructor({index_attr = null, dht_node = null, dht_lookup_func = null, dht_lookup_args = []} = {}) {
 		// TODO: validation
 		if (typeof index_attr !== "string") {
 			throw new TypeError("Argument index_attr must be a string");
 		} 
 
-		if (typeof dht_lookup !== "function") {
+		if (typeof dht_lookup_func !== "function") {
 			throw new TypeError("Argument dht_lookup must be a function");
 		}
 
@@ -31,7 +31,7 @@ class Hpht {
 		}
 		
 		this.dht_node = dht_node;
-		this.dht_lookup = dht_lookup;
+		this.dht_lookup_func = dht_lookup_func;
 		this.dht_lookup_args = dht_lookup_args;
 		this.index_attr = index_attr
 	}
@@ -39,21 +39,14 @@ class Hpht {
 	// DEBUG: Print PHT stats - this walks the entire tree and prints everything we know about it
 	async _debug_print_stats() {
 		async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
-			if (pht_node.children[0x00] !== null && pht_node.children[0x01] !== null) {
-				const hdata0 = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(pht_node.children[0x00]), ...this.dht_lookup_args);
-				
-				if (hdata0.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata0.payload[0])) {
+			if (!pht_node.is_leaf()) {
+				const child0 = await this._dht_lookup(pht_node.children[0x00]);
+				const child1 = await this._dht_lookup(pht_node.children[0x01]);
+
+				if (child0 === null || child1 === null) {
 					throw new Error("Fatal PHT graph error");
 				}
 
-				const hdata1 = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(pht_node.children[0x01]), ...this.dht_lookup_args);
-
-				if (hdata1.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata1.payload[0])) {
-					throw new Error("Fatal PHT graph error");
-				}
-
-				const child0 = hdata0.payload[0];
-				const child1 = hdata1.payload[0];
 				({nodes, keys, leaves} = await _walk.bind(this)(child0, nodes, keys, leaves));
 				({nodes, keys, leaves} = await _walk.bind(this)(child1, nodes, keys, leaves));
 			}
@@ -84,17 +77,27 @@ class Hpht {
 
 	// DEBUG: Get the root node, or null if we can't find it
 	async _debug_get_root_node() {
-		const label_hash = this._get_label_hash();
-		const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+		return await this._dht_lookup();
+	}
 
-		if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
+	// Get a PHT node from the DHT -- returns the node if found, null if not
+	// This is where we rehydrate PHT nodes -- is this the most logical place for that?
+	async _dht_lookup(label = "") {
+		const label_hash = this._get_label_hash(label);
+		const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+
+		// This assumes that dht lookups always return an Hkad_data type, which I *think* is true
+		const data = new Hkad_data(res);
+
+		if (data.get_type() !== Hkad_data.TYPE.VAL || !Hpht_node.valid_magic(data.get_payload()[0])) {
 			return null;
 		}
 
-		return hdata.payload[0];
+		return data.get_payload()[0];
 	}
 
 	// Get the hash of a PHT node label (the hash of a PHT node label is the key used to locate it in the DHT)
+
 	// In our implementation, we concatenate the index attribute and the PHT node's binary label at hash time
 	// Supplying no argument will get you the label hash of the PHT root node
 	_get_label_hash(data = "") {
@@ -110,26 +113,23 @@ class Hpht {
 	// It's idempotent - subsequent calls to init() will log the creation time of the existing root node
 	async init() {
 		console.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
+		const data = await this._dht_lookup();
 
-		const label_hash = this._get_label_hash();
-		const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
-
-		if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.is_hpht_node(hdata.payload[0])) {
-			console.log(`[HPHT] Root node found! Created ${hdata.payload[0].created}`);
+		if (data !== null) {
+			console.log(`[HPHT] Root node found! Created ${data.created}`);
 			return;
 		}
 
 		console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
 		const root = new Hpht_node({label: ""});
-
 		const child0 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(0), 1)});
 		const child1 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(1), 1)});
 
 		child0.set_ptrs({left: null, right: child1.get_label()});
 		child1.set_ptrs({left: child0.get_label(), right: null});
 		
-		root.children[0x00] = child0.label;
-		root.children[0x01] = child1.label;
+		root.children[0x00] = child0.get_label();
+		root.children[0x01] = child1.get_label();
 
 		const results = [];
 		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0));
@@ -153,15 +153,10 @@ class Hpht {
 
 		for (let i = 0; i < Hpht.BIT_DEPTH; i += 1) {
 			const pi_k = key & mask;
-			const label_hash = this._get_label_hash(Hutil._bigint_to_bin_str(pi_k, i));
-			const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+			const pht_node = await this._dht_lookup(Hutil._bigint_to_bin_str(pi_k, i));
 
-			if (hdata.type === Hkad_data.TYPE.VAL) {
-				const pht_node = hdata.payload[0];
-
-				if (Hpht_node.is_hpht_node(pht_node) && pht_node.is_leaf()) {
-					return pht_node;
-				}
+			if (pht_node !== null && pht_node.is_leaf()) {
+				return pht_node;
 			}
 
 			mask |= (0x01n << BigInt(i));
@@ -174,6 +169,7 @@ class Hpht {
 	// Returns null if there's no leaf node associated with that key
 	// TODO: Currently this is much slower than linear lookup, likely because of the BigInt computations 
 	// We eventually need to get this working faster and implement it as the default search, with a parallelized linear lookup as the backup
+	// TODO: This also needs to be refactored to use the _dht_lookup() helper function 
 	async lookup_bin(key) {
 		let p = 0;
 		let r = Hpht.BIT_DEPTH - 1; // Is this off by one?
@@ -183,9 +179,9 @@ class Hpht {
 			const mask = ((2n ** BigInt(Hpht.BIT_DEPTH)) - 1n) >> (BigInt(Hpht.BIT_DEPTH) - BigInt(q));
 			const pq_k = key & mask;
 			const label_hash = this._get_label_hash(Hutil._bigint_to_bin_str(pq_k, q));
-			const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+			const hdata = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 			
-			if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.is_hpht_node(hdata.payload[0])) {
+			if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.valid_magic(hdata.payload[0])) {
 				if (hdata.payload[0].is_leaf()) {
 					return hdata.payload[0];
 				}
@@ -337,9 +333,9 @@ class Hpht {
 			// If we decide to do that, then our init() function should only create a root node, not the depth 1 nodes
 			while (old_leaf.label.length > 1) {
 				const sibling_label = `${old_leaf.label.substring(0, old_leaf.label.length - 1)}${old_leaf.label[old_leaf.label.length - 1] === "0" ? "1" : "0"}`;
-				const sibling_hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(sibling_label), ...this.dht_lookup_args);
+				const sibling_hdata = await this.dht_lookup_func.bind(this.dht_node)(this._get_label_hash(sibling_label), ...this.dht_lookup_args);
 
-				if (sibling_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(sibling_hdata.payload[0])) {
+				if (sibling_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.valid_magic(sibling_hdata.payload[0])) {
 					// If we can't find the leaf node for a key, our graph is likely corrupted
 					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
 					throw new Error("Fatal PHT graph error");
@@ -355,9 +351,9 @@ class Hpht {
 				// Our sibling also has 0 keys, we gotta delete this level, adjust our parent, and iterate!
 				// TODO: Currently our DHT has no DELETE() operation, so we can't actually remove the PHT node from the network... but maybe we want it?
 				const parent_label = old_leaf.label.substring(0, old_leaf.label.length - 1);
-				const parent_hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(parent_label), ...this.dht_lookup_args);
+				const parent_hdata = await this.dht_lookup_func.bind(this.dht_node)(this._get_label_hash(parent_label), ...this.dht_lookup_args);
 
-				if (parent_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(parent_hdata.payload[0])) {
+				if (parent_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.valid_magic(parent_hdata.payload[0])) {
 					// If we can't find the leaf node for a key, our graph is likely corrupted
 					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
 					throw new Error("Fatal PHT graph error");
@@ -420,24 +416,24 @@ class Hpht {
 			// TODO: This needs to actually be parallelized for speed
 			if (child0_rect >= min_region && child0_rect <= max_region) {
 				// Recurse 
-				const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(child0_label), ...this.dht_lookup_args);
+				const child_node = await this._dht_lookup(child0_label);
 
-				if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
+				if (child_node === null) {
 					throw new Error("Fatal PHT graph error");
 				}
 
-				data = data.concat(await _do_range_query_2d.bind(this)(hdata.payload[0], child0_label, data));
+				data = data.concat(await _do_range_query_2d.bind(this)(child_node, child0_label, data));
 			}
 
 			if (child1_rect >= min_region && child1_rect <= max_region) {
 				// Recurse
-				const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(child1_label), ...this.dht_lookup_args);
+				const child_node = await this._dht_lookup(child1_label);
 
-				if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
+				if (child_node === null) {
 					throw new Error("Fatal PHT graph error");
 				}
 
-				data = data.concat(await _do_range_query_2d.bind(this)(hdata.payload[0], child1_label, data));
+				data = data.concat(await _do_range_query_2d.bind(this)(child_node, child1_label, data));
 			}
 			
 			return data;
@@ -458,14 +454,14 @@ class Hpht {
 		let lcp = Hutil._get_lcp(key_strings);
 
 		// Now get the PHT node labeled with that prefix
-		const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(lcp), ...this.dht_lookup_args);
+		const pht_node = await this._dht_lookup(lcp);
 
-		if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
+		if (pht_node === null) {
 			throw new Error("Fatal PHT graph error");
 		}
 
 		// Perform recursive parallel traversal of this PHT node
-		return await _do_range_query_2d.bind(this)(hdata.payload[0], lcp);
+		return await _do_range_query_2d.bind(this)(pht_node, lcp);
 	}
 }
 

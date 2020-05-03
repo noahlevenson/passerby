@@ -50,7 +50,7 @@ my_local_simulator._add_peer(bootstrap_node);
 
 // Now let's add some other nodes to the simulated network
 new Promise((resolve, reject) => {
-	for (let i = 0; i < 200; i += 1) {
+	for (let i = 0; i < 10; i += 1) {
 		(async function() {
 			const message_eng = new Hkad_eng_alpha();
 			const local_simulator = new Hkad_net_sim();
@@ -88,7 +88,7 @@ async function doit() {
 	// Create a PHT interface for La Rosa
 	const larosa_pht = new Hpht({
 		index_attr: "___h00dn3t.geoha$h!!",
-		dht_lookup: larosa._node_lookup, 
+		dht_lookup_func: larosa._node_lookup, 
 		dht_lookup_args: [larosa._req_find_value], 
 		dht_node: larosa
 	});

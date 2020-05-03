@@ -19,6 +19,14 @@ class Hkad_data {
 		this.type = type;
 		this.payload = payload;
 	}
+
+	get_type() {
+		return this.type;
+	}
+
+	get_payload() {
+		return this.payload;
+	}
 }
 
 module.exports.Hkad_data = Hkad_data;

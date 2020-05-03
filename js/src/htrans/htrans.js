@@ -3,7 +3,6 @@ const EventEmitter = require("events");
 // Base class for a transport service
 class Htrans {
 	network;
-	inbound_event_name;
 
 	constructor() {
 		this.network = new EventEmitter();

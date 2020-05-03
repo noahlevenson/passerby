@@ -2,14 +2,14 @@
 // TODO: I feel like this class, and all classes, should really have getters and setters for everything, and we should stop accessing members directly
 // But maybe we can wait to see where the JS standard for private members lands -- is it going to be adopted? It's what I want to use
 class Hpht_node {
-	static MAGIC = "PHTDEADBEEF";
+	static MAGIC_VAL = `${Buffer.from([0x19, 0x81]).toString()}v3ryrar3`;
 	
 	created;
 	label;
 	children;
 	ptrs;
 	data;
-	phtmagic;
+	magic;
 
 	constructor({label = null} = {}) {
 		// TODO: validation
@@ -30,19 +30,19 @@ class Hpht_node {
 		this.data = new Map();
 		this.label = label;
 		this.created = new Date();
-		this.phtmagic = Hpht_node.MAGIC.slice(0);
+		this.magic = Hpht_node.MAGIC_VAL.slice(0);
 	}	
 
 	// TODO: Make this more reliable - currently we just implement some dumb magic buffer but there should be some thought put into this
 	// this object identification is a big part of security as well!!!
-	static is_hpht_node(obj) {
+	static valid_magic(obj) {
 		try {
-			return obj.phtmagic === Hpht_node.MAGIC ? true : false;
+			return obj.magic === Hpht_node.MAGIC_VAL ? true : false;
 		} catch(err) {
-			// Silently fail?
+			return false;
 		}
 	}
-
+	
 	// For some reason I wrote a setter for the pointers, we need to do this for children too
 	set_ptrs({left = null, right = null} = {}) {
 		if (typeof left !== "string" && left !== null) {

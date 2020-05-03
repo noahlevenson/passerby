@@ -16,7 +16,6 @@ class Htrans_udp extends Htrans {
 		this.port = port;
 		this.udp4 = udp4;
 		this.udp6 = udp6;
-		this.inbound_event_name = `${this.prefix}${this.port}`;
 		this._start();
 	}
 
@@ -51,7 +50,7 @@ class Htrans_udp extends Htrans {
 			size: rinfo.size
 		});
 
-		this.network.emit(this.inbound_event_name, in_msg);
+		this.network.emit("message", in_msg);
 	}
 
 	_send(htrans_msg) {
