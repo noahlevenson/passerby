@@ -22,24 +22,26 @@ Map.prototype.toJSON = Hutil._map_to_json;
 Map.from_json = Hutil._map_from_json;
 
 
-
-// Make a bootstrap node with UDP transport that lives on the default port
-const bootstrap_udp_trans = new Htrans_udp();
-const bnet = new Hkad_net_solo(bootstrap_udp_trans);
-const beng = new Hkad_eng_alpha();
-const bootstrap_node = new Hkad_node({eng: beng, net: bnet, port: bootstrap_udp_trans.port});
-
-
-// Create a node for me, Pizzeria La Rosa
-const larosa_udp_trans = new Htrans_udp({port: 31337});
-const larosa_net = new Hkad_net_solo(larosa_udp_trans);
-const larosa_eng = new Hkad_eng_alpha();
-const larosa = new Hkad_node({eng: larosa_eng, net: larosa_net, port: larosa_udp_trans.port});
-
 doit();
 
 
 async function doit() {
+	// Make a bootstrap node with UDP transport that lives on the default port
+	const bootstrap_udp_trans = new Htrans_udp();
+	await bootstrap_udp_trans._start();
+	const bnet = new Hkad_net_solo(bootstrap_udp_trans);
+	const beng = new Hkad_eng_alpha();
+	const bootstrap_node = new Hkad_node({eng: beng, net: bnet, port: bootstrap_udp_trans.port});
+
+
+	// Create a node for me, Pizzeria La Rosa
+	const larosa_udp_trans = new Htrans_udp({port: 31337});
+	await larosa_udp_trans._start();
+	const larosa_net = new Hkad_net_solo(larosa_udp_trans);
+	const larosa_eng = new Hkad_eng_alpha();
+	const larosa = new Hkad_node({eng: larosa_eng, net: larosa_net, port: larosa_udp_trans.port});
+
+
 	await larosa.bootstrap(bootstrap_node.node_info);
 
 
@@ -54,6 +56,13 @@ async function doit() {
 	// Init the PHT interface (idempotently checks for root structure)
 	await larosa_pht.init();
 	await larosa_pht.init();	
+
+
+	// for (let i = 0; i < 2000; i += 1) {
+	// 	await larosa_pht.insert(BigInt(i), i);
+	// }
+
+
 
 
 	// Create geo object for our location in the real world -- this should happen before we bootstrap the DHT node, and we should bootstrap using the linearization of this object as our NODE ID
@@ -101,6 +110,13 @@ async function doit() {
 
 	console.log("SOUTH BROOKLYN:");
 	console.log(res4);
+
+
+	await larosa_pht._debug_print_stats();
+
+
+	
+
 
 	
 }

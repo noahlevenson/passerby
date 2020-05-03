@@ -4,7 +4,6 @@ const { Htrans_msg } = require("../htrans_msg.js");
 
 // Htrans_udp is our UDP transport service
 class Htrans_udp extends Htrans {
-	prefix;
 	socket;
 	port;
 	udp4;
@@ -12,15 +11,13 @@ class Htrans_udp extends Htrans {
 
 	constructor({port = 27500, udp4 = true, udp6 = true} = {}) {
 		super();
-		this.prefix = "+udp";
 		this.port = port;
 		this.udp4 = udp4;
 		this.udp6 = udp6;
-		this._start();
 	}
 
 	// This should prob be promise based, i want to await this
-	_start() {
+	async _start() {
 		if (this.udp4 && this.udp6) {
 			this.socket = dgram.createSocket("udp6");
 		} else if (this.udp4) {
@@ -29,15 +26,21 @@ class Htrans_udp extends Htrans {
 			this.socket = dgram.createSocket({type: "udp6", ipv6Only: true});
 		}
 
-		this.socket.on("listening", () => {
-			const addr = this.socket.address();
-			console.log(`[HTRANS] UDP service listening on ${addr.address}:${addr.port}`);
-			return;
-		});
-
 		this.socket.on("message", this._on_message.bind(this));
 		this.socket.bind(this.port);
-		console.log(`[HTRANS] UDP service starting...`);
+		console.log(`[HTRANS] UDP service starting on port ${this.port}...`);
+		await this._listening();
+
+	}
+
+	_listening() {
+		return new Promise((resolve, reject) => {
+			this.socket.on("listening", () => {
+				const addr = this.socket.address();
+				console.log(`[HTRANS] UDP service online, listening on ${addr.address}:${addr.port}`);
+				resolve();
+			});
+		});
 	}
 
 	_on_message(msg, rinfo) {
