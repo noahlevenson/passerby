@@ -17,7 +17,12 @@ class Hpht_node {
 			throw new TypeError("Argument 'label' must be string");
 		}
 
-		this.data = data !== null ? Map.from_json(data) : new Map();
+		if (data === null) {
+			this.data = new Map();
+		} else {
+			this.data = data instanceof Map ? data : Map.from_json(data);
+		}
+
 		this.label = label;
 		this.created = created;
 		this.children = children;

@@ -56,7 +56,6 @@ async function doit() {
 	await larosa_pht.init();	
 
 
-
 	// Create geo object for our location in the real world -- this should happen before we bootstrap the DHT node, and we should bootstrap using the linearization of this object as our NODE ID
 	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
@@ -73,5 +72,35 @@ async function doit() {
 
 	const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
 	await larosa_pht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
+
+	// this map subwindow describes a large area that encompasses la rosa, the north bronx, mount vernon, larchmont
+	const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
+	const res1 = await larosa_pht.range_query_2d(westchester.get_min().linearize(), westchester.get_max().linearize());
+
+
+	console.log("WESTCHESTER:");
+	console.log(res1);
+
+	// this map subwindow describes a smallish area that encompasses most of park slope and some of gowanus
+	const park_slope = new Hgeo_rect({bottom: 40.66203, left: -74.00236, top: 40.67219, right: -73.96271});
+	const res2 = await larosa_pht.range_query_2d(park_slope.get_min().linearize(), park_slope.get_max().linearize());
+
+	console.log("PARK SLOPE:");
+	console.log(res2);
+
+	// this map subwindow describes a small area that encompasses a region of prospect heights
+	const prospect_heights = new Hgeo_rect({bottom: 40.65347, left: -73.96451, top: 40.66929, right: -73.92451});
+	const res3 = await larosa_pht.range_query_2d(prospect_heights.get_min().linearize(), prospect_heights.get_max().linearize());
+
+	console.log("PROSPECT HEIGHTS:");
+	console.log(res3);
+
+	// this map subwindow describes a small region of south brooklyn encompassing L&B Spumoni Gardens
+	const south_bk = new Hgeo_rect({bottom: 40.59046, left: -73.99054, top: 40.59838, right: -73.97054});
+	const res4 = await larosa_pht.range_query_2d(south_bk.get_min().linearize(), south_bk.get_max().linearize());
+
+	console.log("SOUTH BROOKLYN:");
+	console.log(res4);
+
 	
 }

@@ -36,6 +36,18 @@ const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
 // Is the hoodnet.js file necessary in the distribution? Do want to maybe move some global constants here?
 
+// Give BigInts a serialization method -- this needs to execute early, so I guess this is the best place to put it
+BigInt.prototype.toJSON = Hutil._bigint_to_json;
+
+// Give Map type a serializer too
+Map.prototype.toJSON = Hutil._map_to_json;
+
+// For maps, also add this constructor function
+Map.from_json = Hutil._map_from_json;
+
+
+
+
 // Make a bootstrap node
 const beng = new Hkad_eng_alpha();
 const bnet = new Hkad_net_sim();
@@ -50,7 +62,7 @@ my_local_simulator._add_peer(bootstrap_node);
 
 // Now let's add some other nodes to the simulated network
 new Promise((resolve, reject) => {
-	for (let i = 0; i < 10; i += 1) {
+	for (let i = 0; i < 100; i += 1) {
 		(async function() {
 			const message_eng = new Hkad_eng_alpha();
 			const local_simulator = new Hkad_net_sim();
