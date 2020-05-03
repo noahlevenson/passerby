@@ -15,6 +15,14 @@ const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 // Give BigInts a serialization method -- this needs to execute early, so I guess this is the best place to put it
 BigInt.prototype.toJSON = Hutil._bigint_to_json;
 
+// Give Map type a serializer too
+Map.prototype.toJSON = Hutil._map_to_json;
+
+// For maps, also add this constructor function
+Map.from_json = Hutil._map_from_json;
+
+
+
 // Make a bootstrap node with UDP transport that lives on the default port
 const bootstrap_udp_trans = new Htrans_udp();
 const bnet = new Hkad_net_solo(bootstrap_udp_trans);

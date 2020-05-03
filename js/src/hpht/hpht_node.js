@@ -11,25 +11,17 @@ class Hpht_node {
 	data;
 	magic;
 
-	constructor({label = null} = {}) {
+	constructor({label = null, created = new Date(), children = {0x00: null, 0x01: null}, ptrs = {"left": null, "right": null}, data = null} = {}) {
 		// TODO: validation
 		if (typeof label !== "string") {
 			throw new TypeError("Argument 'label' must be string");
 		}
 
-		this.children = {
-			0x00: null,
-			0x01: null
-		};
-
-		this.ptrs = {
-			"left": null,
-			"right": null
-		};	
-
-		this.data = new Map();
+		this.data = data !== null ? Map.from_json(data) : new Map();
 		this.label = label;
-		this.created = new Date();
+		this.created = created;
+		this.children = children;
+		this.ptrs = ptrs;
 		this.magic = Hpht_node.MAGIC_VAL.slice(0);
 	}	
 

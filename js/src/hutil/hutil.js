@@ -3,13 +3,15 @@ const crypto = require("crypto");
 // Utility functions
 class Hutil {
 	static SYS_BYTE_WIDTH = 8;
-	static HEX_STR_PREFIX = "0x"; // The prefix we prepend to long hex string values to identify them for deserialization - 
-									// it may be better to put this with a higher level module, HTRANS or HKAD_NET, whoever is concerned with serializing/deserializing big integers 
-									// and it may just require a deep rethink of what our over-the-wire data format is
+
+	// The prefix we prepend to long hex string values in our over-the-wire format to identify them for deserialization
+	// it's probably better to keep this with a higher level module, HTRANS or HKAD_NET, whoever is concerned with serialization/deserialization
+	// from our over-the-wire format... and this all probably requires a deep rethink of what our over-the-wire format is...
+	static HEX_STR_PREFIX = "0x"; 
 
 	// JSON serializer for BigInt type - this is set on the BigInt prototype at the HAPP layer
 	// This makes the rather gross assumption that we are representing very large integer values as hex strings in our
-	// over-the-wire format, which seems true but we should probably define it at a higher layer than this one...
+	// over-the-wire format, which seems true but we should probably define that at a higher layer than this one...
 	static _bigint_to_json() {
 		return `${Hutil.HEX_STR_PREFIX}${this.toString(16)}`;
 	}
@@ -23,6 +25,19 @@ class Hutil {
 		}
 
 		return val;
+	}
+
+	// JSON serializer for javascript's Map() type -- this is set on the Map prototype at the HAPP layer as above
+	// We just turn maps into arrays of key, val pairs in our over-the-wire format
+	static _map_to_json() {
+		return JSON.stringify(Array.from(this.entries()));
+	}
+
+	// Since maps come over the wire as arrays, there's no way to tell that they're supposed to be maps - so we can't write
+	// a reviver function for them...
+	// Instead, we implement a Map.from_JSON() function (curently set on the prorotype at the HAPP layer)
+	static _map_from_json(json) {
+		return new Map(JSON.parse(json));
 	}
 
 	// Returns a hex string

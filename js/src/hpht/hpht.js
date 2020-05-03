@@ -92,8 +92,8 @@ class Hpht {
 		if (data.get_type() !== Hkad_data.TYPE.VAL || !Hpht_node.valid_magic(data.get_payload()[0])) {
 			return null;
 		}
-
-		return data.get_payload()[0];
+		
+		return new Hpht_node(data.get_payload()[0]);
 	}
 
 	// Get the hash of a PHT node label (the hash of a PHT node label is the key used to locate it in the DHT)
