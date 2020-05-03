@@ -8,7 +8,6 @@ const { Hkad_data } = require("./hkad_data.js");
 // A hoodnet Kademlia DHT node
 class Hkad_node {
 	static DHT_BIT_WIDTH = 160;
-
 	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;

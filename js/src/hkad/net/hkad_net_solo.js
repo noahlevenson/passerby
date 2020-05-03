@@ -23,7 +23,7 @@ class Hkad_net_solo extends Hkad_net {
 		// This htrans_msg is delivered from the HTRANS module, so it's an Htrans object where the msg is a Buffer
 		// TODO: Need to figure out how to discern HKAD messages if/when we multiplex protocols
 		try {
-			const msg = JSON.parse(htrans_msg.msg.toString(), Hutil._bigint_revive);
+			const msg = new Hkad_msg(JSON.parse(htrans_msg.msg.toString(), Hutil._bigint_revive));
 			this._in(msg);
 		} catch(err) {
 			// Silently ignore it?

@@ -20,7 +20,7 @@ class Htrans_udp extends Htrans {
 		this._start();
 	}
 
-	// This should prob be promise based
+	// This should prob be promise based, i want to await this
 	_start() {
 		if (this.udp4 && this.udp6) {
 			this.socket = dgram.createSocket("udp6");
@@ -33,6 +33,7 @@ class Htrans_udp extends Htrans {
 		this.socket.on("listening", () => {
 			const addr = this.socket.address();
 			console.log(`[HTRANS] UDP service listening on ${addr.address}:${addr.port}`);
+			return;
 		});
 
 		this.socket.on("message", this._on_message.bind(this));
@@ -55,7 +56,6 @@ class Htrans_udp extends Htrans {
 
 	_send(htrans_msg) {
 		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
-
 		this.socket.send(htrans_msg.msg, htrans_msg.port, htrans_msg.addr, (err) => {
 			if (err) {
 				console.log(`[HTRANS] UDP socket send error ${htrans_msg.addr}:${htrans_msg.port} (${err})`);

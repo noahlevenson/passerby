@@ -151,7 +151,6 @@ async function doit() {
 
 
 
-	const udp = new Htrans_udp();
 
 
 

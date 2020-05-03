@@ -42,13 +42,13 @@ class Hpht {
 			if (pht_node.children[0x00] !== null && pht_node.children[0x01] !== null) {
 				const hdata0 = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(pht_node.children[0x00]), ...this.dht_lookup_args);
 				
-				if (hdata0.type !== Hkad_data.TYPE.VAL || !(hdata0.payload[0] instanceof Hpht_node)) {
+				if (hdata0.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata0.payload[0])) {
 					throw new Error("Fatal PHT graph error");
 				}
 
 				const hdata1 = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(pht_node.children[0x01]), ...this.dht_lookup_args);
 
-				if (hdata1.type !== Hkad_data.TYPE.VAL || !(hdata1.payload[0] instanceof Hpht_node)) {
+				if (hdata1.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata1.payload[0])) {
 					throw new Error("Fatal PHT graph error");
 				}
 
@@ -87,7 +87,7 @@ class Hpht {
 		const label_hash = this._get_label_hash();
 		const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
-		if (hdata.type !== Hkad_data.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+		if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
 			return null;
 		}
 
@@ -114,7 +114,7 @@ class Hpht {
 		const label_hash = this._get_label_hash();
 		const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
-		if (hdata.type === Hkad_data.TYPE.VAL && hdata.payload[0] instanceof Hpht_node) {
+		if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.is_hpht_node(hdata.payload[0])) {
 			console.log(`[HPHT] Root node found! Created ${hdata.payload[0].created}`);
 			return;
 		}
@@ -159,7 +159,7 @@ class Hpht {
 			if (hdata.type === Hkad_data.TYPE.VAL) {
 				const pht_node = hdata.payload[0];
 
-				if (pht_node instanceof Hpht_node && pht_node.is_leaf()) {
+				if (Hpht_node.is_hpht_node(pht_node) && pht_node.is_leaf()) {
 					return pht_node;
 				}
 			}
@@ -185,7 +185,7 @@ class Hpht {
 			const label_hash = this._get_label_hash(Hutil._bigint_to_bin_str(pq_k, q));
 			const hdata = await this.dht_lookup.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 			
-			if (hdata.type === Hkad_data.TYPE.VAL && hdata.payload[0] instanceof Hpht_node) {
+			if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.is_hpht_node(hdata.payload[0])) {
 				if (hdata.payload[0].is_leaf()) {
 					return hdata.payload[0];
 				}
@@ -339,7 +339,7 @@ class Hpht {
 				const sibling_label = `${old_leaf.label.substring(0, old_leaf.label.length - 1)}${old_leaf.label[old_leaf.label.length - 1] === "0" ? "1" : "0"}`;
 				const sibling_hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(sibling_label), ...this.dht_lookup_args);
 
-				if (sibling_hdata.type !== Hkad_data.TYPE.VAL || !(sibling_hdata.payload[0] instanceof Hpht_node)) {
+				if (sibling_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(sibling_hdata.payload[0])) {
 					// If we can't find the leaf node for a key, our graph is likely corrupted
 					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
 					throw new Error("Fatal PHT graph error");
@@ -357,7 +357,7 @@ class Hpht {
 				const parent_label = old_leaf.label.substring(0, old_leaf.label.length - 1);
 				const parent_hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(parent_label), ...this.dht_lookup_args);
 
-				if (parent_hdata.type !== Hkad_data.TYPE.VAL || !(parent_hdata.payload[0] instanceof Hpht_node)) {
+				if (parent_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(parent_hdata.payload[0])) {
 					// If we can't find the leaf node for a key, our graph is likely corrupted
 					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
 					throw new Error("Fatal PHT graph error");
@@ -422,7 +422,7 @@ class Hpht {
 				// Recurse 
 				const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(child0_label), ...this.dht_lookup_args);
 
-				if (hdata.type !== Hkad_data.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+				if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
 					throw new Error("Fatal PHT graph error");
 				}
 
@@ -433,7 +433,7 @@ class Hpht {
 				// Recurse
 				const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(child1_label), ...this.dht_lookup_args);
 
-				if (hdata.type !== Hkad_data.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+				if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
 					throw new Error("Fatal PHT graph error");
 				}
 
@@ -460,7 +460,7 @@ class Hpht {
 		// Now get the PHT node labeled with that prefix
 		const hdata = await this.dht_lookup.bind(this.dht_node)(this._get_label_hash(lcp), ...this.dht_lookup_args);
 
-		if (hdata.type !== Hkad_data.TYPE.VAL || !(hdata.payload[0] instanceof Hpht_node)) {
+		if (hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.is_hpht_node(hdata.payload[0])) {
 			throw new Error("Fatal PHT graph error");
 		}
 
