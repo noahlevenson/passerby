@@ -20,15 +20,14 @@ class Hkad_net_solo extends Hkad_net {
 	}
 
 	_on_message(htrans_msg) {
-		// This htrans_msg is delivered from the HTRANS module, so it's an Htrans object where the msg is a Buffer
-		// TODO: Need to figure out how to discern HKAD messages if/when we multiplex protocols
-		// How do we know that htrans_msg.msg is a buffer that we should try to stringify and parse using the bigint reviver function?
-		// maybe we have to try to transform it this way to learn that it's not actually an Hkad_msg object, but we need
-		// a rigorous way of testing whether some object is an Hkad_msg object...
-		// A SIMPLE way to do it: Make Htrans_msg our over-the-wire format -- only send Htrans_msg's, and give them a TYPE field: KAD or STUN
+		// This htrans_msg is delivered from the HTRANS module, so it's a rehydrated Htrans object
+		// HTRANS guarantees that this is a valid HTRANS object, but we need to know if it's of the HKAD type...
+		// and then we need to make sure that the msg it contains is a valid HKAD_MSG object...
 		try {
-			const msg = new Hkad_msg(JSON.parse(htrans_msg.msg.toString(), Hutil._bigint_revive));
-			this._in(msg);
+			if (htrans_msg.type === Htrans_msg.TYPE.HKAD) {
+				const msg = new Hkad_msg(htrans_msg.msg);
+				this._in(msg);
+			}
 		} catch(err) {
 			// Silently ignore it?
 		}
@@ -37,14 +36,11 @@ class Hkad_net_solo extends Hkad_net {
 	_out(hkad_msg, node_info) {
 		// Hkad_msg is delivered from an HKAD ENG module
 		const htrans_msg = new Htrans_msg({
-			msg: Buffer.from(JSON.stringify(hkad_msg)),
-			addr: node_info.addr,
-			fam: null,
-			port: node_info.port,
-			size: null
+			msg: hkad_msg,
+			type: Htrans_msg.TYPE.HKAD
 		});
 
-		this.trans._send(htrans_msg);
+		this.trans._send(htrans_msg, node_info.addr, node_info.port);
 	}
 }
 

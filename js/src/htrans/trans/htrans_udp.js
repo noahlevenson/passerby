@@ -1,6 +1,7 @@
 const dgram = require("dgram");
 const { Htrans } = require("../htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
+const { Hutil } = require("../../hutil/hutil.js");
 
 // Htrans_udp is our UDP transport service
 class Htrans_udp extends Htrans {
@@ -44,23 +45,17 @@ class Htrans_udp extends Htrans {
 	}
 
 	_on_message(msg, rinfo) {
-		// The message here is a Buffer, delivered raw from the UDP socket
-		const in_msg = new Htrans_msg({
-			msg: Buffer.from(msg), // Maybe it's not necessary to copy it?
-			addr: rinfo.address,
-			fam: rinfo.family,
-			port: rinfo.port,
-			size: rinfo.size
-		});
-
+		// The message here is a Buffer containing an Htrans_msg, delivered raw from the UDP socket
+		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
+		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hutil._bigint_revive)); // this is nice! We rehydrate our BigInts at the HTRANS layer, which is exactly where we should do it
 		this.network.emit("message", in_msg);
 	}
 
-	_send(htrans_msg) {
+	_send(htrans_msg, addr, port) {
 		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
-		this.socket.send(htrans_msg.msg, htrans_msg.port, htrans_msg.addr, (err) => {
+		this.socket.send(Buffer.from(JSON.stringify(htrans_msg)), port, addr, (err) => {
 			if (err) {
-				console.log(`[HTRANS] UDP socket send error ${htrans_msg.addr}:${htrans_msg.port} (${err})`);
+				console.log(`[HTRANS] UDP socket send error ${addr}:${port} (${err})`);
 				return;
 			}
 

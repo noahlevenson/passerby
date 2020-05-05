@@ -48,6 +48,7 @@ Map.from_json = Hutil._map_from_json;
 
 
 
+
 // Make a bootstrap node
 const beng = new Hkad_eng_alpha();
 const bnet = new Hkad_net_sim();
@@ -184,11 +185,11 @@ async function doit() {
 
 
 
-	// for (let i = 0; i < 1000; i += 1) {
-	// 	await larosa_pht.insert(BigInt(i), i);
-	// }
+	for (let i = 0; i < 1000; i += 1) {
+		await larosa_pht.insert(BigInt(i), i);
+	}
 
-	// await larosa_pht._debug_print_stats();
+	await larosa_pht._debug_print_stats();
 
 	
 

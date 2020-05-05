@@ -1,17 +1,21 @@
 // Class for a transport service message object
 class Htrans_msg {
-	msg;
-	addr;
-	fam;
-	port;
-	size;
+	static TYPE = {
+		HKAD: 0,
+		HSTUN: 1
+	};
 
-	constructor({msg = null, addr = null, fam = null, port = null, size = null} = {}) {
+	msg;
+	type;
+
+	constructor({msg = null, type = null} = {}) {
+		// TODO: Validation
+		// Since this is our over-the-wire format, we want to have checks in the constructor
+		// to discern between a valid dehydrated Htrans_msg and what might be some other garbage packet of information that may
+		// have been sent to a peer by accident or maliciously
+		
 		this.msg = msg;
-		this.addr = addr;
-		this.fam = fam;
-		this.port = port;
-		this.size = size;
+		this.type = type;
 	}
 }
 
