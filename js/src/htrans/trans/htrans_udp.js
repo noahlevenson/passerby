@@ -48,7 +48,7 @@ class Htrans_udp extends Htrans {
 		// The message here is a Buffer containing an Htrans_msg, delivered raw from the UDP socket
 		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hutil._bigint_revive)); // this is nice! We rehydrate our BigInts at the HTRANS layer, which is exactly where we should do it
-		this.network.emit("message", in_msg);
+		this.network.emit("message", in_msg, rinfo);
 	}
 
 	_send(htrans_msg, addr, port) {

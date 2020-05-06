@@ -1,6 +1,6 @@
 const EventEmitter = require("events");
 
-// Base class for a hoodnet network module
+// Base class for an HKAD network module, which is basically a translation and validation layer that connects an HTRANS data transport to the HKAD_ENG engine
 class Hkad_net {
 	network;
 

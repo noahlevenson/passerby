@@ -1,19 +1,10 @@
-/**
- * ministun: Zero dependency STUN server for Node.js
- *
- * by Noah Levenson <noahlevenson@gmail.com>
- * 
- * mattr.js
- * STUN message attribute
- */
+const { Hstun_hdr } = require("./hstun_hdr.js");
+const { Hstun_type_data } = require("./hstun_container.js");
+const { Hutil } = require("../hutil/hutil.js"); 
 
-const { MStunHeader } = require("./mhdr.js");
-const { MTypeData } = require("./mcontainer.js");
-const { MUtil } = require("./mutil.js"); 
-
-class MStunAttr {
+class Hstun_attr {
 	static K_ALIGN = 4;
-	static K_SOFTWARE = "ministun by Noah Levenson";
+	static K_SOFTWARE = "software attribute TBD";
 	static K_TYPE_OFF = [0, 2]; 
 	static K_LEN_OFF = [2, 4];
 	static K_LEN_LEN = this.K_LEN_OFF[1] - this.K_LEN_OFF[0]; 
@@ -42,24 +33,24 @@ class MStunAttr {
 	};
 
 	static K_ATTR_TYPE_TABLE = new Map([
-		[new Buffer.from([0x00, 0x00]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_0000, new Buffer.from([0x00, 0x00]))],
-		[new Buffer.from([0x00, 0x01]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.MAPPED_ADDRESS, new Buffer.from([0x00, 0x01]), this._enMappedAddr)],
-		[new Buffer.from([0x00, 0x02]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_0002, new Buffer.from([0x00, 0x02]))],
-		[new Buffer.from([0x00, 0x03]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_0003, new Buffer.from([0x00, 0x03]))],
-		[new Buffer.from([0x00, 0x04]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_0004, new Buffer.from([0x00, 0x04]))],
-		[new Buffer.from([0x00, 0x05]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_0005, new Buffer.from([0x00, 0x05]))],
-		[new Buffer.from([0x00, 0x06]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.USERNAME, new Buffer.from([0x00, 0x06]))],
-		[new Buffer.from([0x00, 0x07]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_0007, new Buffer.from([0x00, 0x07]))],
-		[new Buffer.from([0x00, 0x08]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.MESSAGE_INTEGRITY, new Buffer.from([0x00, 0x08]))],
-		[new Buffer.from([0x00, 0x09]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.ERROR_CODE, new Buffer.from([0x00, 0x09]), this._enErrorCode)],
-		[new Buffer.from([0x00, 0x0A]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.UNKNOWN_ATTRIBUTES, new Buffer.from([0x00, 0x0A]), this._enUnknownAttr)],
-		[new Buffer.from([0x00, 0x0B]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.RESERVED_000B, new Buffer.from([0x00, 0x0B]))],
-		[new Buffer.from([0x00, 0x14]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.REALM, new Buffer.from([0x00, 0x14]))],
-		[new Buffer.from([0x00, 0x15]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.NONCE, new Buffer.from([0x00, 0x15]))],
-		[new Buffer.from([0x00, 0x20]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.XOR_MAPPED_ADDRESS, new Buffer.from([0x00, 0x20]), this._enMappedAddr)],
-		[new Buffer.from([0x80, 0x22]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.SOFTWARE, new Buffer.from([0x80, 0x22]), this._enSoftware)],
-		[new Buffer.from([0x80, 0x23]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.ALTERNATE_SERVER, new Buffer.from([0x80, 0x23]))],
-		[new Buffer.from([0x80, 0x28]).toString("hex"), new MTypeData(this.K_ATTR_TYPE.FINGERPRINT, new Buffer.from([0x80, 0x28]))]
+		[new Buffer.from([0x00, 0x00]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_0000, new Buffer.from([0x00, 0x00]))],
+		[new Buffer.from([0x00, 0x01]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.MAPPED_ADDRESS, new Buffer.from([0x00, 0x01]), this._enMappedAddr)],
+		[new Buffer.from([0x00, 0x02]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_0002, new Buffer.from([0x00, 0x02]))],
+		[new Buffer.from([0x00, 0x03]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_0003, new Buffer.from([0x00, 0x03]))],
+		[new Buffer.from([0x00, 0x04]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_0004, new Buffer.from([0x00, 0x04]))],
+		[new Buffer.from([0x00, 0x05]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_0005, new Buffer.from([0x00, 0x05]))],
+		[new Buffer.from([0x00, 0x06]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.USERNAME, new Buffer.from([0x00, 0x06]))],
+		[new Buffer.from([0x00, 0x07]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_0007, new Buffer.from([0x00, 0x07]))],
+		[new Buffer.from([0x00, 0x08]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.MESSAGE_INTEGRITY, new Buffer.from([0x00, 0x08]))],
+		[new Buffer.from([0x00, 0x09]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.ERROR_CODE, new Buffer.from([0x00, 0x09]), this._enErrorCode)],
+		[new Buffer.from([0x00, 0x0A]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.UNKNOWN_ATTRIBUTES, new Buffer.from([0x00, 0x0A]), this._enUnknownAttr)],
+		[new Buffer.from([0x00, 0x0B]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.RESERVED_000B, new Buffer.from([0x00, 0x0B]))],
+		[new Buffer.from([0x00, 0x14]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.REALM, new Buffer.from([0x00, 0x14]))],
+		[new Buffer.from([0x00, 0x15]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.NONCE, new Buffer.from([0x00, 0x15]))],
+		[new Buffer.from([0x00, 0x20]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.XOR_MAPPED_ADDRESS, new Buffer.from([0x00, 0x20]), this._enMappedAddr)],
+		[new Buffer.from([0x80, 0x22]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.SOFTWARE, new Buffer.from([0x80, 0x22]), this._enSoftware)],
+		[new Buffer.from([0x80, 0x23]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.ALTERNATE_SERVER, new Buffer.from([0x80, 0x23]))],
+		[new Buffer.from([0x80, 0x28]).toString("hex"), new Hstun_type_data(this.K_ATTR_TYPE.FINGERPRINT, new Buffer.from([0x80, 0x28]))]
 	]);
 
 	static K_ADDR_FAMILY = {
@@ -69,8 +60,8 @@ class MStunAttr {
 	};
 
 	static K_ADDR_FAMILY_TABLE = new Map([
-		[new Buffer.from([0x01]).toString("hex"), new MTypeData(this.K_ADDR_FAMILY.IPv4, new Buffer.from([0x01]))],
-		[new Buffer.from([0x02]).toString("hex"), new MTypeData(this.K_ADDR_FAMILY.IPv6, new Buffer.from([0x02]))]
+		[new Buffer.from([0x01]).toString("hex"), new Hstun_type_data(this.K_ADDR_FAMILY.IPv4, new Buffer.from([0x01]))],
+		[new Buffer.from([0x02]).toString("hex"), new Hstun_type_data(this.K_ADDR_FAMILY.IPv6, new Buffer.from([0x02]))]
 	]);
 
 	static K_ERROR_CODE = {
@@ -84,9 +75,9 @@ class MStunAttr {
 
 	// TODO: Validation
 	constructor({type = null, args = []} = {}) {
-		this.type = type ? MStunAttr._enType(type) : type;
-		this.val = type ? Array.from(MStunAttr.K_ATTR_TYPE_TABLE.values())[type].f(...args) : null;
-		this.len = type ? MStunAttr._enLen(this.val.length) : null;
+		this.type = type ? Hstun_attr._enType(type) : type;
+		this.val = type ? Array.from(Hstun_attr.K_ATTR_TYPE_TABLE.values())[type].f(...args) : null;
+		this.len = type ? Hstun_attr._enLen(this.val.length) : null;
 	}
 
 	// TODO: Validation
@@ -123,7 +114,7 @@ class MStunAttr {
 			return dtype;
 		}
 		
-		return new MTypeData(this.K_ATTR_TYPE.MALFORMED);
+		return new Hstun_type_data(this.K_ATTR_TYPE.MALFORMED);
 	}
 
 	static _decLen(len) {
@@ -149,7 +140,7 @@ class MStunAttr {
 			return dfam;
 		}
 
-		return new MTypeData(this.K_ADDR_FAMILY.MALFORMED);
+		return new Hstun_type_data(this.K_ADDR_FAMILY.MALFORMED);
 	}
 
 	static _enType(type) {
@@ -171,7 +162,7 @@ class MStunAttr {
 			throw new Error("len must be number");
 		}
 
-		return MUtil._int2Buf16(len); 
+		return Hutil._int2Buf16(len); 
 	}
 
 	static _enFam(fam) {
@@ -191,22 +182,22 @@ class MStunAttr {
 	// TODO: Validation
 	static _enMappedAddr(famType, addrStr, portInt, xor = false, id = Buffer.alloc(12)) {
 		const zero = Buffer.alloc(1);
-		const fam = MStunAttr._enFam(famType);
-		const port = MUtil._int2Buf16(portInt);
+		const fam = Hstun_attr._enFam(famType);
+		const port = Hutil._int2Buf16(portInt);
 		let addr;
 
-		if (famType === MStunAttr.K_ADDR_FAMILY.IPv4) {
-			addr = MUtil._ipv4Str2Buf32(addrStr);
-		} else if (famType === MStunAttr.K_ADDR_FAMILY.IPv6) {
-			addr = MUtil._ipv6Str2Buf128(addrStr);
+		if (famType === Hstun_attr.K_ADDR_FAMILY.IPv4) {
+			addr = Hutil._ipv4Str2Buf32(addrStr);
+		} else if (famType === Hstun_attr.K_ADDR_FAMILY.IPv6) {
+			addr = Hutil._ipv6Str2Buf128(addrStr);
 		}
 
 		if (xor) {
 			for (let i = 0; i < port.length; i += 1) {
-				port[i] ^= MStunHeader.K_MAGIC[i]; 
+				port[i] ^= Hstun_hdr.K_MAGIC[i]; 
 			}
 
-			const c = Buffer.concat([MStunHeader.K_MAGIC, id]);
+			const c = Buffer.concat([Hstun_hdr.K_MAGIC, id]);
 
 			for (let i = 0; i < addr.length; i += 1) {
 				addr[i] ^= c[i];
@@ -216,13 +207,27 @@ class MStunAttr {
 		return Buffer.concat([zero, fam, port, addr]);
 	}
 
+	// TODO: This is shitty, isn't it? Can we make this better? Isn't it wonky that it returns an array?
+	// Aren't the magic numbers for the buffer offsets dumb? Come on man, this can be nicer
+	// Shouldn't there be a function that reverses ipv4Str2Buf32 and ipv6Str2Buf128 instead of inlining that stuff here?
+	static _decMappedAddr(buf, xor = false) {
+		const fam = Hstun_attr._decFam(buf.slice(1, 2));
+		const port = buf.slice(2, 4);
+
+		if (xor) {
+			for (let i = 0; i < port.length; i += 1) {
+				port[i] ^= Hstun_hdr.K_MAGIC[i];
+			}
+		}
+	}
+
 	// TODO: Validation
 	static _enErrorCode(code) {
 		const resClass = Buffer.alloc(3);
 		resClass[2] = Math.floor(code / 100);
 		
 		const num = Buffer.from([code % 100]); 
-		const phrase = Buffer.from(MStunAttr.K_ERROR_CODE[code]);
+		const phrase = Buffer.from(Hstun_attr.K_ERROR_CODE[code]);
 
 		return Buffer.concat([resClass, num, phrase]);
 	}
@@ -233,17 +238,17 @@ class MStunAttr {
 			return Buffer.from(type);
 		}));
 
-		return MStunAttr._toPadded(uknowns);
+		return Hstun_attr._toPadded(uknowns);
 	}
 
-	static _enSoftware(desc = MStunAttr.K_SOFTWARE) {
-		return MStunAttr._toPadded(Buffer.from(desc));
+	static _enSoftware(desc = Hstun_attr.K_SOFTWARE) {
+		return Hstun_attr._toPadded(Buffer.from(desc));
 	}	
 
 	static _toPadded(buf) {
 		return Buffer.concat([
 			buf,
-			Buffer.alloc(Math.ceil(buf.length / MStunAttr.K_ALIGN) * MStunAttr.K_ALIGN - buf.length)
+			Buffer.alloc(Math.ceil(buf.length / Hstun_attr.K_ALIGN) * Hstun_attr.K_ALIGN - buf.length)
 		]);
 	}
 
@@ -256,4 +261,4 @@ class MStunAttr {
 	}
 }
 
-module.exports.MStunAttr = MStunAttr;
+module.exports.Hstun_attr = Hstun_attr;

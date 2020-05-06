@@ -2,7 +2,6 @@ const { Hkad_net } = require("../hkad_net.js");
 const { Hkad_msg } = require("../hkad_msg.js");
 const { Htrans } = require("../../htrans/htrans.js");
 const { Htrans_msg } = require("../../htrans/htrans_msg.js");
-const { Hutil } = require("../../hutil/hutil.js");
 
 // Hkad_net_solo is an HKAD network module that uses exactly HTRANS transport
 class Hkad_net_solo extends Hkad_net {

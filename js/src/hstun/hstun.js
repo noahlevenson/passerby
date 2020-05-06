@@ -1,63 +1,64 @@
+const crypto = require("crypto");
+const EventEmitter = require("events");
 const { Hstun_msg } = require("./hstun_msg.js");
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");
 
 // The Hstun class provides all STUN server and client function
 // Our first crack at HSTUN is gonna be simpler than HKAD -- we're gonna skip the "NET" layer between HSTUN and HTRANS
-// let's note where this is good and where it's bad...
+// let's note where this works well and where it doesn't work so well
 class Hstun {
-	trans;
+	static REQ_TIMEOUT = 5000;
+
+	net;
 	sw;
+	res;
 
-	constructor({trans = null, sw = false} = {}) {
-		if (!(trans instanceof Htrans)) {
-			throw new TypeError("Argument 'trans' must be instance of Htrans");
-		}
-
+	constructor({net = null, sw = false} = {}) {
 		this.sw = sw;
-		this.trans = trans;
-		this.trans.network.on("message", this._decode_and_process.bind(this));
+		this.net = net;
+		this.res = new EventEmitter();
+		this.net.network.on("message", this._on_message.bind(this));
+		console.log(`[HSTUN] Online`);
 	}
 
-	start() {
+	// This is our one and only client function: send a binding request to some address and port
+	// I'm not sure that a promise-based binding req that waits for and correlates a response is
+	// a function that should be part of HSTUN - maybe its really a layer of abstraction above the STUN protocol?
+	_binding_req(addr, port) {
 		return new Promise((resolve, reject) => {
-			if (this.udp4 && this.udp6) {
-				this.socket = dgram.createSocket("udp6");
-			} else if (this.udp4) {
-				this.socket = dgram.createSocket("udp4");
-			} else {
-				this.socket = dgram.createSocket({type: "udp6", ipv6Only: true});
-			}
+			// TODO: the STUN RFC says that we SHOULD implement retransmissions, and the retransmission spec and algorithm is defined in the paper
+			// Since I think retransmission only applies to UDP, we should implement a "TRANSPORT TYPE" enum on HTRANS and check it here...
 
-			this.socket.on("listening", () => {
-				const addr = this.socket.address();
-				this._lout(`Listening for STUN clients on ${addr.address}:${addr.port}\n`);
-				resolve();
+			// TODO: We should have a function to generate ID's rather than just doing it ad hoc here
+			const id = crypto.randomBytes(Hstun_hdr.K_ID_LEN);
+			const id_string = id.toString("hex");
+
+			const req_hdr = new Hstun_hdr({
+				type: Hstun_hdr.K_MSG_TYPE.BINDING_REQUEST,
+				len: 0,
+				id: id
 			});
 
-			this.socket.on("message", this._onMessage.bind(this));
-			this.socket.bind(this.port);
-			this._lout(`ministun starting...\n`);
-		}); 
-	}
-
-	stop() {
-		return new Promise((resolve, reject) => {
-			this.socket.on("close", () => {
-				this._lout(`ministun stopped\n`);
-				resolve();
+			const req_msg = new Hstun_msg({
+				hdr: req_hdr
 			});
 
-			this.socket.close();
+			this._send(req_msg, {address: addr, port: port});
+
+			const timeout_id = setTimeout(() => {
+				this.res.removeAllListeners(id_string);
+				resolve(null);
+			}, Hstun.REQ_TIMEOUT);
+
+			this.res.once(id_string, (res_msg) => {
+				clearTimeout(timeout_id);
+				
+				Hstun_attr._decMappedAddr(res_msg.attrs[0].val, true);
+
+				resolve(res_msg);
+			});
 		});
-	}
-
-	// This intermediate function is only here because we don't have a NET layer like HKAD --
-	// In the protocol pattern we're establishing, each network enabled module's NET layer 
-	// deals with parsing the Htrans_msg that comes in from HTRANS, and deciding whether 
-	// it's a message intended for another system or if we should take action on it...
-	_decode_and_process(htrans_msg) {
-		
 	}
 
 	_on_message(msg, rinfo) {
@@ -67,7 +68,7 @@ class Hstun {
 			return;
 		}
 
-		this._lout(`${Object.keys(Hstun_hdr.K_MSG_TYPE)[Hstun_hdr._decType(inMsg.hdr.type).type]} received from ${rinfo.address}:${rinfo.port}\n`);
+		// this._lout(`${Object.keys(Hstun_hdr.K_MSG_TYPE)[Hstun_hdr._decType(inMsg.hdr.type).type]} received from ${rinfo.address}:${rinfo.port}\n`);
 
 		// For compliance with RFCs 5389 and 3489, we return an error response for any unknown comprehension required attrs
 		const badAttrTypes = [];
@@ -104,6 +105,7 @@ class Hstun {
 			this._send(outMsg, rinfo);
 		}
 
+		// TODO: Shouldn't we use a map here instead of a conditional
 		if (Hstun_hdr._decType(inMsg.hdr.type).type === Hstun_hdr.K_MSG_TYPE.BINDING_REQUEST) {
 			const mtype = !inMsg.rfc3489 ? Hstun_attr.K_ATTR_TYPE.XOR_MAPPED_ADDRESS : Hstun_attr.K_ATTR_TYPE.MAPPED_ADDRESS;
 
@@ -130,19 +132,14 @@ class Hstun {
 			});
 
 			this._send(outMsg, rinfo);
+		} else if (Hstun_hdr._decType(inMsg.hdr.type).type === Hstun_hdr.K_MSG_TYPE.BINDING_SUCCESS_RESPONSE) {
+			this.res.emit(inMsg.hdr.id.toString("hex"), inMsg);
 		}
 	}
 
 	_send(stunMsgObj, rinfo) {
-		this.socket.send(stunMsgObj.serialize(), rinfo.port, rinfo.address, (err) => {
-			if (err) {
-				this._lerr(`Socket send error (${rinfo.address}:${rinfo.port}): ${err}\n`);
-			 	return;
-			}
-
-			this._lout(`${Object.keys(Hstun_hdr.K_MSG_TYPE)[Hstun_hdr._decType(stunMsgObj.hdr.type).type]} received from ${rinfo.address}:${rinfo.port}\n`);
-		});
+		this.net._out(stunMsgObj.serialize(), rinfo);
 	}
 }
 
-module.exports = Ministun;
+module.exports.Hstun = Hstun;

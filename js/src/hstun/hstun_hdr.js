@@ -1,16 +1,7 @@
-/**
- * ministun: Zero dependency STUN server for Node.js
- *
- * by Noah Levenson <noahlevenson@gmail.com>
- * 
- * mhdr.js 
- * STUN message header
- */
+const { Hutil } = require("../hutil/hutil.js"); 
+const { Hstun_type_data } = require("./hstun_container.js");
 
-const { MUtil } = require("./mutil.js"); 
-const { MTypeData } = require("./mcontainer.js");
-
-class MStunHeader {
+class Hstun_hdr {
 	static K_HDR_LEN = 20;
 	static K_ID_LEN = 12;
 	static K_MAGIC = new Buffer.from([0x21, 0x12, 0xA4, 0x42]);
@@ -28,22 +19,22 @@ class MStunHeader {
 	};
 
 	static K_MSG_TYPE_TABLE = new Map([
-		[new Buffer.from([0x00, 0x01]).toString("hex"), new MTypeData(this.K_MSG_TYPE.BINDING_REQUEST, new Buffer.from([0x00, 0x01]))],
-		[new Buffer.from([0x00, 0x11]).toString("hex"), new MTypeData(this.K_MSG_TYPE.BINDING_INDICATION, new Buffer.from([0x00, 0x11]))],
-		[new Buffer.from([0x01, 0x01]).toString("hex"), new MTypeData(this.K_MSG_TYPE.BINDING_SUCCESS_RESPONSE, new Buffer.from([0x01, 0x01]))],
-		[new Buffer.from([0x01, 0x11]).toString("hex"), new MTypeData(this.K_MSG_TYPE.BINDING_ERROR_RESPONSE, new Buffer.from([0x01, 0x11]))]
+		[new Buffer.from([0x00, 0x01]).toString("hex"), new Hstun_type_data(this.K_MSG_TYPE.BINDING_REQUEST, new Buffer.from([0x00, 0x01]))],
+		[new Buffer.from([0x00, 0x11]).toString("hex"), new Hstun_type_data(this.K_MSG_TYPE.BINDING_INDICATION, new Buffer.from([0x00, 0x11]))],
+		[new Buffer.from([0x01, 0x01]).toString("hex"), new Hstun_type_data(this.K_MSG_TYPE.BINDING_SUCCESS_RESPONSE, new Buffer.from([0x01, 0x01]))],
+		[new Buffer.from([0x01, 0x11]).toString("hex"), new Hstun_type_data(this.K_MSG_TYPE.BINDING_ERROR_RESPONSE, new Buffer.from([0x01, 0x11]))]
 	]);
 
 	// TODO: Validation
-	constructor({type = null, len = null, id = null, magic = MStunHeader.K_MAGIC} = {}) {
-		this.type = typeof type === "number" ? MStunHeader._enType(type) : type;
-		this.len = typeof len === "number" ? MStunHeader._enLen(len) : len;
+	constructor({type = null, len = null, id = null, magic = Hstun_hdr.K_MAGIC} = {}) {
+		this.type = typeof type === "number" ? Hstun_hdr._enType(type) : type;
+		this.len = typeof len === "number" ? Hstun_hdr._enLen(len) : len;
 		this.magic = Buffer.from(magic);
 		this.id = Buffer.isBuffer(id) ? Buffer.from(id) : id;
 	}
 
 	// TODO: Validation
-	static from({type = null, len = null, id = null, magic = MStunHeader.K_MAGIC} = {}) {
+	static from({type = null, len = null, id = null, magic = Hstun_hdr.K_MAGIC} = {}) {
 		const hdr = new this;
 
 		hdr.type = type;
@@ -59,7 +50,7 @@ class MStunHeader {
 			throw new Error("buf must be Buffer with a length > 0");
 		}
 
-		if (MUtil._getBit(buf, 0, 6) !== 0 || MUtil._getBit(buf, 0, 7) !== 0) {
+		if (Hutil._getBit(buf, 0, 6) !== 0 || Hutil._getBit(buf, 0, 7) !== 0) {
 			return false;
 		}
 
@@ -67,7 +58,7 @@ class MStunHeader {
 	}
 
 	static _isValidMagic(magic) {
-		return MUtil._compareBuf(magic, this.K_MAGIC);
+		return Hutil._compareBuf(magic, this.K_MAGIC);
 	}
 
 	static _decType(type) {
@@ -81,7 +72,7 @@ class MStunHeader {
 			return dtype;
 		}
 		
-		return new MTypeData(this.K_MSG_TYPE.MALFORMED);
+		return new Hstun_type_data(this.K_MSG_TYPE.MALFORMED);
 	}
 
 	static _decLen(len) {
@@ -110,7 +101,7 @@ class MStunHeader {
 			throw new Error("len must be number");
 		}
 		
-		return MUtil._int2Buf16(len); 
+		return Hutil._int2Buf16(len); 
 	}
 
 	serialize() {
@@ -118,4 +109,4 @@ class MStunHeader {
 	}
 }
 
-module.exports.MStunHeader = MStunHeader;
+module.exports.Hstun_hdr = Hstun_hdr;

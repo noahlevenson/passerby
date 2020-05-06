@@ -1,13 +1,4 @@
-/**
- * ministun: Zero dependency STUN server for Node.js
- *
- * by Noah Levenson <noahlevenson@gmail.com>
- * 
- * mcontainer.js 
- * Useful data structures
- */
-
-class MTypeData {
+class Hstun_type_data {
 	constructor(type = null, bin = null, f = null) {
 		this.type = type;
 		this.bin = bin;
@@ -15,4 +6,4 @@ class MTypeData {
 	}
 }
 
-module.exports.MTypeData = MTypeData;
+module.exports.Hstun_type_data = Hstun_type_data;

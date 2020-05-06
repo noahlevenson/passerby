@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const net = require("net");
+
 
 // Utility functions
 class Hutil {
@@ -199,7 +201,7 @@ class Hutil {
 	}
 
 	// TODO: Validation
-	static _ipv6Str2Buf128(str) {
+	static _ipv6Str2Buf128(str) {		
 		const arr = str.split(":");
 		const len = arr.length - 1;
 

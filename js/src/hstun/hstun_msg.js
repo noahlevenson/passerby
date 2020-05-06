@@ -1,17 +1,8 @@
-/**
- * ministun: Zero dependency STUN server for Node.js
- *
- * by Noah Levenson <noahlevenson@gmail.com>
- * 
- * mmsg.js 
- * STUN message
- */
+const { Hstun_hdr } = require("./hstun_hdr.js");
+const { Hstun_attr } = require("./hstun_attr.js");
+const { Hutil } = require("../hutil/hutil.js"); 
 
-const { MStunHeader } = require("./mhdr.js");
-const { MStunAttr } = require("./mattr.js");
-const { MUtil } = require("./mutil.js"); 
-
-class MStunMsg {
+class Hstun_msg {
 	constructor({hdr = null, attrs = [], rfc3489 = false} = {}) {
 		this.hdr = hdr;
 		this.attrs = attrs;
@@ -19,51 +10,52 @@ class MStunMsg {
 	}
 
 	static from(buf) {
-		if (!Buffer.isBuffer(buf) || buf.length < MStunHeader.K_HDR_LEN || !MStunHeader._isValidMsb(buf)) {
+		if (!Buffer.isBuffer(buf) || buf.length < Hstun_hdr.K_HDR_LEN || !Hstun_hdr._isValidMsb(buf)) {
 			return null;
 		}
 
-		const type = buf.slice(MStunHeader.K_TYPE_OFF[0], MStunHeader.K_TYPE_OFF[1]);
+		const type = buf.slice(Hstun_hdr.K_TYPE_OFF[0], Hstun_hdr.K_TYPE_OFF[1]);
 
-		if (MStunHeader._decType(type).type === MStunHeader.K_MSG_TYPE.MALFORMED) {
+		if (Hstun_hdr._decType(type).type === Hstun_hdr.K_MSG_TYPE.MALFORMED) {
 			return null;
 		}
 
-		const len = buf.slice(MStunHeader.K_LEN_OFF[0], MStunHeader.K_LEN_OFF[1]);
+		const len = buf.slice(Hstun_hdr.K_LEN_OFF[0], Hstun_hdr.K_LEN_OFF[1]);
 
 		// Attributes are padded to multiples of 4 bytes, so the 2 least significant bits of the msg length must be zero
-		if (MUtil._getBit(len, len.length - 1, 0) !== 0 || MUtil._getBit(len, len.length - 1, 1) !== 0) {
+		if (Hutil._getBit(len, len.length - 1, 0) !== 0 || Hutil._getBit(len, len.length - 1, 1) !== 0) {
 			return null;
 		}
 		
-		const msglen = MStunHeader._decLen(len);
+		const msglen = Hstun_hdr._decLen(len);
 
-		if (msglen !== buf.length - MStunHeader.K_HDR_LEN) {
+		if (msglen !== buf.length - Hstun_hdr.K_HDR_LEN) {
 			return null;
 		}
 
 		const attrs = [];
 
 		if (msglen > 0) {
-			let attrptr = MStunHeader.K_HDR_LEN;
+			let attrptr = Hstun_hdr.K_HDR_LEN;
 
 			while (attrptr < buf.length) {
-				const atype = buf.slice(attrptr + MStunAttr.K_TYPE_OFF[0], attrptr + MStunAttr.K_TYPE_OFF[1]);
-				const alen = buf.slice(attrptr + MStunAttr.K_LEN_OFF[0], attrptr + MStunAttr.K_LEN_OFF[1]);
-				const vlen = MStunAttr._decLen(alen);
-				const aval = buf.slice(attrptr + MStunAttr.K_LEN_OFF[1], attrptr + MStunAttr.K_LEN_OFF[1] + vlen);
-				attrs.push(MStunAttr.from(atype, alen, aval));
-				attrptr += (vlen + MStunAttr.K_TYPE_LEN + MStunAttr.K_LEN_LEN);
+				const atype = buf.slice(attrptr + Hstun_attr.K_TYPE_OFF[0], attrptr + Hstun_attr.K_TYPE_OFF[1]);
+				const alen = buf.slice(attrptr + Hstun_attr.K_LEN_OFF[0], attrptr + Hstun_attr.K_LEN_OFF[1]);
+				const vlen = Hstun_attr._decLen(alen);
+				const aval = buf.slice(attrptr + Hstun_attr.K_LEN_OFF[1], attrptr + Hstun_attr.K_LEN_OFF[1] + vlen);
+
+				attrs.push(Hstun_attr.from({type: atype, len: alen, val: aval}));
+				attrptr += (vlen + Hstun_attr.K_TYPE_LEN + Hstun_attr.K_LEN_LEN);
 			}
 		}
 
-		const id = buf.slice(MStunHeader.K_ID_OFF[0], MStunHeader.K_ID_OFF[1]);
-		const magic = buf.slice(MStunHeader.K_MAGIC_OFF[0], MStunHeader.K_MAGIC_OFF[1]);
+		const id = buf.slice(Hstun_hdr.K_ID_OFF[0], Hstun_hdr.K_ID_OFF[1]);
+		const magic = buf.slice(Hstun_hdr.K_MAGIC_OFF[0], Hstun_hdr.K_MAGIC_OFF[1]);
 		
 		const msg = new this({
-			hdr: MStunHeader.from({type: type, len: len, id: id, magic: magic}),
+			hdr: Hstun_hdr.from({type: type, len: len, id: id, magic: magic}),
 			attrs: attrs,
-			rfc3489: !MStunHeader._isValidMagic(magic)
+			rfc3489: !Hstun_hdr._isValidMagic(magic)
 		});
 
 		return msg;
@@ -83,4 +75,4 @@ class MStunMsg {
 	}
 }
 
-module.exports.MStunMsg = MStunMsg;
+module.exports.Hstun_msg = Hstun_msg;

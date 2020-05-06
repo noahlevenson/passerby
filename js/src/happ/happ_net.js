@@ -10,6 +10,9 @@ const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we incl
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 
+const { Hstun } = require("../hstun/hstun.js");
+const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
+
 const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
 // Give BigInts a serialization method -- this needs to execute early, so I guess this is the best place to put it
@@ -32,6 +35,10 @@ async function doit() {
 	const bnet = new Hkad_net_solo(bootstrap_udp_trans);
 	const beng = new Hkad_eng_alpha();
 	const bootstrap_node = new Hkad_node({eng: beng, net: bnet, port: bootstrap_udp_trans.port});
+	
+	// Give it STUN services
+	const bootstrap_node_stun_net = new Hstun_net_solo(bootstrap_udp_trans);
+	const bootstrap_node_stun_service = new Hstun({net: bootstrap_node_stun_net});
 
 
 	// Create a node for me, Pizzeria La Rosa
@@ -40,6 +47,17 @@ async function doit() {
 	const larosa_net = new Hkad_net_solo(larosa_udp_trans);
 	const larosa_eng = new Hkad_eng_alpha();
 	const larosa = new Hkad_node({eng: larosa_eng, net: larosa_net, port: larosa_udp_trans.port});
+
+	// Give it STUN services
+	const larosa_stun_net = new Hstun_net_solo(larosa_udp_trans);
+	const larosa_stun_service = new Hstun({net: larosa_stun_net});
+
+
+	const stun_res = await larosa_stun_service._binding_req("localhost", 27500);
+
+	console.log(stun_res);
+
+
 
 
 	await larosa.bootstrap(bootstrap_node.node_info);
