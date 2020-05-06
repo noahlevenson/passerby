@@ -56,9 +56,7 @@ async function doit() {
 	const stun_res = await larosa_stun_service._binding_req("localhost", 27500);
 
 	console.log(stun_res);
-
-
-
+	
 
 	await larosa.bootstrap(bootstrap_node.node_info);
 
@@ -133,7 +131,7 @@ async function doit() {
 	await larosa_pht._debug_print_stats();
 
 
-	
+
 
 	
 }

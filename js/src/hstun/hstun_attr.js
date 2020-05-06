@@ -186,6 +186,8 @@ class Hstun_attr {
 		const port = Hutil._int2Buf16(portInt);
 		let addr;
 
+		console.log(portInt);
+
 		if (famType === Hstun_attr.K_ADDR_FAMILY.IPv4) {
 			addr = Hutil._ipv4Str2Buf32(addrStr);
 		} else if (famType === Hstun_attr.K_ADDR_FAMILY.IPv6) {
@@ -209,7 +211,6 @@ class Hstun_attr {
 
 	// TODO: This is shitty, isn't it? Can we make this better? Isn't it wonky that it returns an array?
 	// Aren't the magic numbers for the buffer offsets dumb? Come on man, this can be nicer
-	// Shouldn't there be a function that reverses ipv4Str2Buf32 and ipv6Str2Buf128 instead of inlining that stuff here?
 	static _decMappedAddr(buf, id, xor = false) {
 		const famType = Hstun_attr._decFam(buf.slice(1, 2));
 		const port = buf.slice(2, 4);
@@ -235,7 +236,7 @@ class Hstun_attr {
 			decoded_addr = Hutil._buf128_2_ipv6Str(addr);
 		}
 
-		return [decoded_addr, port.readInt16LE()];
+		return [decoded_addr, port.readInt16BE()];
 	}
 
 	// TODO: Validation
