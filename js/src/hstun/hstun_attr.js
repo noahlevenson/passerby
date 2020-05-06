@@ -186,7 +186,6 @@ class Hstun_attr {
 		const port = Hutil._int2Buf16(portInt);
 		let addr;
 
-		console.log(portInt);
 
 		if (famType === Hstun_attr.K_ADDR_FAMILY.IPv4) {
 			addr = Hutil._ipv4Str2Buf32(addrStr);

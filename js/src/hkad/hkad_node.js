@@ -19,6 +19,7 @@ class Hkad_node {
 	node_info;
 	kbuckets;
 	data;
+
 	RPC_RES_EXEC = new Map([
 		[Hkad_msg.RPC.PING, this._res_ping],
 		[Hkad_msg.RPC.STORE, this._res_store],
@@ -27,7 +28,7 @@ class Hkad_node {
 	]);
 
 	// REMEMBER TO DELETE port BELOW, WE DON'T USE IT, ITS FOR TESTING ONLY
-	constructor({net = null, eng = null, port = null} = {}) {
+	constructor({net = null, eng = null, addr = null, port = null, id = null} = {}) {
 		// TODO: validate that the net and message eng module are instances of the correct base classes and implement the functionality we rely on
 		this.DEBUG = {
 			WATCH: null,
@@ -36,12 +37,12 @@ class Hkad_node {
 		this.net = net;
 		this.eng = eng;
 
-		this.node_id = Hkad_node.generate_random_key_between();  // This is just a temp hack!! Node IDs must be generated properly bro!
+		this.node_id = id || Hkad_node.generate_random_key_between();
 
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
 		// but for our first one-machine network tests, we'll just manually supply a port...
-		this.node_info = new Hkad_node_info({addr: "localhost", port: port, node_id: BigInt(this.node_id)});
+		this.node_info = new Hkad_node_info({addr: addr, port: port, node_id: BigInt(this.node_id)});
 
 		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
 		

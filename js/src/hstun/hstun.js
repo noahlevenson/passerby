@@ -133,6 +133,7 @@ class Hstun {
 			// TODO: Shouldn't we confirm that this has the attr of the correct type? (Either XOR MAPPED ADDRESS or MAPPED ADDRESS?) 
 			// Or maybe we do that in the _decMapedAddr function itself...
 			const decoded = Hstun_attr._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
+			console.log(`[HSTUN] Binding response received: ${decoded[0]}:${decoded[1]}`)
 			this.res.emit(inMsg.hdr.id.toString("hex"), decoded);
 		}
 	}
