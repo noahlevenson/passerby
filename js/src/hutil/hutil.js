@@ -200,6 +200,11 @@ class Hutil {
 		}));
 	}
 
+	// TODO: validation
+	static _buf32_2_ipv4Str(buf) {
+		return `${buf[0]}.${buf[1]}.${buf[2]}.${buf[3]}`;
+	}
+
 	// TODO: Validation
 	static _ipv6Str2Buf128(str) {		
 		const arr = str.split(":");
@@ -225,6 +230,24 @@ class Hutil {
 		}
 
 		return buf;
+	}
+
+	// TODO: validation
+	// Also this was very hastily written -- it needs unit tests
+	static _buf128_2_ipv6Str(buf) {
+		// It's an ipv4 mapped ipv6 address
+		if (buf.compare(Buffer.alloc(10), 0, 10, 0, 10) === 0 && buf.compare(Buffer.from([0xFF, 0xFF]), 0, 2, 10, 12) === 0) {
+			return `::FFFF:${Hutil._buf32_2_ipv4Str(buf.slice(12, buf.length))}`;
+		}
+
+		let addr = "";
+
+		for (let i = 0; i < buf.length; i += 2) {
+			addr += `${buf[i].toString(16).padStart(2, "0")}${buf[i + 1].toString(16).padStart(2, "0")}:`;
+		}
+
+		return addr.substring(0, addr.length - 1); // Just remove the last colon
+		
 	}
 }
 

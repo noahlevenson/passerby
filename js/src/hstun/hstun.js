@@ -53,9 +53,6 @@ class Hstun {
 
 			this.res.once(id_string, (res_msg) => {
 				clearTimeout(timeout_id);
-				
-				Hstun_attr._decMappedAddr(res_msg.attrs[0].val, true);
-
 				resolve(res_msg);
 			});
 		});
@@ -133,7 +130,10 @@ class Hstun {
 
 			this._send(outMsg, rinfo);
 		} else if (Hstun_hdr._decType(inMsg.hdr.type).type === Hstun_hdr.K_MSG_TYPE.BINDING_SUCCESS_RESPONSE) {
-			this.res.emit(inMsg.hdr.id.toString("hex"), inMsg);
+			// TODO: Shouldn't we confirm that this has the attr of the correct type? (Either XOR MAPPED ADDRESS or MAPPED ADDRESS?) 
+			// Or maybe we do that in the _decMapedAddr function itself...
+			const decoded = Hstun_attr._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
+			this.res.emit(inMsg.hdr.id.toString("hex"), decoded);
 		}
 	}
 
