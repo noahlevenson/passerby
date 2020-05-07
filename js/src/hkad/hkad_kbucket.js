@@ -13,6 +13,8 @@ class Hkad_kbucket {
 		}
 	}
 
+	// NEVER call this without first checking if the bucket _exists() first 
+	// TODO: We should probably join the functions to prevent some of the nasty bugs I've enjoyed introducing
 	_push(node_info) {
 		this.#data.push(node_info);
 		this.#data.shift();
@@ -33,7 +35,8 @@ class Hkad_kbucket {
 	}
 
 	move_to_tail(i) {
-		this.#data.push(this.#data.splice(i, 1)[0]);
+		const popped = this.#data.splice(i, 1)[0];
+		this.#data.push(popped);
 	}
 
 	is_full() {

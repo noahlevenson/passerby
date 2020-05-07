@@ -55,6 +55,7 @@ class Hkad_node {
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our net module reference and call its out() method
+		this.net.node = this; // Ditto for the net module
 		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the network module to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
 	}
 
@@ -110,6 +111,7 @@ class Hkad_node {
 
 		if (i !== null) {
 			bucket.move_to_tail(i);
+			// bucket.print()
 			return;
 		}
 
@@ -201,6 +203,9 @@ class Hkad_node {
 					}
 				}
 
+				// console.log(`${returnable.length} - ${our_current_k_size_bro}`)
+				// console.log(ctx._get_nodes_closest_to(key, Hkad_node.K_SIZE))
+
 				if (returnable.length >= our_current_k_size_bro) {
 					resolve_node_lookup(new Hkad_data({type: Hkad_data.TYPE.NODE_LIST, payload: returnable}));
 					return;
@@ -223,7 +228,7 @@ class Hkad_node {
 
 				node_infos.forEach((node_info) => {
 					resolutions.push(new Promise((resolve, reject) => {
-						ctx[find_rpc.name](key, node_info, _do_node_lookup.bind(this, resolve), (resolve) => { // Weird thing we should test - we also pass resolve
+						ctx[find_rpc.name](key, node_info, _do_node_lookup.bind(this, resolve), () => { // Weird thing we should test - we also pass resolve
 							resolve();																      // to the failure callback, because we want to use
 						});																				  // Promise.all() to test for their completion
 					}));
@@ -268,6 +273,8 @@ class Hkad_node {
 			const node_map = new Map();
 			
 			// console.log(`key: ${key}`)
+
+
 
 			node_infos.forEach((node_info) => {
 				// console.log(node_info.node_id)
@@ -402,8 +409,6 @@ class Hkad_node {
 			// Since we don't iterate through the actual kbucket, we also solve concurrency issues - but this is pure garbage
 			const bucket = this.get_kbucket(search_order[i]).copy_to_arr();
 
-			// console.log(bucket)
-
 			// Sort the bucket by distance from the key -- this is duplicated code, doesn't belong here, requires too much knowledge
 			// of Hkad_node_info structure -- please make this better sir
 			bucket.sort((a, b) => {
@@ -428,17 +433,38 @@ class Hkad_node {
 
 	// **** PUBLIC API ****
 
-	async bootstrap(node_info) {
+	async bootstrap(addr, port) {
 		// TODO: Replace this message with our proper logging function
-		console.log(`[HKAD] Joining network as ${this.node_id} via bootstrap node ${node_info.node_id}...`);
+		console.log(`[HKAD] Joining network as ${this.node_id} via bootstrap node ${addr}:${port}...`);
+
+		// Here's another case where we have to wrap an RPC in a promise because we didn't implement them as async functions...
+		// Is it worth rethinking?
+		const node_info = await new Promise((resolve, reject) => {
+			this._req_ping({addr: addr, port: port}, (res, ctx) => {
+				resolve(res.from);
+			}, () => {
+				resolve(null);
+			});
+		});
+
+		if (node_info === null) {
+			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
+			return;
+		}
 
 		const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
 		const b = Hutil._log2(d);
 
-		this.get_kbucket(b)._push(node_info);
+		// You never want to call the _push() method of hkad_kbucket without first checking if the node exists() first...
+		const bucket = this.get_kbucket(b);
 
+		if (!bucket.exists(node_info)) {
+			bucket._push(node_info);
+		}
+		
 		const result = await this._node_lookup(this.node_id);
 		const closest_to_me_sorted = result.payload;
+
 
 		// Now we refresh every k-bucket further away than the closest neighbor I found
 		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"

@@ -226,7 +226,7 @@ class Hstun_attr {
 				addr[i] ^= c[i];
 			}
 		}
-
+        
 		let decoded_addr;
 
 		if (famType.type === Hstun_attr.K_ADDR_FAMILY.IPv4) {
@@ -235,7 +235,7 @@ class Hstun_attr {
 			decoded_addr = Hutil._buf128_2_ipv6Str(addr);
 		}
 
-		return [decoded_addr, port.readInt16BE()];
+		return [decoded_addr, port.readUInt16BE()];
 	}
 
 	// TODO: Validation

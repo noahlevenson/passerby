@@ -16,6 +16,8 @@ class Hkad_net_solo extends Hkad_net {
 
 		this.trans = trans;
 		this.trans.network.on("message", this._on_message.bind(this));
+
+		// I want to see this.node in the constructor for code comprehension
 	}
 
 	_on_message(htrans_msg) {
@@ -34,6 +36,20 @@ class Hkad_net_solo extends Hkad_net {
 
 	_out(hkad_msg, node_info) {
 		// Hkad_msg is delivered from an HKAD ENG module
+
+		// TODO: This is the most painful issue I've yet encountered in programming this project
+		// We need a way to detect when we're trying to send a message to ourself, and intercept it
+		// because our node_info holds our external port number, and we can't send messages to that port number
+		// there are many possible solutions: first of all, are we sure that we've implemented the protocol 
+		// correctly? Are we supposed to be sending messages to ourself? Secondly - this solution bypasses
+		// the transport completely and just wires the message back to us like a feedback loop
+		// But we could implement this at Hkad_eng_alpha and save us one frame on the call stack...
+		// Here we bypass address and port completely by just checking node_id... but is this safe in all cases?
+		if (node_info.node_id === this.node.node_id) {
+			this._in(hkad_msg);
+			return;
+		}
+
 		const htrans_msg = new Htrans_msg({
 			msg: hkad_msg,
 			type: Htrans_msg.TYPE.HKAD
