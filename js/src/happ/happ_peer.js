@@ -78,7 +78,7 @@ async function doit() {
 		id: our_node_id
 	});
 
-	await larosa.bootstrap("66.228.34.29", 27500);
+	await larosa.bootstrap({addr: "66.228.34.29", port: 27500});
 
 	// Create a PHT interface for La Rosa
 	const larosa_pht = new Hpht({
