@@ -418,6 +418,7 @@ class Hkad_node {
 	async bootstrap({addr = null, port = null, node_id = null} = {}) {
 		// You can bootstrap with an addr + port OR just an ID
 		// You'd use an ID for local testing
+		// This is crap code and needs to be cleaned up
 		let node_info;
 
 		if (addr === null && port === null && node_id instanceof Hbigint) {
@@ -426,7 +427,9 @@ class Hkad_node {
 			// Here's another case where we have to wrap an RPC in a promise because we didn't implement them as async functions...
 			// Is it worth rethinking?
 			node_info = await new Promise((resolve, reject) => {
-				this._req_ping({addr: addr, port: port}, (res, ctx) => {
+				// Why the -1 Hbigint? Well, we always want to include a node_id in a node_info that we pass to an RPC primitive
+				// That's because Hkad_net may check an outgoing message's node_id to see if we're trying to send a message to ourself
+				this._req_ping({addr: addr, port: port, node_id: new Hbigint(-1)}, (res, ctx) => {
 					resolve(res.from);
 				}, () => {
 					resolve(null);
@@ -440,11 +443,12 @@ class Hkad_node {
 			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
 			return;
 		}	
-		
+
 		const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
 		const b = Hutil._log2(d);
 
 		// You never want to call the _push() method of hkad_kbucket without first checking if the node exists() first...
+		// We prob want to create an Hkbucket function that wraps both operations in one and use that one exclusively
 		const bucket = this.get_kbucket(b);
 
 		if (!bucket.exists(node_info)) {

@@ -33,26 +33,22 @@ async function doit() {
 	await bootstrap_udp_trans._start();
 	const bnet = new Hkad_net_solo(bootstrap_udp_trans);
 	const beng = new Hkad_eng_alpha();
-	const bootstrap_node = new Hkad_node({eng: beng, net: bnet, addr: "localhost", 
-		port: bootstrap_udp_trans.port});
+	const bootstrap_node = new Hkad_node({eng: beng, net: bnet, addr: "127.0.0.1", port: bootstrap_udp_trans.port});
 	
 	// Give it STUN services
-	const bootstrap_node_stun_net = new Hstun_net_solo(bootstrap_udp_trans);
-	const bootstrap_node_stun_service = new Hstun({net: bootstrap_node_stun_net});
+	const bootstrap_stun_net = new Hstun_net_solo(bootstrap_udp_trans);
+	const bootstrap_stun_service = new Hstun({net: bootstrap_stun_net});
 
-
-
-
-	// For me, Pizzeria La Rosa, create a UDP transport
+	// // For me, Pizzeria La Rosa, create a UDP transport
 	const larosa_udp_trans = new Htrans_udp({port: 31337});
 	await larosa_udp_trans._start();
 
-	// For me, Pizzeria La Rosa, start up our STUN services:
+	// // For me, Pizzeria La Rosa, start up our STUN services:
 	const larosa_stun_net = new Hstun_net_solo(larosa_udp_trans);
 	const larosa_stun_service = new Hstun({net: larosa_stun_net});
 
-	// For me, Pizzeria La Rosa, first thing: hit a bootstrap node's STUN server and resolve our external addr/port info...
-	const stun_res = await larosa_stun_service._binding_req("localhost", 27500);
+	// // For me, Pizzeria La Rosa, first thing: hit a bootstrap node's STUN server and resolve our external addr/port info...
+	const stun_res = await larosa_stun_service._binding_req("127.0.0.1", 27500);
 
 	if (stun_res === null) {
 		throw new Error("STUN binding request failed!");
@@ -62,6 +58,7 @@ async function doit() {
 	const our_location = new Hgeo_coord({lat: 40.9018663, long: -73.7912739});
 
 	// Currently, node ID's are the 160-bit SHA1 hash of our 80-bit linearization...
+
 	// since menu data keys are 80-bit linearizations, clients can connect directly to restaurants
 	// by taking the 160-bit SHA1 hash of the menu they want to order from, and then finding the node_info 
 	// for the node with that node ID
@@ -79,7 +76,6 @@ async function doit() {
 		id: our_node_id
 	});
 
-
 	await larosa.bootstrap(bootstrap_node.node_info);
 
 
@@ -95,10 +91,6 @@ async function doit() {
 	await larosa_pht.init();
 	await larosa_pht.init();	
 
-
-	// for (let i = 0; i < 2000; i += 1) {
-	// 	await larosa_pht.insert(new Hbigint(i), i);
-	// }
 
 
 
@@ -146,13 +138,14 @@ async function doit() {
 	console.log("SOUTH BROOKLYN:");
 	console.log(res4);
 
+	// for (let i = 0; i < 1000; i += 1) {
+	// 	await larosa_pht.insert(new Hbigint(i), i);
+	// }
+
+
 
 	await larosa_pht._debug_print_stats();
 
-
-	// console.log(bootstrap_node.node_info);
-
-	// console.log(larosa.node_info)
 
 
 	

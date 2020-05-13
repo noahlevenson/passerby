@@ -18,7 +18,6 @@ class Hkad_eng_alpha extends Hkad_eng {
 	
 	_on_message(msg) {
 		// Assuming the message is already deserialized & validated to be an Hkad_msg object!
-
 		// First, update the appropriate k-bucket for the sender's node ID
 		this.node._update_kbucket(msg);
 		
