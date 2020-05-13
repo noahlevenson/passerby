@@ -51,7 +51,7 @@ async function doit() {
 	const larosa_stun_service = new Hstun({net: larosa_stun_net});
 
 	// // For me, Pizzeria La Rosa, first thing: hit a bootstrap node's STUN server and resolve our external addr/port info...
-	const stun_res = await larosa_stun_service._binding_req("::FFFF:66.228.34.29", 27500);
+	const stun_res = await larosa_stun_service._binding_req("66.228.34.29", 27500);
 
 	if (stun_res === null) {
 		throw new Error("STUN binding request failed!");
@@ -78,7 +78,7 @@ async function doit() {
 		id: our_node_id
 	});
 
-	await larosa.bootstrap("::FFFF:66.228.34.29", 27500);
+	await larosa.bootstrap("66.228.34.29", 27500);
 
 	// Create a PHT interface for La Rosa
 	const larosa_pht = new Hpht({
