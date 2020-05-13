@@ -10,7 +10,7 @@ class Hkad_net_sim extends Hkad_net {
 	}
 
 	_add_peer(peer) {
-		Hkad_net_sim.peer_list.set(peer.node_id.toString(16), peer);
+		Hkad_net_sim.peer_list.set(peer.node_id.toString(), peer);
 	}
 
 	_get_peers() {
@@ -58,7 +58,7 @@ class Hkad_net_sim extends Hkad_net {
 	}
 
 	_out(msg, node_info) {
-		const peer = Hkad_net_sim.peer_list.get(node_info.node_id.toString(16));
+		const peer = Hkad_net_sim.peer_list.get(node_info.node_id.toString());
 
 		if (peer) {
 			peer.net._in(msg);

@@ -2,6 +2,7 @@ const dgram = require("dgram");
 const { Htrans } = require("../htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
 const { Hutil } = require("../../hutil/hutil.js");
+const { Hbigint } = require("../../hutil/struct/hbigint_node.js");
 
 // Htrans_udp is our UDP transport service
 class Htrans_udp extends Htrans {
@@ -10,7 +11,9 @@ class Htrans_udp extends Htrans {
 	udp4;
 	udp6;
 
-	constructor({port = 27500, udp4 = true, udp6 = true} = {}) {
+	// TODO: we need to have a deep think about whether mixed IPv4 + IPv6 networks will work correctly
+	// until then, we disable UPD6 by default
+	constructor({port = 27500, udp4 = true, udp6 = false} = {}) {
 		super();
 		this.port = port;
 		this.udp4 = udp4;
@@ -47,7 +50,7 @@ class Htrans_udp extends Htrans {
 	_on_message(msg, rinfo) {
 		// The message here is a Buffer containing an Htrans_msg, delivered raw from the UDP socket
 		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
-		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hutil._bigint_revive)); // this is nice! We rehydrate our BigInts at the HTRANS layer, which is exactly where we should do it
+		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive)); // this is nice! We rehydrate our Hbigints at the HTRANS layer, which is exactly where we should do it
 		this.network.emit("message", in_msg, rinfo);
 	}
 

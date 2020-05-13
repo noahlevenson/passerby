@@ -1,3 +1,5 @@
+const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+
 // Class for a PHT node
 // TODO: I feel like this class, and all classes, should really have getters and setters for everything, and we should stop accessing members directly
 // But maybe we can wait to see where the JS standard for private members lands -- is it going to be adopted? It's what I want to use
@@ -75,23 +77,23 @@ class Hpht_node {
 	}
 
 	put(key, val) {
-		if (typeof key !== "bigint") {
-			throw new TypeError("Argument 'key' must be BigInt");
+		if (!(key instanceof Hbigint)) {
+			throw new TypeError("Argument 'key' must be Hbigint");
 		}
 
-		return this.data.set(key.toString(16), val);
+		return this.data.set(key.toString(), val);
 	}
 
 	get(key) {
-		if (typeof key !== "bigint") {
-			throw new TypeError("Argument 'key' must be BigInt");
+		if (!(key instanceof Hbigint)) {
+			throw new TypeError("Argument 'key' must be Hbigint");
 		}
 
-		return this.data.get(key.toString(16));
+		return this.data.get(key.toString());
 	}
 
 	delete(key) {
-		return this.data.delete(key.toString(16));
+		return this.data.delete(key.toString());
 	}
 
 	get_all_pairs() {

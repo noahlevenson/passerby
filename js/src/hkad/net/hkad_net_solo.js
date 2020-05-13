@@ -45,7 +45,7 @@ class Hkad_net_solo extends Hkad_net {
 		// the transport completely and just wires the message back to us like a feedback loop
 		// But we could implement this at Hkad_eng_alpha and save us one frame on the call stack...
 		// Here we bypass address and port completely by just checking node_id... but is this safe in all cases?
-		if (node_info.node_id === this.node.node_id) {
+		if (node_info.node_id.equals(this.node.node_id)) {
 			this._in(hkad_msg);
 			return;
 		}

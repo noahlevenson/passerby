@@ -15,8 +15,7 @@ const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 
 const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
-// Give BigInts a serialization method -- this needs to execute early, so I guess this is the best place to put it
-BigInt.prototype.toJSON = Hutil._bigint_to_json;
+const { Hbigint } = require("../hutil/struct/hbigint_node.js");
 
 // Give Map type a serializer too
 Map.prototype.toJSON = Hutil._map_to_json;
@@ -66,7 +65,7 @@ async function doit() {
 	// since menu data keys are 80-bit linearizations, clients can connect directly to restaurants
 	// by taking the 160-bit SHA1 hash of the menu they want to order from, and then finding the node_info 
 	// for the node with that node ID
-	const our_node_id = BigInt(`0x${Hutil._sha1(our_location.linearize().toString(16))}`);
+	const our_node_id = new Hbigint(Hutil._sha1(our_location.linearize().toString(16)));
 
 	// Now we can finally create our HKAD node...
 	const larosa_net = new Hkad_net_solo(larosa_udp_trans);
@@ -98,7 +97,7 @@ async function doit() {
 
 
 	// for (let i = 0; i < 2000; i += 1) {
-	// 	await larosa_pht.insert(BigInt(i), i);
+	// 	await larosa_pht.insert(new Hbigint(i), i);
 	// }
 
 

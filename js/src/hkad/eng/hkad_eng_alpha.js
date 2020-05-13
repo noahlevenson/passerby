@@ -24,7 +24,7 @@ class Hkad_eng_alpha extends Hkad_eng {
 		
 		if (msg.type === Hkad_msg.TYPE.RES) {
 			// console.log(`Node ${this.node.node_info.node_id.toString(16)} received a res from node ${msg.from.node_id.toString(16)}`)
-			this.res.emit(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id}`, msg);
+			this.res.emit(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`, msg);
 			return;
 		}
 
@@ -42,11 +42,11 @@ class Hkad_eng_alpha extends Hkad_eng {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
 					// console.log(`req timed out for msg ${msg.id.toString(16)}`);
-					this.res.removeAllListeners(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id}`);
+					this.res.removeAllListeners(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`);
 					reject(); // Maybe we should reject with a proper error code etc
 				}, Hkad_eng_alpha.TIMEOUT);
 
-				this.res.once(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id}`, (res_msg) => {
+				this.res.once(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`, (res_msg) => {
 					clearTimeout(timeout_id);
 
 					if (typeof success === "function") {

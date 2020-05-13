@@ -29,6 +29,8 @@ const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we incl
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 
+const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 
 
@@ -36,8 +38,6 @@ const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
 // Is the hoodnet.js file necessary in the distribution? Do want to maybe move some global constants here?
 
-// Give BigInts a serialization method -- this needs to execute early, so I guess this is the best place to put it
-BigInt.prototype.toJSON = Hutil._bigint_to_json;
 
 // Give Map type a serializer too
 Map.prototype.toJSON = Hutil._map_to_json;
@@ -70,8 +70,7 @@ new Promise((resolve, reject) => {
 			const node = new Hkad_node({eng: message_eng, net: local_simulator});
 			my_local_simulator._add_peer(node);
 			await node.bootstrap(bootstrap_node.node_info);
-
-			// console.log(`A peer node has joined: ${node.node_info.node_id}`)
+			console.log(`A peer node has joined: ${node.node_info.node_id}`)
 		})();	
 	}
 
@@ -86,7 +85,7 @@ async function doit() {
 	const my_preferred_message_eng = new Hkad_eng_alpha();
 
 	// Create a DHT node for me, Pizzeria La Rosa
-	const larosa = new Hkad_node({eng: my_preferred_message_eng, net: my_local_simulator});
+	const larosa = new Hkad_node({eng: my_preferred_message_eng, net: my_local_simulator, id: new Hbigint(500)});
 
 
 	// Add me to the local simulator
@@ -164,6 +163,17 @@ async function doit() {
 
 
 
+	for (let i = 0; i < 1000; i += 1) {
+		await larosa_pht.insert(new Hbigint(i), i);
+	}
+
+
+	await larosa_pht._debug_print_stats();
+
+	my_local_simulator._debug_dump_network_state();
+
+
+
 
 
 
@@ -185,11 +195,11 @@ async function doit() {
 
 
 
-	for (let i = 0; i < 1000; i += 1) {
-		await larosa_pht.insert(BigInt(i), i);
-	}
+	// for (let i = 0; i < 1000; i += 1) {
+	// 	await larosa_pht.insert(new Hbigint(i), i);
+	// }
 
-	await larosa_pht._debug_print_stats();
+	// await larosa_pht._debug_print_stats();
 
 	
 
@@ -197,13 +207,10 @@ async function doit() {
 
 
 	// for (let i = 1000; i >= 0; i -= 1) {
-	// 	await larosa_pht.delete(BigInt(i));
+	// 	await larosa_pht.delete(new Hbigint(i));
 	// }
 
-	await larosa_pht._debug_print_stats();
-
-	my_local_simulator._debug_dump_network_state();
-
+	
 	
 	
 
@@ -218,15 +225,15 @@ async function doit() {
 	// console.log(child0);
 
 
-	// await larosa_pht.insert(BigInt(31337), "Some other shit dog");
+	// await larosa_pht.insert(new Hbigint(31337), "Some other shit dog");
 
 	// await larosa_pht._print_stats();
 
-	// await larosa_pht.insert(BigInt(0xdeadbeef), "Some other shit dog");
+	// await larosa_pht.insert(new Hbigint(0xdeadbeef), "Some other shit dog");
 	
 	// await larosa_pht._print_stats();
 
-	// await larosa_pht.insert(BigInt(3133777), "Some other shit dogsdfsdfsdfsdf");
+	// await larosa_pht.insert(new Hbigint(3133777), "Some other shit dogsdfsdfsdfsdf");
 
 	// await larosa_pht._print_stats();
 
@@ -247,10 +254,10 @@ async function doit() {
 	// (async function doshit() {
 	// 	await client_node.join(bootstrap_node.node_info);
 
-	// 	client_node.store(BigInt(500), "Hey it's some arbitrary data bro");
+	// 	client_node.store(new Hbigint(500), "Hey it's some arbitrary data bro");
 
 	// 	setTimeout(async () => {
-	// 		const result = await client_node.find(BigInt(500));
+	// 		const result = await client_node.find(new Hbigint(500));
 
 	// 		console.log(result);
 	// 	}, 5000)

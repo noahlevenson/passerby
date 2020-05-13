@@ -26,7 +26,7 @@ class Hkad_kbucket {
 
 	exists(node_info) {
 		for (let i = 0; i < this.data.length; i += 1) {
-			if (this.data[i] && this.data[i].node_id === node_info.node_id) {
+			if (this.data[i] && this.data[i].node_id.equals(node_info.node_id)) {
 				return i;
 			}
 		}

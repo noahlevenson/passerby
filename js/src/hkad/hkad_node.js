@@ -4,6 +4,7 @@ const { Hkad_node_info } = require("./hkad_node_info.js");
 const { Hkad_kbucket } = require("./hkad_kbucket.js");
 const { Hkad_msg } = require("./hkad_msg.js");
 const { Hkad_data } = require("./hkad_data.js");
+const { Hbigint } = require("../hutil/struct/hbigint_node.js");
 
 // A hoodnet Kademlia DHT node
 class Hkad_node {
@@ -30,10 +31,6 @@ class Hkad_node {
 	// REMEMBER TO DELETE port BELOW, WE DON'T USE IT, ITS FOR TESTING ONLY
 	constructor({net = null, eng = null, addr = null, port = null, id = null} = {}) {
 		// TODO: validate that the net and message eng module are instances of the correct base classes and implement the functionality we rely on
-		this.DEBUG = {
-			WATCH: null,
-		};
-
 		this.net = net;
 		this.eng = eng;
 
@@ -42,7 +39,7 @@ class Hkad_node {
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
 		// but for our first one-machine network tests, we'll just manually supply a port...
-		this.node_info = new Hkad_node_info({addr: addr, port: port, node_id: BigInt(this.node_id)});
+		this.node_info = new Hkad_node_info({addr: addr, port: port, node_id: new Hbigint(this.node_id)});
 
 		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
 		
@@ -59,34 +56,35 @@ class Hkad_node {
 		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the network module to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
 	}
 
+	// key1 and key2 are Hbigints
 	static _get_distance(key1, key2) {
-		return key1 ^ key2;
+		return key1.xor(key2);
 	}
 
 	// min and max are the log2 of your desired integer range: 2^min - 2^max
 	// TODO: This is cryptographically insecure and pretty crappy
 	// Let's figure out how to do this properly when we implement a real portable system that doesn't realy on BigInts
 	static generate_random_key_between(min = 0, max = this.DHT_BIT_WIDTH) {
-		let min_bigint = 2n ** BigInt(min);
-		const max_bigint = 2n ** BigInt(max);
-		const diff = max_bigint - min_bigint;
+		// let min_bigint = 2n ** BigInt(min);
+		// const max_bigint = 2n ** BigInt(max);
+		// const diff = max_bigint - min_bigint;
+		// const bits_needed = Hutil._log2(diff) || 1;
+		// const bytes_needed = Math.ceil(bits_needed / Hutil.SYS_BYTE_WIDTH);
+		// const extra_bits = (bytes_needed * Hutil.SYS_BYTE_WIDTH) - bits_needed;
+		// const random_bytes_buf = crypto.randomBytes(bytes_needed);
+		// random_bytes_buf[0] &= (0xFF >> extra_bits);
+		// return min_bigint + BigInt(`0x${random_bytes_buf.toString("hex")}`);
 
-		const bits_needed = Hutil._log2(diff) || 1;
+		let min_bigint = (new Hbigint(2)).pow(new Hbigint(min));
+		const max_bigint = (new Hbigint(2)).pow(new Hbigint(max));
+		const diff = max_bigint.sub(min_bigint);
+		const bits_needed = Math.max(Hutil._log2(diff), 1);
 		const bytes_needed = Math.ceil(bits_needed / Hutil.SYS_BYTE_WIDTH);
 		const extra_bits = (bytes_needed * Hutil.SYS_BYTE_WIDTH) - bits_needed;
 		const random_bytes_buf = crypto.randomBytes(bytes_needed);
-
 		random_bytes_buf[0] &= (0xFF >> extra_bits);
 
-		return min_bigint + BigInt(`0x${random_bytes_buf.toString("hex")}`);
-	}
-
-	_debug_watch(key) {
-		if (typeof key !== "bigint") {
-			throw new TypeError("Argument 'key' must be BigInt");
-		}
-
-		this.DEBUG.WATCH = key;
+		return min_bigint.add(new Hbigint(random_bytes_buf.toString("hex")));
 	}
 
 	// Get a REFERENCE to a kbucket
@@ -159,7 +157,7 @@ class Hkad_node {
 				// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
 				const sender = res.from;
 				sender.queried = true;
-				node_map.set(Hkad_node._get_distance(key, res.from.node_id).toString(16), sender);
+				node_map.set(Hkad_node._get_distance(key, res.from.node_id).toString(), sender);
 
 				// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
 				// Again exploit the map property that we can just overwrite old keys
@@ -167,11 +165,11 @@ class Hkad_node {
 					// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
 					// us a node in a list that we've already talked to and we want to retain its queried status
 
-					const existing_node = node_map.get(Hkad_node._get_distance(key, node_info.node_id).toString(16));
+					const existing_node = node_map.get(Hkad_node._get_distance(key, node_info.node_id).toString());
 
 					if (!existing_node) {
 						node_info.queried = false;
-						node_map.set(Hkad_node._get_distance(key, node_info.node_id).toString(16), node_info);
+						node_map.set(Hkad_node._get_distance(key, node_info.node_id).toString(), node_info);
 					}
 				});
 
@@ -179,7 +177,7 @@ class Hkad_node {
 				// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
 				// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
 				const sorted = Array.from(node_map.values()).sort((a, b) => {
-					return Hkad_node._get_distance(key, a.node_id) > Hkad_node._get_distance(key, b.node_id) ? 1 : -1;
+					return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
 				});
 
 				// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
@@ -239,7 +237,7 @@ class Hkad_node {
 				// TODO: Is this "hail mary" round supposed to trigger recursions?  I mean, I think so, right?
 				Promise.all(resolutions).then((values) => {
 					const new_sorted = Array.from(node_map.values()).sort((a, b) => {
-						return Hkad_node._get_distance(key, a.node_id) > Hkad_node._get_distance(key, b.node_id) ? 1 : -1;
+						return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
 					});
 
 					// Here we check the hail mary condition
@@ -272,17 +270,9 @@ class Hkad_node {
 			const node_infos = this._get_nodes_closest_to(key, Hkad_node.ALPHA);
 			const node_map = new Map();
 			
-			// console.log(`key: ${key}`)
-
-
-
 			node_infos.forEach((node_info) => {
-				// console.log(node_info.node_id)
-
 				this[find_rpc.name](key, node_info, _do_node_lookup.bind(this, null));
 			});
-
-			// console.log("***")
 		});
 	}
 
@@ -348,7 +338,7 @@ class Hkad_node {
 	}
 
 	_res_store(req) {
-		this.data.set(req.data.payload[0].toString(16), req.data.payload[1]);
+		this.data.set(req.data.payload[0].toString(), req.data.payload[1]);
 
 		return new Hkad_msg({
 			rpc: Hkad_msg.RPC.STORE,
@@ -372,7 +362,7 @@ class Hkad_node {
 	}
 
 	_res_find_value(req) {
-		let payload = [this.data.get(req.data.payload[0].toString(16))];
+		let payload = [this.data.get(req.data.payload[0].toString())];
 		let type = Hkad_data.TYPE.VAL;
 		
 		if (!payload[0]) {
@@ -412,46 +402,45 @@ class Hkad_node {
 			// Sort the bucket by distance from the key -- this is duplicated code, doesn't belong here, requires too much knowledge
 			// of Hkad_node_info structure -- please make this better sir
 			bucket.sort((a, b) => {
-				return Hkad_node._get_distance(key, a.node_id) > Hkad_node._get_distance(key, b.node_id) ? 1 : -1;
+				return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
 			})
-
-			// console.log(bucket)
 
 			for (let j = 0; j < bucket.length && nodes.length < max; j += 1) {
 				nodes.push(new Hkad_node_info(bucket[j]));
 			}
 		}	
 
-		if (this.DEBUG.WATCH === key) {
-			console.log(`\n[HKAD] DEBUG.WATCH:`);
-			console.log(`[HKAD] key lookup: ${key}`);
-			console.log(`[HKAD] closest node: ${nodes[0].node_id}`);
-		}
-
 		return nodes;
 	}
 
 	// **** PUBLIC API ****
 
-	async bootstrap(addr, port) {
-		// TODO: Replace this message with our proper logging function
-		console.log(`[HKAD] Joining network as ${this.node_id} via bootstrap node ${addr}:${port}...`);
+	async bootstrap({addr = null, port = null, node_id = null} = {}) {
+		// You can bootstrap with an addr + port OR just an ID
+		// You'd use an ID for local testing
+		let node_info;
 
-		// Here's another case where we have to wrap an RPC in a promise because we didn't implement them as async functions...
-		// Is it worth rethinking?
-		const node_info = await new Promise((resolve, reject) => {
-			this._req_ping({addr: addr, port: port}, (res, ctx) => {
-				resolve(res.from);
-			}, () => {
-				resolve(null);
+		if (addr === null && port === null && node_id instanceof Hbigint) {
+			node_info = new Hkad_node_info({addr: addr, port: port, node_id: node_id});
+		} else {
+			// Here's another case where we have to wrap an RPC in a promise because we didn't implement them as async functions...
+			// Is it worth rethinking?
+			node_info = await new Promise((resolve, reject) => {
+				this._req_ping({addr: addr, port: port}, (res, ctx) => {
+					resolve(res.from);
+				}, () => {
+					resolve(null);
+				});
 			});
-		});
+		}
+		
+		console.log(`[HKAD] Joining network as ${this.node_id.toString()} via bootstrap node ${addr}:${port}...`);
 
 		if (node_info === null) {
 			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
 			return;
-		}
-
+		}	
+		
 		const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
 		const b = Hutil._log2(d);
 
@@ -479,7 +468,7 @@ class Hkad_node {
 			await this._refresh_kbucket(i);
 		}
 
-		console.log(`[HKAD] Success: node ${this.node_id} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
 
 		// TODO:  Resolve with a result?
 		return;

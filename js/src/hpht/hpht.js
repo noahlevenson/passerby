@@ -1,6 +1,7 @@
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
+const { Hbigint } = require("../hutil/struct/hbigint_node.js");
 
 // The Hpht class implements the PHT protocol 
 // PHT keys must be BigInts in the range of BIT_DEPTH
@@ -104,7 +105,7 @@ class Hpht {
 			throw new TypeError("Argument 'data' must be string");
 		}
 
-		return BigInt(`0x${Hutil._sha1(this.index_attr + data)}`);
+		return new Hbigint(Hutil._sha1(this.index_attr + data));
 	}
 
 	// Init a new PHT structure - this is how you create the root node structure, and some peer in the network
@@ -121,8 +122,8 @@ class Hpht {
 
 		console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
 		const root = new Hpht_node({label: ""});
-		const child0 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(0), 1)});
-		const child1 = new Hpht_node({label: Hutil._bigint_to_bin_str(BigInt(1), 1)});
+		const child0 = new Hpht_node({label: (new Hbigint(0)).to_bin_str(1)});
+		const child1 = new Hpht_node({label: (new Hbigint(1)).to_bin_str(1)});
 
 		child0.set_ptrs({left: null, right: child1.get_label()});
 		child1.set_ptrs({left: child0.get_label(), right: null});
@@ -144,21 +145,21 @@ class Hpht {
 	// Returns null if there's no leaf node associated with that key
 	async lookup_lin(key) {
 		// TODO: validation
-		if (typeof key !== "bigint") {
-			throw new TypeError("Argument 'key' must be BigInt");
+		if (!(key instanceof Hbigint)) {
+			throw new TypeError("Argument 'key' must be Hbigint");
 		}
 
-		let mask = 0x01n;
+		let mask = new Hbigint(0x01);
 
 		for (let i = 0; i < Hpht.BIT_DEPTH; i += 1) {
-			const pi_k = key & mask;
-			const pht_node = await this._dht_lookup(Hutil._bigint_to_bin_str(pi_k, i));
+			const pi_k = key.and(mask);
+			const pht_node = await this._dht_lookup(pi_k.to_bin_str(i));
 
 			if (pht_node !== null && pht_node.is_leaf()) {
 				return pht_node;
 			}
 
-			mask |= (0x01n << BigInt(i));
+			mask = mask.or((new Hbigint(0x01)).shift_left(new Hbigint(i)));
 		}
 
 		return null;
@@ -175,9 +176,11 @@ class Hpht {
 	
 		while (p <= r) {
 			let q = Math.floor((p + r) / 2);
-			const mask = ((2n ** BigInt(Hpht.BIT_DEPTH)) - 1n) >> (BigInt(Hpht.BIT_DEPTH) - BigInt(q));
-			const pq_k = key & mask;
-			const label_hash = this._get_label_hash(Hutil._bigint_to_bin_str(pq_k, q));
+			//const mask = ((2n ** BigInt(Hpht.BIT_DEPTH)) - 1n) >> (BigInt(Hpht.BIT_DEPTH) - BigInt(q));   <--- old line right here, just in case your tests fail
+		
+			const mask = ((new Hbigint(2)).pow(new Hbigint(Hpht.BIT_DEPTH))).sub(new Hbigint(1)).shift_right(new Hbigint(Hpht.BIT_DEPTH) - new Hbigint(q));			
+			const pq_k = key.and(mask);
+			const label_hash = this._get_label_hash(pq_k.to_bin_str(q));
 			const hdata = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 			
 			if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.valid_magic(hdata.payload[0])) {
@@ -210,7 +213,7 @@ class Hpht {
 			leaf.put(key, val);
 			const label_hash = this._get_label_hash(leaf.label);
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-			console.log(`[HPHT] Inserted key ${key} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
+			console.log(`[HPHT] Inserted key ${key.toString()} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
 		} else {
 			// NOTE: THIS IS THE "UNLIMITED SPLIT" VERSION OF BUCKET SPLITTING - THE PAPER ALSO SPECIFIES A FASTER "STAGGERED UPDATES"
 			// MODEL WHERE EACH INSERT IS LIMITED TO ONE BUCKET SPLIT, BUT WHICH COULD RESULT IN VIOLATING PHT INVARIANTS
@@ -221,7 +224,7 @@ class Hpht {
 			const pairs = leaf.get_all_pairs();
 
 			pairs.forEach((pair, i, arr) => {
-				arr[i] = [BigInt(`0x${pair[0]}`), pair[1]];
+				arr[i] = [new Hbigint(pair[0]), pair[1]];
 			});
 			
 			pairs.push([key, val]);
@@ -230,7 +233,7 @@ class Hpht {
 			const key_bin_strings = [];
 
 			pairs.forEach((pair) => {
-				key_bin_strings.push(Hutil._bigint_to_bin_str(pair[0], Hpht.BIT_DEPTH));
+				key_bin_strings.push(pair[0].to_bin_str(Hpht.BIT_DEPTH));
 			});
 
 			// Since we used _bigint_to_bin_str to make our bin strings the same length, we don't have to get too fancy here
@@ -277,7 +280,7 @@ class Hpht {
 						const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
 						child_ref.put(pair[0], pair[1]);
 
-						console.log(`[HPHT] Redistributed key ${pair[0]} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
+						console.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
 					});
 				}
 
@@ -298,6 +301,7 @@ class Hpht {
 		}
 	}
 
+	// This function doesn't work and we never refactored to use Hbigint
 	async delete(key) {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
@@ -396,24 +400,24 @@ class Hpht {
 				// "apply the range query to all items within this node and report the result"
 				// i think that just means the items in this node represent the entirety of what must be returned by the range query
 				return pht_node.get_all_pairs().filter((pair) => {
-					const key = BigInt(`0x${pair[0]}`);
-					return key >= minkey && key <= maxkey;
+					const key = new Hbigint(pair[0]);
+					return key.greater_equal(minkey) && key.less_equal(maxkey);
 				});
 			} 
 
 			// is there any overlap between the rectangular region defined by the subtree's prefix and the range of the original query?
 			// TODO: is this an insane way to do this?  Can't we just learn this by comparing the 0's and 1's???
-			const min_region = BigInt(`0b${key_strings[0].substring(0, prefix.length + 1)}`);
-			const max_region = BigInt(`0b${key_strings[1].substring(0, prefix.length + 1)}`);
+			const min_region = Hbigint.from_base2_str(key_strings[0].substring(0, prefix.length + 1));
+			const max_region = Hbigint.from_base2_str(key_strings[1].substring(0, prefix.length + 1));
 
 			const child0_label = `${prefix}0`;
 			const child1_label = `${prefix}1`;
 
-			const child0_rect = BigInt(`0b${child0_label}`);
-			const child1_rect = BigInt(`0b${child1_label}`);
+			const child0_rect = Hbigint.from_base2_str(child0_label);  
+			const child1_rect = Hbigint.from_base2_str(child1_label);
 
 			// TODO: This needs to actually be parallelized for speed
-			if (child0_rect >= min_region && child0_rect <= max_region) {
+			if (child0_rect.greater_equal(min_region) && child0_rect.less_equal(max_region)) {
 				// Recurse 
 				const child_node = await this._dht_lookup(child0_label);
 
@@ -424,7 +428,7 @@ class Hpht {
 				data = data.concat(await _do_range_query_2d.bind(this)(child_node, child0_label, data));
 			}
 
-			if (child1_rect >= min_region && child1_rect <= max_region) {
+			if (child1_rect.greater_equal(min_region) && child1_rect.less_equal(max_region)) {
 				// Recurse
 				const child_node = await this._dht_lookup(child1_label);
 
@@ -438,18 +442,18 @@ class Hpht {
 			return data;
 		}
 
-		if (typeof minkey !== "bigint" || typeof maxkey !== "bigint") {
-			throw new TypeError("Arguments 'minkey' and 'maxkey' must be BigInt");
+		if (!(minkey instanceof Hbigint) || !(maxkey instanceof Hbigint)) {
+			throw new TypeError("Arguments 'minkey' and 'maxkey' must be Hbigint");
 		}
 
-		if (minkey >= maxkey) {
+		if (minkey.greater_equal(maxkey)) {
 			throw new RangeError("'minkey' must be less than 'maxkey'");
 		}
 
 		// First, get the longest common binary prefix of these keys
 		const key_strings = [];
-		key_strings.push(Hutil._bigint_to_bin_str(minkey, Hpht.BIT_DEPTH));
-		key_strings.push(Hutil._bigint_to_bin_str(maxkey, Hpht.BIT_DEPTH));
+		key_strings.push(minkey.to_bin_str(Hpht.BIT_DEPTH));
+		key_strings.push(maxkey.to_bin_str(Hpht.BIT_DEPTH));
 		let lcp = Hutil._get_lcp(key_strings);
 
 		// Now get the PHT node labeled with that prefix

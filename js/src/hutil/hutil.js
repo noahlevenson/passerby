@@ -1,33 +1,10 @@
 const crypto = require("crypto");
 const net = require("net");
-
+const { Hbigint } = require("./struct/hbigint_node.js");
 
 // Utility functions
 class Hutil {
 	static SYS_BYTE_WIDTH = 8;
-
-	// The prefix we prepend to long hex string values in our over-the-wire format to identify them for deserialization
-	// it's probably better to keep this with a higher level module, HTRANS or HKAD_NET, whoever is concerned with serialization/deserialization
-	// from our over-the-wire format... and this all probably requires a deep rethink of what our over-the-wire format is...
-	static HEX_STR_PREFIX = "0x"; 
-
-	// JSON serializer for BigInt type - this is set on the BigInt prototype at the HAPP layer
-	// This makes the rather gross assumption that we are representing very large integer values as hex strings in our
-	// over-the-wire format, which seems true but we should probably define that at a higher layer than this one...
-	static _bigint_to_json() {
-		return `${Hutil.HEX_STR_PREFIX}${this.toString(16)}`;
-	}
-
-	// BigInt reviver function - this is applied at the individual application NET layer to revive long hex values
-	// In a world where we have other implementations written in other languages, long hex values actually remain portable
-	// we'd just need to chop off the HEX_STR_PREFIX and then revive them as whatever format works -- likely just a buffer of bytes
-	static _bigint_revive(key, val) {
-		if (typeof val === "string" && val.substring(0, 2) === Hutil.HEX_STR_PREFIX) {
-			return BigInt(val);
-		}
-
-		return val;
-	}
 
 	// JSON serializer for javascript's Map() type -- this is set on the Map prototype at the HAPP layer as above
 	// We just turn maps into arrays of key, val pairs in our over-the-wire format
@@ -49,19 +26,21 @@ class Hutil {
 		return hash.digest("hex");
 	}
 
-	// This is actually only returning the integer part of the log2, right?
+	// Get the integral part of the log2 of a Hbigint
+	// Works on Number types too, but pointlessly slow
 	static _log2(n) {
-		let x = BigInt(n);
-
-		if (x === BigInt(0)) {
+		let x = new Hbigint(n);
+		
+		if (x.equals(new Hbigint(0))) {
 			return 0;
 		}
 		
-		let y = BigInt(1);
+		let zero = new Hbigint(0);
+		let y = new Hbigint(0x01);
 		let i = 0;
 
-		while (x > 0) {
-			x >>= y;
+		while (x.greater(zero)) {
+			x = x.shift_right(y);
 			i += 1
 		}
 
@@ -69,6 +48,7 @@ class Hutil {
 	}
 
 	// Sort elements in array arr by their euclidean distance from number n
+	// It's meant to operate on Number types
 	static _sort_by_distance_from(arr, n) {
 		return arr.sort((a, b) => {
 			return Math.abs(a - n) - Math.abs(b - n);
@@ -89,27 +69,19 @@ class Hutil {
 	// Currently takes Number types and returns a BigInt, but we may want to roll our own Buffer-based binary format
 	static _z_linearize_2d(x, y, b) {
 		// TODO: Validate inputs
-		let xx = BigInt(x);
-		let yy = BigInt(y);
+		let xx = new Hbigint(x);
+		let yy = new Hbigint(y);
 
-		let l = 0n;
-		let mask = 0x01n;
+		let l = new Hbigint(0);
+		let mask = new Hbigint(0x01);
 
 		for (let i = 0; i < b; i += 1) {
-			l |= (xx & mask) << BigInt(i);
-			l |= (yy & mask) << BigInt(i + 1);
-			mask <<= 0x01n;
+			l = l.or((xx.and(mask)).shift_left(new Hbigint(i)));
+			l = l.or((yy.and(mask)).shift_left(new Hbigint(i + 1)));
+			mask = mask.shift_left(new Hbigint(0x01));
 		}
 
 		return l;
-	}
-
-	// Get binary string representation of a BigInt, leftmost bit is LSB
-	// b is the number of bits to consider -- it adds trailing '0' bits
-	// because we want 0 and 000 to be different strings for our PHT labels
-	static _bigint_to_bin_str(n, b) {
-		// TODO: validation
-		return n.toString(2).split("").reverse().join("").padEnd(b, "0");
 	}
 
 	// Return the longest common prefix of an array of strings
