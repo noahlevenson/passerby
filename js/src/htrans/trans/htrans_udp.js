@@ -1,8 +1,8 @@
 const dgram = require("dgram");
-const { Htrans } = require("../htrans.js");
+const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
 const { Hutil } = require("../../hutil/hutil.js");
-const { Hbigint } = require("../../hutil/struct/hbigint_node.js");
+const { Hbigint } = require("../../htypes/hbigint/hbigint_node.js");
 
 // Htrans_udp is our UDP transport service
 class Htrans_udp extends Htrans {
@@ -20,7 +20,6 @@ class Htrans_udp extends Htrans {
 		this.udp6 = udp6;
 	}
 
-	// This should prob be promise based, i want to await this
 	async _start() {
 		if (this.udp4 && this.udp6) {
 			this.socket = dgram.createSocket("udp6");

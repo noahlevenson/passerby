@@ -1,4 +1,4 @@
-const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 // Class for a PHT node
 // TODO: I feel like this class, and all classes, should really have getters and setters for everything, and we should stop accessing members directly

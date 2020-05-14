@@ -1,0 +1,88 @@
+// Base class for a hoodnet big integer
+class Hbigint_base {
+	static JSON_PREFIX = "__$!0x";
+
+	data;
+
+	constructor() {
+		
+	}
+
+	static from_base2_str(str) {
+		throw new Error("Subclasses must implement the from_base2_str() method");
+	}
+
+	static _json_revive(key, val) {
+		throw new Error("Subclasses must implement the _json_revive() method");
+	}
+
+	get() {
+		throw new Error("Subclasses must implement the get() method");
+	}
+
+	equals(op) {
+		throw new Error("Subclasses must implement the equals() method");
+	}
+
+	greater(op) {
+		throw new Error("Subclasses must implement the greater() method");
+	}
+
+	less(op) {
+		throw new Error("Subclasses must implement the less() method");
+	}
+
+	greater_equal(op) {
+		throw new Error("Subclasses must implement the greater_equal() method");
+	}
+
+	less_equal(op) {
+		throw new Error("Subclasses must implement the less_equal() method");
+	}
+
+	add(op) {
+		throw new Error("Subclasses must implement the add() method");
+	}
+
+	sub(op) {
+		throw new Error("Subclasses must implement the sub() method");
+	}
+
+	and(op) {
+		throw new Error("Subclasses must implement the and() method");
+	}
+
+	or(op) {
+		throw new Error("Subclasses must implement the or() method");
+	}
+
+	xor(op) {
+		throw new Error("Subclasses must implement the xor() method");
+	}
+
+	shift_left(op) {
+		throw new Error("Subclasses must implement the shift_left() method");
+	}
+
+	shift_right(op) {
+		throw new Error("Subclasses must implement the shift_right() method");
+	}
+
+	pow(op) {
+		throw new Error("Subclasses must implement the pow() method");
+	}
+
+	to_bin_str(b) {
+		throw new Error("Subclasses must implement the to_bin_str() method");
+	}
+
+	toString() {
+		throw new Error("Subclasses must implement the toString() method");
+	}
+
+	toJSON() {
+		throw new Error("Subclasses must implement the toJSON() method");
+	}
+}
+
+module.exports.Hbigint_base = Hbigint_base;

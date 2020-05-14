@@ -1,12 +1,12 @@
+const { Hbigint_base } = require("./hbigint_base.js");
+
 // Class for a hoodnet big integer (Node.js >= 12.? implementation)
 // It uses native BigInt under the hood
-class Hbigint {
-	static JSON_PREFIX = "__$!0x";
-
-	data;
-
+class Hbigint extends Hbigint_base {
 	// Using the default constructor, an Hbigint can be constructed from a base16 string, a Number, or another Hbigint -- that's it
 	constructor(input) {
+		super();
+		
 		if (typeof input === "string") {
 			this.data = BigInt(`0x${input}`);
 		} else if (typeof input === "number") {

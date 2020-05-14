@@ -29,7 +29,7 @@ const { Hgeo_coord } = require("../hgeo/hgeo_coord.js"); // TODO: Should we incl
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 
-const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 

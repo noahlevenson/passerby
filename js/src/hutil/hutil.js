@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const net = require("net");
-const { Hbigint } = require("./struct/hbigint_node.js");
+const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 // Utility functions
 class Hutil {

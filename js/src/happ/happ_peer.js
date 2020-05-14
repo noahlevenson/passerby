@@ -15,7 +15,7 @@ const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 
 const { Hutil } = require("../hutil/hutil.js"); // DELETE ME!!!
 
-const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 // Give Map type a serializer too
 Map.prototype.toJSON = Hutil._map_to_json;

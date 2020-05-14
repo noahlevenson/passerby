@@ -1,6 +1,6 @@
-const { Hkad_net } = require("../hkad_net.js");
+const { Hkad_net } = require("./hkad_net.js");
 const { Hkad_msg } = require("../hkad_msg.js");
-const { Htrans } = require("../../htrans/htrans.js");
+const { Htrans } = require("../../htrans/trans/htrans.js");
 const { Htrans_msg } = require("../../htrans/htrans_msg.js");
 
 // Hkad_net_solo is an HKAD network module that uses exactly HTRANS transport
@@ -40,6 +40,7 @@ class Hkad_net_solo extends Hkad_net {
 		// TODO: This is the most painful issue I've yet encountered in programming this project
 		// We need a way to detect when we're trying to send a message to ourself, and intercept it
 		// because our node_info holds our external port number, and we can't send messages to that port number
+		
 		// there are many possible solutions: first of all, are we sure that we've implemented the protocol 
 		// correctly? Are we supposed to be sending messages to ourself? Secondly - this solution bypasses
 		// the transport completely and just wires the message back to us like a feedback loop

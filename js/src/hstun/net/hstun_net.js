@@ -13,7 +13,7 @@ class Hstun_net {
 	}
 
 	_out(msg, rinfo) {
-
+		throw new Error("Subclasses must implement the _out() method");
 	}
 }
 

@@ -1,5 +1,5 @@
-const { Hstun_net } = require("../hstun_net.js");
-const { Htrans } = require("../../htrans/htrans.js");
+const { Hstun_net } = require("./hstun_net.js");
+const { Htrans } = require("../../htrans/trans/htrans.js");
 const { Htrans_msg } = require("../../htrans/htrans_msg.js");
 
 // Hstun_net_solo is an HSTUN network module that uses exactly one HTRANS transport

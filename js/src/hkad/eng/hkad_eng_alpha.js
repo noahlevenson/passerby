@@ -1,5 +1,5 @@
 const EventEmitter = require("events");
-const { Hkad_eng } = require("../hkad_eng.js");
+const { Hkad_eng } = require("./hkad_eng.js");
 const { Hkad_msg } = require("../hkad_msg.js");
 
 // Hkad_eng_alpha is a hoodnet message engine module that takes an event-driven approach and uses promises to avoid keeping message state

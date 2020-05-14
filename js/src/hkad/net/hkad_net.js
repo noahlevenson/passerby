@@ -15,7 +15,7 @@ class Hkad_net {
 	}
 
 	_out(msg, node_info) {
-
+		throw new Error("Subclasses must implement the _out() method");
 	}
 }
 

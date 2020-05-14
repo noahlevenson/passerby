@@ -4,7 +4,7 @@ const { Hkad_node_info } = require("./hkad_node_info.js");
 const { Hkad_kbucket } = require("./hkad_kbucket.js");
 const { Hkad_msg } = require("./hkad_msg.js");
 const { Hkad_data } = require("./hkad_data.js");
-const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 // A hoodnet Kademlia DHT node
 class Hkad_node {

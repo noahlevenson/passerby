@@ -9,11 +9,11 @@ class Htrans {
 	}
 	
 	_on_message() {
-
+		throw new Error("Subclasses must implement the _on_message() method");
 	}
 
 	_send() {
-
+		throw new Error("Subclasses must implement the _send() method");
 	}
 }
 

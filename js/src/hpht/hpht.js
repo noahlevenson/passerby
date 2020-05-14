@@ -1,7 +1,7 @@
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
-const { Hbigint } = require("../hutil/struct/hbigint_node.js");
+const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 // The Hpht class implements the PHT protocol 
 // PHT keys must be BigInts in the range of BIT_DEPTH

@@ -1,4 +1,4 @@
-const { Hkad_net } = require("../hkad_net.js");
+const { Hkad_net } = require("./hkad_net.js");
 const { Hutil } = require("../../hutil/hutil.js");
 
 // Hkad_net_sim is an HKAD network module that implements a local network simulator
