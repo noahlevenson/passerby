@@ -235,7 +235,8 @@ class Hstun_attr {
 			decoded_addr = Hutil._buf128_2_ipv6Str(addr);
 		}
 
-		return [decoded_addr, port.readUInt16BE()];
+		// Interpret port as a 16-bit unsigned int without using Buffer API
+		return [decoded_addr, port[1] | (port[0] << 8)]; 
 	}
 
 	// TODO: Validation

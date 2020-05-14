@@ -55,7 +55,8 @@ class Htrans_udp extends Htrans {
 
 	_send(htrans_msg, addr, port) {
 		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
-		this.socket.send(Buffer.from(JSON.stringify(htrans_msg)), port, addr, (err) => {
+		const buf = Buffer.from(JSON.stringify(htrans_msg));
+		this.socket.send(buf, 0, buf.length, port, addr, (err) => {
 			if (err) {
 				console.log(`[HTRANS] UDP socket send error ${addr}:${port} (${err})`);
 				return;
