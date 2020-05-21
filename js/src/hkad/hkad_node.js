@@ -34,7 +34,7 @@ class Hkad_node {
 		this.net = net;
 		this.eng = eng;
 
-		this.node_id = id || Hkad_node.generate_random_key_between();
+		this.node_id = id || Hkad_node.generate_random_key_between(); // You sure you wanna be able to do this bro?
 
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
@@ -463,9 +463,15 @@ class Hkad_node {
 		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
 		// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
 
-		// Since I just did a node lookup on myself, the 0th node in the list returned should be me,
-		// since the nodes in the network see me as the closest node to myself
-		const distance_to_closest_bro = Hkad_node._get_distance(closest_to_me_sorted[1].node_id, this.node_id);
+		// Since I just did a node lookup on myself, it's possible that nodes have reported me as the closest node to myself
+		// So we want to find the closest node in closest_to_me_sorted that isn't me
+		let i = 0;
+		
+		while (closest_to_me_sorted[i].node_id.equals(this.node_id)) {
+			i += 1;
+		}
+
+		const distance_to_closest_bro = Hkad_node._get_distance(closest_to_me_sorted[i].node_id, this.node_id);
 		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
 
 		for (let i = closest_bro_bucket + 1; i < Hkad_node.DHT_BIT_WIDTH; i += 1) {
