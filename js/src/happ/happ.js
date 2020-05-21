@@ -119,18 +119,18 @@ class Happ {
 			if (!bootstrap_res) {
 				throw new Error("DHT bootstrap failed!");
 			}
+
+			// Create a PHT interface
+			this.pht = new Hpht({
+				index_attr: Happ.GEO_INDEX_ATTR,
+				dht_lookup_func: peer_node._node_lookup, 
+				dht_lookup_args: [peer_node._req_find_value], 
+				dht_node: peer_node
+			});
+
+			// Idempotently initialize the PHT
+			await this.pht.init();
 		}
-
-		// Create a PHT interface
-		this.pht = new Hpht({
-			index_attr: Happ.GEO_INDEX_ATTR,
-			dht_lookup_func: peer_node._node_lookup, 
-			dht_lookup_args: [peer_node._req_find_value], 
-			dht_node: peer_node
-		});
-
-		// Idempotently initialize the PHT
-		await this.pht.init();
 	}
 }
 
