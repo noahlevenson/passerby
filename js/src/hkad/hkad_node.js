@@ -458,7 +458,6 @@ class Hkad_node {
 		const result = await this._node_lookup(this.node_id);
 		const closest_to_me_sorted = result.payload;
 
-
 		// Now we refresh every k-bucket further away than the closest neighbor I found
 		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
 		// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
@@ -467,7 +466,7 @@ class Hkad_node {
 		// So we want to find the closest node in closest_to_me_sorted that isn't me
 		let i = 0;
 		
-		while (closest_to_me_sorted[i].node_id.equals(this.node_id)) {
+		while (i < closest_to_me_sorted.length && closest_to_me_sorted[i].node_id.equals(this.node_id)) {
 			i += 1;
 		}
 
