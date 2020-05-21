@@ -107,30 +107,29 @@ class Happ {
 			id: this.get_id()
 		});
 
-		// Only bootstrap onto the DHT network if we're not a bootstrap node
-		if (!is_bootstrap) {
-			// TODO: Should we bootstrap on more than one node?
-			let bootstrap_res = false;
+		
+		// TODO: Should we bootstrap on more than one node?
+		let bootstrap_res = false;
 
-			for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && bootstrap_res === false; i += 1) {
-				bootstrap_res = await peer_node.bootstrap({addr: Happ.BOOTSTRAP_NODES[i][0], port: Happ.BOOTSTRAP_NODES[i][1]});
-			}
-
-			if (!bootstrap_res) {
-				throw new Error("DHT bootstrap failed!");
-			}
-
-			// Create a PHT interface
-			this.pht = new Hpht({
-				index_attr: Happ.GEO_INDEX_ATTR,
-				dht_lookup_func: peer_node._node_lookup, 
-				dht_lookup_args: [peer_node._req_find_value], 
-				dht_node: peer_node
-			});
-
-			// Idempotently initialize the PHT
-			await this.pht.init();
+		for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && bootstrap_res === false; i += 1) {
+			bootstrap_res = await peer_node.bootstrap({addr: Happ.BOOTSTRAP_NODES[i][0], port: Happ.BOOTSTRAP_NODES[i][1]});
 		}
+
+		if (!bootstrap_res) {
+			throw new Error("DHT bootstrap failed!");
+		}
+
+		// Create a PHT interface
+		this.pht = new Hpht({
+			index_attr: Happ.GEO_INDEX_ATTR,
+			dht_lookup_func: peer_node._node_lookup, 
+			dht_lookup_args: [peer_node._req_find_value], 
+			dht_node: peer_node
+		});
+
+		// Idempotently initialize the PHT
+		await this.pht.init();
+		
 	}
 }
 
