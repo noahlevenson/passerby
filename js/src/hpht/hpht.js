@@ -84,6 +84,10 @@ class Hpht {
 	// Get a PHT node from the DHT -- returns the node if found, null if not
 	// This is where we rehydrate PHT nodes -- is this the most logical place for that?
 	async _dht_lookup(label = "") {
+		if (label === null) {
+			return null;
+		}
+
 		const label_hash = this._get_label_hash(label);
 		const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
@@ -259,6 +263,9 @@ class Hpht {
 			let old_leaf = leaf;
 			let d = leaf.label.length; 
 
+			// This is <= instead of < because: i have 5 keys, their longest common prefix length is i, which means we need to redistribute them at level d + i
+			// e.g. -- i'm at level 2, and my 5 keys have a lcp length of 2 -- so we do one iteration to create the child nodes, that iteration is the last iteratioon (d === i)
+			// so we distribute the keys into those nodes, make them leaves, and stop iterating
 			while (d <= i) {
 				child0 = new Hpht_node({label: `${old_leaf.label}0`});
 				child1 = new Hpht_node({label: `${old_leaf.label}1`});
@@ -273,6 +280,7 @@ class Hpht {
 				interior_node.children[0x01] = child1.label;
 
 				// If we've reached our final depth, then the children are leaf nodes, so let's distribute the keys to them
+				// When you see this pattern, shouldn't this be a recursive algorithm where we handle the base case (d === i) instead of an iterative one?
 				if (d === i) {
 					pairs.forEach((pair, idx, arr) => {
 						// Sort them into the new children by their ith bit? 
@@ -300,8 +308,7 @@ class Hpht {
 			// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
 		}
 	}
-
-	// This function doesn't work and we never refactored to use Hbigint
+	
 	async delete(key) {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
@@ -312,10 +319,6 @@ class Hpht {
 			return false;
 		}
 
-		// OK so what are the different things that can happen here?  
-		// you can remove a key from a leaf node and the leaf node has more keys in it
-		// you can remove a key from a leaf node and the leaf node has 0 keys in it, but the leaf node's sibling has some keys
-		// you can remove a key from a a leaf node and the leaf node has 0 keys in it and the leaf node's siblings have 0 keys - so these must be collapsed
 		if (!leaf.delete(key)) {
 			// The key wasn't found in the leaf node it's supposed to be found in
 			// TODO: Do we want to handle this? Throw an error or return an error?
@@ -324,62 +327,110 @@ class Hpht {
 			return;
 		}
 
-		if (leaf.size() > 0) {
-			const label_hash = this._get_label_hash(leaf.label);
-			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-			console.log(`[HPHT] Deleted key ${key} from PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
+		const sibling_node = await this._dht_lookup(leaf.get_sibling_label());
+
+		if (sibling_node === null) {
+			throw new Error("Fatal PHT graph error");
+		}
+
+		if (leaf.size() + sibling_node.size() > Hpht.B) {
+			// Simple case: leaf + its sibling node contains more than B keys, so the invariant is maintained
+			console.log(`[HPHT] Deleted key ${key.toString()} from PHT index ${this.index_attr}, leaf ${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})\n`);
 		} else {
-			// Here's the case where we may have to remove some nodes
-			let old_leaf = leaf;
+			// Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
+			const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs());
+
+			pairs.forEach((pair, i, arr) => {
+				arr[i] = [new Hbigint(pair[0]), pair[1]];
+			});
 			
-			// We don't allow deletion of the depth 1 nodes -- maybe this is dumb, and we should allow deletion until only the root node remains?
-			// If we decide to do that, then our init() function should only create a root node, not the depth 1 nodes
-			while (old_leaf.label.length > 1) {
-				const sibling_label = `${old_leaf.label.substring(0, old_leaf.label.length - 1)}${old_leaf.label[old_leaf.label.length - 1] === "0" ? "1" : "0"}`;
-				const sibling_hdata = await this.dht_lookup_func.bind(this.dht_node)(this._get_label_hash(sibling_label), ...this.dht_lookup_args);
+			// Get an array of the binary strings for each (key, val) pair
+			const key_bin_strings = [];
 
-				if (sibling_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.valid_magic(sibling_hdata.payload[0])) {
-					// If we can't find the leaf node for a key, our graph is likely corrupted
-					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
+			pairs.forEach((pair) => {
+				key_bin_strings.push(pair[0].to_bin_str(Hpht.BIT_DEPTH));
+			});
+
+			// Our current depth = the length of our label
+			let d = leaf.get_label().length;
+
+			// Length of the longest common prefix of all keys between leaf and its sibling
+			const i = Hutil._get_lcp(key_bin_strings, true);
+
+			let old_leaf = leaf;
+
+			// d > 1 ensures that we don't delete our level one nodes, since our basic structure consists of root + two children
+			while (d > 1 && d > i) {
+				const parent_node = await this._dht_lookup(old_leaf.get_parent_label());
+
+				if (parent_node === null) {
 					throw new Error("Fatal PHT graph error");
 				}
 
-				const sibling = sibling_hdata.payload[0];
+				parent_node.children[0x00] = null;
+				parent_node.children[0x01] = null;
 
-				if (sibling.size() > 0) {
-					// Our sibling has keys, so we can't remove the nodes at this level
-					break;
+				// Fixing up our parent node's pointers
+				// We need to know if our leaf is a 0 or a 1 node (0 node is "left", 1 node is "right")
+				let child0, child1;
+
+				if (old_leaf.get_label()[old_leaf.get_label().length - 1] === "0") {
+					child0 = old_leaf;
+					child1 = sibling_node;
+				} else {
+					child0 = sibling_node;
+					child1 = old_leaf;
 				}
 
-				// Our sibling also has 0 keys, we gotta delete this level, adjust our parent, and iterate!
-				// TODO: Currently our DHT has no DELETE() operation, so we can't actually remove the PHT node from the network... but maybe we want it?
-				const parent_label = old_leaf.label.substring(0, old_leaf.label.length - 1);
-				const parent_hdata = await this.dht_lookup_func.bind(this.dht_node)(this._get_label_hash(parent_label), ...this.dht_lookup_args);
+				// (get the childrens parent, get the left child's left neighbor, get the right child's right neighbor, set the 
+				// left neighbor's right neighbor to parent, set the right neighbor's left neighbor to parent)
 
-				if (parent_hdata.type !== Hkad_data.TYPE.VAL || !Hpht_node.valid_magic(parent_hdata.payload[0])) {
-					// If we can't find the leaf node for a key, our graph is likely corrupted
-					// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
-					throw new Error("Fatal PHT graph error");
+				const left_neighbor = await this._dht_lookup(child0.ptr_left());
+				const right_neighbor = await this._dht_lookup(child1.ptr_right());
+
+				// Neighbors can be null here -- that just means we reached the left or right end of the tree
+
+				if (left_neighbor !== null) {
+					left_neighbor.set_ptrs({left: left_neighbor.ptr_left(), right: parent_node.get_label()});
 				}
 
-				const parent = parent_hdata.payload[0];
+				if (right_neighbor !== null) {
+					right_neighbor.set_ptrs({left: parent_node.get_label(), right: right_neighbor.ptr_right()});
+				}
 
-				parent.children[0x00] = null;
-				parent.children[0x01] = null;
+				parent_node.set_ptrs({
+					left: left_neighbor !== null ? left_neighbor.get_label() : null, 
+					right: right_neighbor !== null ? right_neighbor.get_label() : null
+				});
 
-				// THIS IS FUCKING BROKEN - DON'T FORGET TO ADJUST OUR PARENT NODE'S POINTERS
-				// get the children's parent
-				// get the left child's left neighbor
-				// get the right child's right neighbor
-				// set the left neighbor's right neighbor to parent
-				// set the right neighbor's left neighbor to parent
+				// We've reached our final depth, so redistribute keys to the parent node
+				if (d - i === 1) {
+					pairs.forEach((pair, idx, arr) => {
+						parent_node.put(pair[0], pair[1]);
+						console.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})\n`);
+					});
+				}
 
-				console.log(`[HPHT] Merging leaves ${old_leaf.label} + ${sibling.label} into ${parent.label}\n`);
-				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.label), parent);
+				// PUT the new leaf node (the parent node) and its non-null right and left neighbors 
+				// TODO: Should we alert the caller if any of the PUTs failed? Either return false (bad pattern) or reject this whole promise (better?)
+				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent_node.get_label()), parent_node);
 
-				old_leaf = parent;
+				if (left_neighbor !== null) {
+					await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(left_neighbor.get_label()), left_neighbor);
+				}
+
+				if (right_neighbor !== null) {
+					await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(right_neighbor.get_label()), right_neighbor);
+				}
+
+				// If we need to iterate, old_leaf must be the parent
+				old_leaf = parent_node;
+
+				d -= 1;
 			}
 		}
+
+		// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
 	}
 
 	// TODO: implement me

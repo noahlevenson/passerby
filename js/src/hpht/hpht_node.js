@@ -68,6 +68,16 @@ class Hpht_node {
 		return this.label;
 	}
 
+	// It it funky to assume that our labels are strings of 0's and 1's? At construction time, we allow the assignment of any string as a label...
+	get_sibling_label() {
+		return `${this.label.substring(0, this.label.length - 1)}${this.label[this.label.length - 1] === "0" ? "1" : "0"}`;
+	}
+
+	// It it funky to assume that our labels are strings of 0's and 1's? At construction time, we allow the assignment of any string as a label...
+	get_parent_label() {
+		return this.label.substring(0, this.label.length - 1);
+	}
+
 	is_leaf() {
 		return (this.children[0x00] === null && this.children[0x01] === null); // TODO: We only must check one because a node can't have only one child
 	}

@@ -63,7 +63,7 @@ my_local_simulator._add_peer(bootstrap_node);
 
 // Now let's add some other nodes to the simulated network
 new Promise((resolve, reject) => {
-	for (let i = 0; i < 100; i += 1) {
+	for (let i = 0; i < 10; i += 1) {
 		(async function() {
 			const message_eng = new Hkad_eng_alpha();
 			const local_simulator = new Hkad_net_sim();
@@ -171,6 +171,25 @@ async function doit() {
 	await larosa_pht._debug_print_stats();
 
 	my_local_simulator._debug_dump_network_state();
+
+	for (let i = 1000; i >= 0; i -= 1) {
+		await larosa_pht.delete(new Hbigint(i));
+	}
+
+	await larosa_pht._debug_print_stats();
+
+	my_local_simulator._debug_dump_network_state();
+
+
+
+
+
+	// await larosa_pht.insert(new Hbigint(1));
+	// await larosa_pht.insert(new Hbigint(2));
+
+	// await larosa_pht._debug_print_stats();
+
+	// my_local_simulator._debug_dump_network_state();
 
 
 
