@@ -441,7 +441,7 @@ class Hkad_node {
 
 		if (node_info === null) {
 			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
-			return;
+			return false;
 		}	
 
 		const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
@@ -475,7 +475,7 @@ class Hkad_node {
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
 
 		// TODO:  Resolve with a result?
-		return;
+		return true;
 	}
 
 	async put(key, val) {
