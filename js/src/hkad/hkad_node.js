@@ -465,11 +465,13 @@ class Hkad_node {
 		// Since I just did a node lookup on myself, it's possible that nodes have reported me as the closest node to myself
 		// So we want to find the closest node in closest_to_me_sorted that isn't me
 		let i = 0;
-		
-		while (i < closest_to_me_sorted.length && closest_to_me_sorted[i].node_id.equals(this.node_id)) {
+
+		// We never evaluate the last element of closest_to_me_sorted - that's OK, because it's either a not-us node_id (we want it) or
+		// all the previous node_id's were our node_id AND the last element is also our node_id, which means we take it either way
+		while (i < closest_to_me_sorted.length - 1 && closest_to_me_sorted[i].node_id.equals(this.node_id)) {
 			i += 1;
 		}
-
+		
 		const distance_to_closest_bro = Hkad_node._get_distance(closest_to_me_sorted[i].node_id, this.node_id);
 		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
 
