@@ -59,12 +59,8 @@ class Happ {
 	}
 
 	// Boot this instance
-	// To boot as a bootstrap node, set is_bootstrap to true and pass an addr and port for ourself
-	async start({is_bootstrap = false, addr = null, port = null} = {}) {
-		if (is_bootstrap && (addr === null || port === null)) {
-			throw new Error("If 'is_bootstrap' === true, 'addr' and 'port' cannot be null");
-		}
-
+	// To boot as a bootstrap node, pass addr and port
+	async start({addr = null, port = null} = {}) {
 		// Give JS Map type a serializer
 		Map.prototype.toJSON = Hutil._map_to_json;
 
@@ -81,8 +77,7 @@ class Happ {
 
 		let addr_port = null;
 
-		if (is_bootstrap) {
-			// Force set our addr and port
+		if (addr !== null && port !== null) {
 			addr_port = [addr, port];
 		} else {
 			// Try all of our known bootstrap nodes' STUN servers to resolve our addr and port (we only need one response)
@@ -107,7 +102,6 @@ class Happ {
 			id: this.get_id()
 		});
 
-		
 		// TODO: Should we bootstrap on more than one node?
 		let bootstrap_res = false;
 
@@ -129,7 +123,6 @@ class Happ {
 
 		// Idempotently initialize the PHT
 		await this.pht.init();
-		
 	}
 }
 
