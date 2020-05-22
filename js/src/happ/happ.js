@@ -4,6 +4,7 @@ const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
 const { Hkad_net_solo } = require("../hkad/net/hkad_net_solo.js");
+const { Hkad_net_sim } = require("../hkad/net/hkad_net_sim.js");
 const { Hgeo_coord } = require("../hgeo/hgeo_coord.js");
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
@@ -23,14 +24,22 @@ class Happ {
 	loc;
 	port;
 	pht;
+	node;
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of the z-curve linearization of our lat/long coords, and a PHT interface (indexing on GEO_INDEX_ATTR)
 	constructor({lat = null, long = null, port = 27500} = {}) {
 		// TODO: validation
+		// Give JS Map type a serializer
+		Map.prototype.toJSON = Hutil._map_to_json;
+
+		// Give JS Map type a deserializer
+		Map.from_json = Hutil._map_from_json;
+
 		this.loc = new Hgeo_coord({lat: lat, long: long});
 		this.port = port;
 		this.pht = null;
+		this.node = null;
 	}
 
 	// Return our location object
@@ -38,7 +47,12 @@ class Happ {
 		return this.loc;
 	}
 
-	// Get our ID - the hash of the z-curve linearization of our lat/long coords
+	// Return a reference to our DHT node
+	get_node() {
+		return this.node;
+	}
+
+	// Get our location-based ID - the hash of the z-curve linearization of our lat/long coords
 	get_id() {
 		return new Hbigint(Hutil._sha1(this.get_location().linearize().toString()));
 	}
@@ -58,15 +72,9 @@ class Happ {
 		return await this.pht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
 	}
 
-	// Boot this instance
+	// Boot this instance and join the network
 	// To boot as a bootstrap node, pass addr and port
 	async start({addr = null, port = null} = {}) {
-		// Give JS Map type a serializer
-		Map.prototype.toJSON = Hutil._map_to_json;
-
-		// Give JS Map type a deserializer
-		Map.from_json = Hutil._map_from_json;
-
 		// Create and boot a UDP transport module
 		const happ_udp_trans = new Htrans_udp({port: this.port});
 		await happ_udp_trans._start();
@@ -91,16 +99,15 @@ class Happ {
 		}
 
 		// Create a DHT node
-		const happ_kad_net = new Hkad_net_solo(happ_udp_trans);
-		const happ_kad_eng = new Hkad_eng_alpha();
-		
 		const peer_node = new Hkad_node({
-			eng: happ_kad_eng, 
-			net: happ_kad_net, 
+			eng: new Hkad_eng_alpha(), 
+			net: new Hkad_net_solo(happ_udp_trans), 
 			addr: addr_port[0],
 			port: addr_port[1],
 			id: this.get_id()
 		});
+
+		this.node = peer_node;
 
 		// TODO: Should we bootstrap on more than one node?
 		let bootstrap_res = false;
@@ -124,6 +131,37 @@ class Happ {
 		// Idempotently initialize the PHT
 		await this.pht.init();
 	}
+
+	// Boot this instance on a local network simulation
+	// local_sim is an instance of Hkad_net_sim
+	// To assign local_sim as this node's net module, set use_local_sim to true
+	// null bootstrap_node means this node is a bootstrap node
+	async _debug_sim_start({bootstrap_node = null, local_sim = null, random_id = true, use_local_sim = false} = {}) {
+		// Create a DHT node
+		const peer_node = new Hkad_node({
+			eng: new Hkad_eng_alpha(), 
+			net: use_local_sim ? local_sim : new Hkad_net_sim(), 
+			id: random_id ? null : this.get_id()
+		});
+
+		this.node = peer_node;
+	
+		local_sim._add_peer(peer_node);
+		await this.node.bootstrap(bootstrap_node === null ? peer_node.node_info : bootstrap_node.get_node());
+
+		// Create a PHT interface
+		this.pht = new Hpht({
+			index_attr: Happ.GEO_INDEX_ATTR,
+			dht_lookup_func: peer_node._node_lookup, 
+			dht_lookup_args: [peer_node._req_find_value], 
+			dht_node: peer_node
+		});
+
+		// Idempotently initialize the PHT
+		await this.pht.init();
+		console.log("");
+	}
 }
+
 
 module.exports.Happ = Happ;
