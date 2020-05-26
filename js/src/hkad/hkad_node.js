@@ -48,6 +48,7 @@ class Hkad_node {
 		}
 
 		// This is our local data store -- I guess we're rehashing keys but whatever
+		// Can we create our own data store class that abstracts the put/get interface please
 		this.data = new Map();
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
