@@ -1,3 +1,12 @@
+/** 
+* HAPP 
+* Top level protocol interface
+*
+*
+*
+*
+*/ 
+
 "use strict";
 
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
@@ -13,7 +22,6 @@ const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
-// Happ is the highest level protocol interface
 class Happ {
 	static GEO_INDEX_ATTR = "___h00dn3t.geoha$h!!";
 
@@ -28,12 +36,10 @@ class Happ {
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of the z-curve linearization of our lat/long coords, and a PHT interface (indexing on GEO_INDEX_ATTR)
+	// TODO: Parameterize this to create different kinds of Happ instances
 	constructor({lat = null, long = null, port = 27500} = {}) {
-		// TODO: validation
-		// Give JS Map type a serializer
+		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Map.prototype.toJSON = Hutil._map_to_json;
-
-		// Give JS Map type a deserializer
 		Map.from_json = Hutil._map_from_json;
 
 		this.loc = new Hgeo_coord({lat: lat, long: long});
@@ -52,12 +58,12 @@ class Happ {
 		return this.node;
 	}
 
-	// Get our location-based ID - the hash of the z-curve linearization of our lat/long coords
+	// Compute our location-based ID - the hash of the z-curve linearization of our lat/long coords
 	get_id() {
 		return new Hbigint(Hutil._sha1(this.get_location().linearize().toString()));
 	}
 
-	// Get the node ID associated with a data (menu) key (key as string)
+	// Compute the node ID associated with a data (menu) key (key as string)
 	get_node_id_for_key(key) {
 		return new Hbigint(Hutil._sha1(key));
 	}
@@ -88,7 +94,7 @@ class Happ {
 		if (addr !== null && port !== null) {
 			addr_port = [addr, port];
 		} else {
-			// Try all of our known bootstrap nodes' STUN servers to resolve our addr and port (we only need one response)
+			// Try all of our known bootstrap nodes' STUN servers to resolve our external addr and port (we only need one response)
 			for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && addr_port === null; i += 1) {
 				addr_port = await happ_stun_service._binding_req(Happ.BOOTSTRAP_NODES[i][0], Happ.BOOTSTRAP_NODES[i][1]);
 			}
@@ -109,7 +115,7 @@ class Happ {
 
 		this.node = peer_node;
 
-		// TODO: Should we bootstrap on more than one node?
+		// TODO: Should we bootstrap with more than one node? Bootstrap with every bootstrap node in our list?
 		let bootstrap_res = false;
 
 		for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && bootstrap_res === false; i += 1) {
@@ -133,9 +139,8 @@ class Happ {
 	}
 
 	// Boot this instance on a local network simulation
-	// local_sim is an instance of Hkad_net_sim
-	// To assign local_sim as this node's net module, set use_local_sim to true
-	// null bootstrap_node means this node is a bootstrap node
+	// local_sim must be an instance of Hkad_net_sim (to assign local_sim as this node's net module, set use_local_sim to true)
+	// To make this node a bootstrap node, just don't supply a value for bootstrap_node
 	async _debug_sim_start({bootstrap_node = null, local_sim = null, random_id = true, use_local_sim = false} = {}) {
 		// Create a DHT node
 		const peer_node = new Hkad_node({
@@ -162,6 +167,5 @@ class Happ {
 		console.log("");
 	}
 }
-
 
 module.exports.Happ = Happ;

@@ -1,4 +1,14 @@
-// Base class for a hoodnet message engine
+/** 
+* HKAD_ENG
+* Base class for an HKAD engine module
+* Engine modules abstract the problem of keeping message state -- correlating previously sent 
+* requests with incoming responses and dispatching the appropriate action
+*
+*
+*/ 
+
+"use strict";
+
 class Hkad_eng {
 	node;
 

@@ -1,6 +1,16 @@
+/** 
+* HGEO_COORD
+* Geographic latidude/longitude coordinate pair
+*
+*
+*
+*
+*/ 
+
+"use strict";
+
 const { Hutil } = require("../hutil/hutil.js");
 
-// Class for an hgeo latitude / longitude coordinate
 class Hgeo_coord {
 	static LIMITS = {
 		LAT_MAX: 90,
@@ -14,7 +24,7 @@ class Hgeo_coord {
 
 	constructor({lat = null, long = null} = {}) {
 		if (typeof lat !== "number" || typeof long !== "number") {
-			throw new Error("Bro you messed up your params");
+			throw new Error("Arguments 'lat' and 'long' must be numbers");
 		}
 
 		if (lat < Hgeo_coord.LIMITS.LAT_MIN || lat > Hgeo_coord.LIMITS.LAT_MAX) {
@@ -29,7 +39,8 @@ class Hgeo_coord {
 		this.long = long;
 	}
 
-	// b = bit depth per dimension
+	// Compute the flattened 1D representation of this coordinate pair
+	// b = bit depth per dimension (if b = 40, then the 1D representation will fit into 80 bits)
 	linearize(b = 40) {
 		const lat = Hutil._float_to_normalized_int(this.lat + Math.abs(Hgeo_coord.LIMITS.LAT_MIN), 
 			Hgeo_coord.LIMITS.LONG_MAX + Math.abs(Hgeo_coord.LIMITS.LONG_MIN), b);

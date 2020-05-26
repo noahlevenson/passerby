@@ -1,6 +1,16 @@
+/** 
+* HGEO_RECT
+* Rectangular geographic "window" as defined by its bottom left (min) and top right (max) vertices
+*
+*
+*
+*
+*/ 
+
+"use strict";
+
 const { Hgeo_coord } = require("./hgeo_coord.js");
 
-// Class for an hgeo rectangle, which is defined by its bottom left (min) vertex and its top right (max) vertex
 class Hgeo_rect {
 	min;
 	max;

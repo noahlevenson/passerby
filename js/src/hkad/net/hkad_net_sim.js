@@ -1,7 +1,17 @@
+/** 
+* HKAD_NET_SIM
+* HKAD net module for a local network simulator
+* When used with HAPP's _debug_sim_start(), this net module
+* lets you simulate an HKAD network on one local machine
+* 
+* 
+*/ 
+
+"use strict";
+
 const { Hkad_net } = require("./hkad_net.js");
 const { Hutil } = require("../../hutil/hutil.js");
 
-// Hkad_net_sim is an HKAD network module that implements a local network simulator
 class Hkad_net_sim extends Hkad_net {
 	static peer_list = new Map();
 

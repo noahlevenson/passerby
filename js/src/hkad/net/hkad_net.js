@@ -1,6 +1,16 @@
+/** 
+* HKAD_NET
+* Base class for an HKAD net module
+* Net modules are HKAD's IO layer: a net module subscribes to some
+* HTRANS module(s) incoming network data events, determine whether incoming
+* data is intended for HKAD, deserializes + validates the data -- and, for
+* outbound data, preps and sends it to HTRANS for transmission
+*/ 
+
+"use strict";
+
 const EventEmitter = require("events");
 
-// Base class for an HKAD network module, which is basically a translation and validation layer that connects an HTRANS data transport to the HKAD_ENG engine
 class Hkad_net {
 	network;
 	node;
