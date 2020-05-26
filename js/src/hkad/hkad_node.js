@@ -1,19 +1,28 @@
+/** 
+* HKAD_NODE
+* An HKAD_NODE is the nucleus of HKAD
+* It implements the Kademlia protocol and wires together an HKAD_ENG
+* with an HKAD_NET to provide a message engine and network I/O 
+*
+*
+*/ 
+
+"use strict";
+
 const crypto = require("crypto");
-const { Hutil } = require("../hutil/hutil.js"); // Hutil is correctly named because its a top level module - the rest below need to be renamed 
+const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_node_info } = require("./hkad_node_info.js");
 const { Hkad_kbucket } = require("./hkad_kbucket.js");
 const { Hkad_msg } = require("./hkad_msg.js");
 const { Hkad_data } = require("./hkad_data.js");
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
-// A hoodnet Kademlia DHT node
 class Hkad_node {
 	static DHT_BIT_WIDTH = 160;
 	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
 
-	DEBUG;
 	net;
 	eng;
 	node_id;
@@ -28,7 +37,6 @@ class Hkad_node {
 		[Hkad_msg.RPC.FIND_VALUE, this._res_find_value]
 	]);
 
-	// REMEMBER TO DELETE port BELOW, WE DON'T USE IT, ITS FOR TESTING ONLY
 	constructor({net = null, eng = null, addr = null, port = null, id = null} = {}) {
 		// TODO: validate that the net and message eng module are instances of the correct base classes and implement the functionality we rely on
 		this.net = net;

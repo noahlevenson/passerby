@@ -1,3 +1,14 @@
+/** 
+* HKAD_KBUCKET
+* Abstracts a Kademlia k-bucket 
+*
+*
+*
+*
+*/ 
+
+"use strict";
+
 // Class for a hoodnet k-bucket
 class Hkad_kbucket {
 	size;
