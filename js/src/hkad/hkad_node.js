@@ -52,7 +52,7 @@ class Hkad_node {
 		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
 		
 		for (let i = 0; i < Hkad_node.DHT_BIT_WIDTH; i += 1) {
-			this.kbuckets.set(i, new Hkad_kbucket({size: Hkad_node.K_SIZE}));
+			this.kbuckets.set(i, new Hkad_kbucket({max_size: Hkad_node.K_SIZE}));
 		}
 
 		// This is our local data store -- I guess we're rehashing keys but whatever
@@ -113,32 +113,33 @@ class Hkad_node {
 		const b = Hutil._log2(d);
 		const bucket = this.get_kbucket(b);
 
-		// I'm worried about a race condition here
-		const i = bucket.exists(msg.from);
+		// I'm worried about a race condition here -- maybe fixed it by making it work with references instead of indexes
+		const node_info = bucket.exists(msg.from.node_id);
 
-		if (i !== null) {
-			bucket.move_to_tail(i);
-			// bucket.print()
+		if (node_info !== null) {
+			bucket.delete(node_info);
+			bucket.enqueue(node_info);
 			return;
 		}
 
 		if (!bucket.is_full()) {
-			bucket._push(msg.from);
+			bucket.enqueue(msg.from);
 			return;
 		}
 
-		this._req_ping(bucket.at(0), (res, ctx) => {
+		this._req_ping(bucket.get(0), (res, ctx) => {
 			const d = Hkad_node._get_distance(res.from.node_id, ctx.node_id);
 			const b = Hutil._log2(d);
 			const bucket = ctx.get_kbucket(b);
 
-			const i = bucket.exists(res.from);
+			const node_info = bucket.exists(res.from.node_id);
 
-			if (i !== null) {
-				bucket.move_to_tail(i);
+			if (node_info !== null) {
+				bucket.delete(node_info);
+				bucket.enqueue(node_info);
 			}
 		}, () => {
-			bucket._push(msg.from);
+			bucket.enqueue(msg.from);
 		});
 	}
 
@@ -406,7 +407,7 @@ class Hkad_node {
 			// (because by default, they're sorted in reverse order of time last seen)
 			// this 'bucket' we create here just holds references to the node_info objects in the kbucket
 			// Since we don't iterate through the actual kbucket, we also solve concurrency issues - but this is pure garbage
-			const bucket = this.get_kbucket(search_order[i]).copy_to_arr();
+			const bucket = this.get_kbucket(search_order[i]).to_array();
 
 			// Sort the bucket by distance from the key -- this is duplicated code, doesn't belong here, requires too much knowledge
 			// of Hkad_node_info structure -- please make this better sir
@@ -460,8 +461,9 @@ class Hkad_node {
 		// We prob want to create an Hkbucket function that wraps both operations in one and use that one exclusively
 		const bucket = this.get_kbucket(b);
 
-		if (!bucket.exists(node_info)) {
-			bucket._push(node_info);
+		// This is now redundant, scrutinize
+		if (!bucket.exists(node_info.node_id)) {
+			bucket.enqueue(node_info);
 		}
 		
 		const result = await this._node_lookup(this.node_id);

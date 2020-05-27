@@ -10,71 +10,68 @@
 "use strict";
 
 class Hkad_kbucket {
-	size;
+	max_size;
 	data;
 
-	constructor({size} = {}) {
-		// TODO: If no size, throw error
-		this.size = size;
+	constructor({max_size} = {}) {
+		this.max_size = max_size;
 		this.data = [];
-
-		for (let i = 0; i < this.size; i += 1) {
-			this.data.push(undefined);
-		}
 	}
 
-	// NEVER call this without first checking if the bucket _exists() first 
-	// TODO: We should probably join the functions to prevent some of the nasty bugs I've enjoyed introducing
-	_push(node_info) {
-		this.data.push(node_info);
-		this.data.shift();
-	}
-
-	at(i) {
+	// Get an Hkad_node_info from this k-bucket by index
+	get(i) {
 		return this.data[i];
 	}
 
-	exists(node_info) {
+	// Has this k-bucket reached max capacity?
+	is_full() {
+		return this.data.length >= this.max_size;
+	}
+
+	// Get current length of this k-bucket
+	length() {
+		return this.data.length;
+	}
+
+	// Enqueue an Hkad_node_info, evicting the least recently seen
+	enqueue(node_info) {
+		// For safety, since all node_infos in our k-bucket must be unique
+		if (this.exists(node_info.node_id)) {
+			return;
+		}
+
+		this.data.push(node_info);
+
+		if (this.data.length > this.max_size) {
+			this.data.shift();
+		}
+	}
+
+	// Check whether an Hkad_node_info with a given node ID exists in this k-bucket
+	// Return a reference to the Hkad_node_info || null 
+	exists(node_id) {
 		for (let i = 0; i < this.data.length; i += 1) {
-			if (this.data[i] && this.data[i].node_id.equals(node_info.node_id)) {
-				return i;
+			if (this.data[i].node_id.equals(node_id)) {
+				return this.data[i];
 			}
 		}
 
 		return null;
 	}
 
-	move_to_tail(i) {
-		const popped = this.data.splice(i, 1)[0];
-		this.data.push(popped);
+	// Delete an Hkad_node_info from this k-bucket
+	// node_info must be a reference to an Hkad_node_info that exists in this k-bucket
+	delete(node_info) {
+		this.data.splice(this.data.indexOf(node_info), 1);
 	}
 
-	is_full() {
-		const res = this.data.every((node_info) => {
-			return node_info !== undefined;
-		});
-
-		return res;
-	}
-
-	length() {
-		return this.data.length;
-	}
-
-	print() {
-		console.log(this.data);
-	}
-
-	// This is a gross hack, let's rethink the entire kbucket implementation to avoid this
-	// Also, it's not even a deep copy -- it's just refs to the node_info objects
-	copy_to_arr() {
+	// Return a shallow copy of this k-bucket's underlying linked list
+	to_array() {
 		const arr = [];
 
-		for (let i = this.data.length - 1; i >= 0; i -= 1) {
-			if (this.data[i]) {
-				arr.push(this.data[i]);
-			}
-		}
+		this.data.forEach((node_info) => {
+			arr.push(node_info);
+		});
 
 		return arr;
 	}
