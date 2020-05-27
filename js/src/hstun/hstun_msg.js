@@ -1,3 +1,14 @@
+/** 
+* HSTUN_MSG
+* Class for a STUN message
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");
 const { Hutil } = require("../hutil/hutil.js"); 

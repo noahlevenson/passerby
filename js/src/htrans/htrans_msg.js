@@ -1,4 +1,14 @@
-// Class for a transport service message object
+/** 
+* HTRANS_MSG
+* Class for an HTRANS message
+* Serialized HTRANS messages (as buffers) are our over-the-wire format
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 class Htrans_msg {
 	static TYPE = {
 		HKAD: 0,

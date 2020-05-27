@@ -1,6 +1,16 @@
+/** 
+* HSTUN_NET
+* Base class for an HSTUN net module
+* Net modules are HSTUN's IO layer: a net module subscribes to some
+* HTRANS module(s) incoming network data events, determine whether incoming
+* data is intended for HSTUN, deserializes + validates the data -- and, for
+* outbound data, preps and sends it to HTRANS for transmission
+*/  
+
+"use strict";
+
 const EventEmitter = require("events");
 
-// Base class for an HSTUN network module, which is basically a translation and validation layer that connects an HTRANS data transport to the HSTUN main brain / services module
 class Hstun_net {
 	network;
 

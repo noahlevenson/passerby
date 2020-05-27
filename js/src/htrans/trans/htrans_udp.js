@@ -1,10 +1,20 @@
+/** 
+* HTRANS_UDP
+* An HTRANS module that sends and receives over UDP
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const dgram = require("dgram");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
 const { Hutil } = require("../../hutil/hutil.js");
 const { Hbigint } = require("../../htypes/hbigint/hbigint_node.js");
 
-// Htrans_udp is our UDP transport service
 class Htrans_udp extends Htrans {
 	socket;
 	port;

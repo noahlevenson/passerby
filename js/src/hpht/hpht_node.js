@@ -1,8 +1,16 @@
+/** 
+* HPHT_NODE
+* Class for a PHT node
+*
+*
+*
+*
+*/ 
+
+"use strict";
+
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
-// Class for a PHT node
-// TODO: I feel like this class, and all classes, should really have getters and setters for everything, and we should stop accessing members directly
-// But maybe we can wait to see where the JS standard for private members lands -- is it going to be adopted? It's what I want to use
 class Hpht_node {
 	static MAGIC_VAL = `${Buffer.from([0x19, 0x81]).toString()}v3ryrar3`;
 	

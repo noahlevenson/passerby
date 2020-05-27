@@ -1,6 +1,16 @@
+/** 
+* HTRANS
+* Base class for a transport service
+* An HTRANS module provides systemwide network IO --
+* every network-enabled component must subscribes to some HTRANS
+* network event(s) to receive data, and send data using some HTRANS
+* _send method
+*/ 
+
+"use strict";
+
 const EventEmitter = require("events");
 
-// Base class for a transport service
 class Htrans {
 	network;
 

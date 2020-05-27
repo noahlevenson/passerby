@@ -1,13 +1,19 @@
+/** 
+* HPHT
+* PHT interface
+* HPHT builds atop HKAD to provide PHT functionality
+* for semantic range queries
+*
+*
+*/ 
+
+"use strict";
+
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
-// The Hpht class implements the PHT protocol 
-// PHT keys must be BigInts in the range of BIT_DEPTH
-
-// Currently, Hpht is essentially glue code that builds atop hkad - it's tightly coupled to the hkad implementation
-// A noble goal would be to make Hpht more generalized for any underlying DHT implementation
 class Hpht {
 	static BIT_DEPTH = 80; // Set this to the bit depth of our input keys - currently out Hgeo linearizations are 80 bit
 	static B = 4; // Max keys per leaf - what's the most optimized value for this? I think smallish B values better distribute the data in the network

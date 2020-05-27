@@ -1,4 +1,14 @@
-// Base class for a hoodnet big integer
+/** 
+* HBIGINT_BASE
+* Base class for a big integer type
+* Large integral values present unique challenges for arithmetic operations,
+* serialization/deserialization, over-the-wire transmission, and runtime
+* environment support -- HBIGINT_BASE provides a universal interface for
+* various host-dependent implementations
+*/ 
+
+"use strict";
+
 class Hbigint_base {
 	static JSON_PREFIX = "__$!0x";
 

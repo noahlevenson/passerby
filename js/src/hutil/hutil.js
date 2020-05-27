@@ -1,8 +1,18 @@
+/** 
+* HUTIL
+* Utility functions
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const crypto = require("crypto");
 const net = require("net");
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
-// Utility functions
 class Hutil {
 	static SYS_BYTE_WIDTH = 8;
 

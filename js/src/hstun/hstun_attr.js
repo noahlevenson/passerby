@@ -1,3 +1,14 @@
+/** 
+* HSTUN_ATTR
+* Class for a STUN message attribute
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_type_data } = require("./hstun_container.js");
 const { Hutil } = require("../hutil/hutil.js"); 

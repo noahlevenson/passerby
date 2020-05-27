@@ -1,8 +1,18 @@
+/** 
+* HSTUN_NET_SOLO
+* An HSTUN net module that subscribes to exactly one HTRANS transport module
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const { Hstun_net } = require("./hstun_net.js");
 const { Htrans } = require("../../htrans/trans/htrans.js");
 const { Htrans_msg } = require("../../htrans/htrans_msg.js");
 
-// Hstun_net_solo is an HSTUN network module that uses exactly one HTRANS transport
 class Hstun_net_solo extends Hstun_net {
 	trans;
 

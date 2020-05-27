@@ -9,7 +9,6 @@
 
 "use strict";
 
-// Class for a hoodnet k-bucket
 class Hkad_kbucket {
 	size;
 	data;

@@ -1,8 +1,17 @@
+/** 
+* HBIGINT_BROWSER
+* Implementation of the HBIGINT_BASE interface for the browser (and React Native) environment
+* It uses BigInteger.js under the hood: https://www.npmjs.com/package/big-integer
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const BigInt = require("big-integer");
 const { Hbigint_base } = require("./hbigint_base.js");
 
-// Class for a hoodnet big integer (Browser implementation)
-// It uses BigInteger.js under the hood: https://www.npmjs.com/package/big-integer
 class Hbigint extends Hbigint_base {
 	// Using the default constructor, an Hbigint can be constructed from a base16 string, a Number, or another Hbigint -- that's it
 	constructor(input) {

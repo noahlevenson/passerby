@@ -1,12 +1,20 @@
+/** 
+* HSTUN
+* STUN protocol interface, providing all client and server functionality
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const crypto = require("crypto");
 const EventEmitter = require("events");
 const { Hstun_msg } = require("./hstun_msg.js");
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");
 
-// The Hstun class provides all STUN server and client function
-// Our first crack at HSTUN is gonna be simpler than HKAD -- we're gonna skip the "NET" layer between HSTUN and HTRANS
-// let's note where this works well and where it doesn't work so well
 class Hstun {
 	static REQ_TIMEOUT = 5000;
 

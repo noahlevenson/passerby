@@ -1,7 +1,16 @@
+/** 
+* HBIGINT_NODE
+* Implementation of the HBIGINT_BASE interface for Node.js >= 12.?
+* It uses native BigInt under the hood
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
 const { Hbigint_base } = require("./hbigint_base.js");
 
-// Class for a hoodnet big integer (Node.js >= 12.? implementation)
-// It uses native BigInt under the hood
 class Hbigint extends Hbigint_base {
 	// Using the default constructor, an Hbigint can be constructed from a base16 string, a Number, or another Hbigint -- that's it
 	constructor(input) {
