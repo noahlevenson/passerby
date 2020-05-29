@@ -13,11 +13,13 @@ class Hkad_kbucket {
 	max_size;
 	data;
 	prefix;
+	touched;
 
 	constructor({max_size, prefix} = {}) {
 		this.max_size = max_size;
 		this.prefix = prefix;
 		this.data = [];
+		this.touch();
 	}
 
 	// Get an Hkad_node_info from this k-bucket by index
@@ -28,6 +30,16 @@ class Hkad_kbucket {
 	// Get this k-bucket's prefix
 	get_prefix() {
 		return this.prefix;
+	}
+
+	// Set time last touched (ms since Unix Epoch)
+	touch() {
+		this.touched = Date.now();
+	}
+
+	// Get time last touched
+	get_touched() {
+		return this.touched;
 	}
 
 	// Has this k-bucket reached max capacity?

@@ -26,6 +26,7 @@ class Hkad_node {
 	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
+	static KBUCKET_REFRESH_INTERVAL = 1000 * 60 * 60;
 
 	net;
 	eng;
@@ -122,10 +123,12 @@ class Hkad_node {
 		_print(this.routing_table.get_root());
 	}
 
-	async _refresh_kbucket(b) {
-		// To refresh k-bucket 20 means to pick a random key in the range of 2^20 - 2^21 and do a "node search" on it -- which I'm assuming means do a node lookup? (as opposed to a find_node?) 
-		// because a find_node is a directed RPC 
-		const random_id = Hkad_node.generate_random_key_between(b, b + 1);
+	// Here's the idea: The point of refreshing a bucket is to force some fresh traffic of contacts that are hopefully within the bucket's range, such that our _update_routing_table function
+	// evicts some contacts and inserts some new ones. To that end, we select a "random ID in the bucket's range" and do a node lookup on it -- asking our peers to tell us what are the K
+	// nodes they know about that are the closest to that ID. To get a "random ID in the bucket's range," we can just select the ID of a random node in the bucket - though it might be more
+	// rigorous to generate a random ID in the bucket's range, as our peers might know about nodes that are closer to some undefined value than they are to the nodes we already know about.
+	async _refresh_kbucket(kbucket) {
+		const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_id;
 		await this._node_lookup(random_id);
 	}
 
@@ -482,6 +485,9 @@ class Hkad_node {
 			return arr;
 		}
 
+		// Touch the bucket covering the key's range so we can refresh pathological cases
+		this.find_kbucket_for_id(key).get_data().touch();
+	
 		const all_nodes = _collect(this.routing_table.get_root());
 
 		all_nodes.sort((a, b) => {
@@ -535,16 +541,18 @@ class Hkad_node {
 		if (!bucket.exists(node_info.node_id)) {
 			bucket.enqueue(node_info);
 		}
+
+		// Now do a node lookup for my own ID and refresh every k-bucket further away than the closest neighbor I found
 		
 		const result = await this._node_lookup(this.node_id);
 		const closest_to_me_sorted = result.payload;
 
-		// Now we refresh every k-bucket further away than the closest neighbor I found
-		// the paper says that during the refresh, we must "populate our own k bucket and insert ourselves into other k buckets as necessary"
-		// but AFAIK this is just describing the natural outcome of the refresh behavior rather than any additional steps we need to take
+		// Here's our plan: get all of our neighbors in a sorted list.  Then find the first index in the list that isn't my own node ID
+		// (since I may appear in the list as the closest node to my own ID...)
+		// Increment i again by one to skip our closest neighbor
+		// Then, for all the remaining nodes, get their associated buckets and collect them as unique entries in a Set
+		// Then do refreshes on all those buckets
 
-		// Since I just did a node lookup on myself, it's possible that nodes have reported me as the closest node to myself
-		// So we want to find the closest node in closest_to_me_sorted that isn't me
 		let i = 0;
 
 		// We never evaluate the last element of closest_to_me_sorted - that's OK, because it's either a not-us node_id (we want it) or
@@ -552,15 +560,60 @@ class Hkad_node {
 		while (i < closest_to_me_sorted.length - 1 && closest_to_me_sorted[i].node_id.equals(this.node_id)) {
 			i += 1;
 		}
-		
-		const distance_to_closest_bro = Hkad_node._get_distance(closest_to_me_sorted[i].node_id, this.node_id);
-		const closest_bro_bucket = Hutil._log2(distance_to_closest_bro);
 
-		for (let i = closest_bro_bucket + 1; i < Hkad_node.DHT_BIT_WIDTH; i += 1) {
-			await this._refresh_kbucket(i);
-		}
+		// i now points to my closest neighbor, so skip that dude
+		i += 1
+
+		const buckets_to_refresh = new Set();
+
+		while (i < closest_to_me_sorted.length) {
+			buckets_to_refresh.add(this.find_kbucket_for_id(closest_to_me_sorted[i].node_id).get_data());
+			i += 1
+		}	
+
+		buckets_to_refresh.forEach((bucket) => {
+			this._refresh_kbucket(bucket);
+		});
 
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
+		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.KBUCKET_REFRESH_INTERVAL / 60 / 60 / 1000).toFixed(1)} hours`);
+
+		const kbucket_refresh_handler = setInterval(() => {
+			// Collect all the buckets from the routing table
+			// cache the current time minus one hour
+			// for any bucket where the touched time < the cached tim
+
+			// This is very duplicated with the _collect method in _new_get_nodes_closest to 
+			// this method just returns an array of buckets, the other returns an array
+			// We should prob put a DFS method on the Hbintree class and have it take a handler function for what to do at each node
+			function _collect(node, arr = []) {
+				if (node.get_left() !== null) {
+					arr = _collect(node.get_left(), arr);
+				}
+
+				if (node.get_right() !== null) {
+					arr = _collect(node.get_right(), arr);
+				}
+
+				const bucket = node.get_data();
+
+				if (bucket !== null) {
+					arr.push(bucket);
+				}
+				
+				return arr;
+			}
+
+			const t1 = Date.now() - Hkad_node.KBUCKET_REFRESH_INTERVAL;
+			const all_buckets = _collect(this.routing_table.get_root());
+
+			all_buckets.forEach((bucket) => {
+				if (bucket.get_touched() < t1) {
+					this._refresh_kbucket(bucket);
+				}
+			});
+
+		}, Hkad_node.KBUCKET_REFRESH_INTERVAL);
 
 		// TODO:  Resolve with a result?
 		return true;
@@ -584,7 +637,7 @@ class Hkad_node {
 		});
 
 		await Promise.all(resolutions);
-		// console.log(`[HKAD] PUT key ${key} (${successful} / ${resolutions.length} OK)`)
+		// console.log(`[HKAD] PUT key ${key.toString()} (${successful} / ${resolutions.length} OK)`)
 		return successful > 0 ? true : false;
 	}
 

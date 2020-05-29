@@ -9,7 +9,7 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
     const local_sim = new Hkad_net_sim();
     await bootstrap_node._debug_sim_start({local_sim: local_sim});
     
-    for (let i = 0; i < 50; i += 1) {
+    for (let i = 0; i < 100; i += 1) {
        const node = new Happ({lat: 0, long: 0});
        await node._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim});
     }
