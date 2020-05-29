@@ -12,15 +12,22 @@
 class Hkad_kbucket {
 	max_size;
 	data;
+	prefix;
 
-	constructor({max_size} = {}) {
+	constructor({max_size, prefix} = {}) {
 		this.max_size = max_size;
+		this.prefix = prefix;
 		this.data = [];
 	}
 
 	// Get an Hkad_node_info from this k-bucket by index
 	get(i) {
 		return this.data[i];
+	}	
+
+	// Get this k-bucket's prefix
+	get_prefix() {
+		return this.prefix;
 	}
 
 	// Has this k-bucket reached max capacity?

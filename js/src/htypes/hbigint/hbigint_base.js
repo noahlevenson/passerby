@@ -86,6 +86,10 @@ class Hbigint_base {
 		throw new Error("Subclasses must implement the to_bin_str() method");
 	}
 
+	get_bit(i) {
+		throw new Error("Subclasses must implement the get_bit() method");
+	}
+
 	toString() {
 		throw new Error("Subclasses must implement the toString() method");
 	}

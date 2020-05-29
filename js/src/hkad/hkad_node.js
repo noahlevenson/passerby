@@ -11,10 +11,14 @@
 
 const crypto = require("crypto");
 const { Hutil } = require("../hutil/hutil.js");
+const { Hkad_net } = require("./net/hkad_net.js");
+const { Hkad_eng } = require("./eng/hkad_eng.js");
 const { Hkad_node_info } = require("./hkad_node_info.js");
 const { Hkad_kbucket } = require("./hkad_kbucket.js");
 const { Hkad_msg } = require("./hkad_msg.js");
 const { Hkad_data } = require("./hkad_data.js");
+const { Hbintree } = require("../htypes/hbintree/hbintree.js");
+const { Hbintree_node } = require("../htypes/hbintree/hbintree_node.js");
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 class Hkad_node {
@@ -27,7 +31,7 @@ class Hkad_node {
 	eng;
 	node_id;
 	node_info;
-	kbuckets;
+	routing_table;
 	data;
 
 	RPC_RES_EXEC = new Map([
@@ -37,8 +41,19 @@ class Hkad_node {
 		[Hkad_msg.RPC.FIND_VALUE, this._res_find_value]
 	]);
 
+	// net must be an Hkad_net net module, eng must be an Hkad_eng eng module
+	// addr and port must be the values that the outside world needs to contact this node
+	// (if this isn't meant to be a bootstrap node, you probably want to do NAT traversal first)
+	// WARNING: nothing prevents you from creating an ID collision! Don't create an ID collision.
 	constructor({net = null, eng = null, addr = null, port = null, id = null} = {}) {
-		// TODO: validate that the net and message eng module are instances of the correct base classes and implement the functionality we rely on
+		if (!(net instanceof Hkad_net)) {
+			throw new TypeError("Argument 'net' must be instance of Hkad_net");
+		}
+
+		if (!(eng instanceof Hkad_eng)) {
+			throw new TypeError("Argument 'eng' must be instance of Hkad_eng");
+		}
+
 		this.net = net;
 		this.eng = eng;
 
@@ -49,11 +64,9 @@ class Hkad_node {
 		// but for our first one-machine network tests, we'll just manually supply a port...
 		this.node_info = new Hkad_node_info({addr: addr, port: port, node_id: new Hbigint(this.node_id)});
 
-		this.kbuckets = new Map(); // Is it more accurate to call this the routing table?
-		
-		for (let i = 0; i < Hkad_node.DHT_BIT_WIDTH; i += 1) {
-			this.kbuckets.set(i, new Hkad_kbucket({max_size: Hkad_node.K_SIZE}));
-		}
+		// Here's the new bro
+		this.routing_table = new Hbintree();
+		this.routing_table.get_root().set_data(new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: ""}));
 
 		// This is our local data store -- I guess we're rehashing keys but whatever
 		// Can we create our own data store class that abstracts the put/get interface please
@@ -65,7 +78,7 @@ class Hkad_node {
 		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the network module to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
 	}
 
-	// key1 and key2 are Hbigints
+	// Get XOR "distance" between two Hbigint values
 	static _get_distance(key1, key2) {
 		return key1.xor(key2);
 	}
@@ -74,16 +87,6 @@ class Hkad_node {
 	// TODO: This is cryptographically insecure and pretty crappy
 	// Let's figure out how to do this properly when we implement a real portable system that doesn't realy on BigInts
 	static generate_random_key_between(min = 0, max = this.DHT_BIT_WIDTH) {
-		// let min_bigint = 2n ** BigInt(min);
-		// const max_bigint = 2n ** BigInt(max);
-		// const diff = max_bigint - min_bigint;
-		// const bits_needed = Hutil._log2(diff) || 1;
-		// const bytes_needed = Math.ceil(bits_needed / Hutil.SYS_BYTE_WIDTH);
-		// const extra_bits = (bytes_needed * Hutil.SYS_BYTE_WIDTH) - bits_needed;
-		// const random_bytes_buf = crypto.randomBytes(bytes_needed);
-		// random_bytes_buf[0] &= (0xFF >> extra_bits);
-		// return min_bigint + BigInt(`0x${random_bytes_buf.toString("hex")}`);
-
 		let min_bigint = (new Hbigint(2)).pow(new Hbigint(min));
 		const max_bigint = (new Hbigint(2)).pow(new Hbigint(max));
 		const diff = max_bigint.sub(min_bigint);
@@ -96,9 +99,27 @@ class Hkad_node {
 		return min_bigint.add(new Hbigint(random_bytes_buf.toString("hex")));
 	}
 
-	// Get a REFERENCE to a kbucket
-	get_kbucket(i) {
-		return this.kbuckets.get(i);
+	// Currently prints DFS
+	_debug_print_routing_table() {
+		function _print(node) {
+			if (node.get_left() !== null) {
+				_print(node.get_left());
+			}
+
+			if (node.get_right() !== null) {
+				_print(node.get_right());
+			}
+
+			const bucket = node.get_data();
+
+			if (bucket !== null) {
+				console.log(`[HKAD] prefix "${bucket.get_prefix()}" - ${bucket.length()} contacts`);
+			}
+		}
+
+		console.log(`\n******************************************`);
+		console.log(`[HKAD] HKAD_NODE _DEBUG_PRINT_ROUTING_TABLE:`);
+		_print(this.routing_table.get_root());
 	}
 
 	async _refresh_kbucket(b) {
@@ -108,39 +129,75 @@ class Hkad_node {
 		await this._node_lookup(random_id);
 	}
 
-	_update_kbucket(msg) {
-		const d = Hkad_node._get_distance(msg.from.node_id, this.node_id);
-		const b = Hutil._log2(d);
-		const bucket = this.get_kbucket(b);
+	// Find the appropriate leaf node in the routing table for a given node ID
+	find_kbucket_for_id(id) {
+		let node = this.routing_table.get_root();
+		let i = 0;
 
-		// I'm worried about a race condition here -- maybe fixed it by making it work with references instead of indexes
-		const node_info = bucket.exists(msg.from.node_id);
+		// TODO: I think this can be simplified, since our tree seems to be a perfect tree -- leafs always split into two children
+		// so we don't need to know the value of b before we enter the loop - we can just say "while this node's children are not null, keep going"
+		while (true) {
+			const b = id.get_bit(i);
+
+			if (node.get_child_bin(b) === null) {
+				break;
+			}
+
+			node = node.get_child_bin(b);
+			i += 1;
+		}
+
+		return node;
+	}
+
+	_update_routing_table(inbound_node_info) {
+		let leaf_node = this.find_kbucket_for_id(inbound_node_info.node_id);
+		let bucket = leaf_node.get_data();
+		const node_info = bucket.exists(inbound_node_info.node_id);
 
 		if (node_info !== null) {
+			// We've already seen this node in this bucket, so just move it to the tail
 			bucket.delete(node_info);
-			bucket.enqueue(node_info);
-			return;
-		}
+			bucket.enqueue(inbound_node_info);
+		} else if (node_info === null && !bucket.is_full()) {
+			// We've never seen this node and the appropriate bucket isn't full, so just insert it
+			bucket.enqueue(inbound_node_info);
+		} else {
+			// We've never seen this node but the appropriate bucket is full
+			const our_bucket = this.find_kbucket_for_id(this.node_id).get_data();
 
-		if (!bucket.is_full()) {
-			bucket.enqueue(msg.from);
-			return;
-		}
+			if (bucket === our_bucket) {
+				// The incoming node_info's bucket's range includes our ID, so split the bucket
+				const left_child = new Hbintree_node({
+					parent: leaf_node, 
+					data: new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: `${bucket.get_prefix()}0`})
+				});
 
-		this._req_ping(bucket.get(0), (res, ctx) => {
-			const d = Hkad_node._get_distance(res.from.node_id, ctx.node_id);
-			const b = Hutil._log2(d);
-			const bucket = ctx.get_kbucket(b);
+				const right_child = new Hbintree_node({
+					parent: leaf_node,
+					data: new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: `${bucket.get_prefix()}1`})
+				});
 
-			const node_info = bucket.exists(res.from.node_id);
+				leaf_node.set_left(left_child);
+				leaf_node.set_right(right_child);
+				leaf_node.set_data(null);
 
-			if (node_info !== null) {
-				bucket.delete(node_info);
-				bucket.enqueue(node_info);
+				// Redistribute the node_infos from the old bucket to the new leaves
+				bucket.to_array().forEach((node_info) => {
+					const b = node_info.node_id.get_bit(bucket.get_prefix().length);
+					leaf_node.get_child_bin(b).get_data().enqueue(node_info);
+				});
+
+				// Attempt reinsertion
+				this._update_routing_table(inbound_node_info);
+			} else {
+				// This is the confusing/contradictory case - either we're supposed to just discard the new contact, or we're supposed to ping the oldest contact 
+				// in the bucket (below) to decide if we evict/replace or discard 
+				// NO, YOU KNOW WHAT IT IS? 
+				// per the optimizations in section 4.1, you're actually not supposed to do the ping for every new contact --
+				// instead, you're supposed to add the new contact to the "replacement cache" and then do a lazy replacement the next time you need to access the bucket
 			}
-		}, () => {
-			bucket.enqueue(msg.from);
-		});
+		}
 	}
 
 	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
@@ -196,7 +253,7 @@ class Hkad_node {
 					resolve_find_nodes();
 				}
 				
-				const our_current_k_size_bro = ctx._get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
+				const our_current_k_size_bro = ctx._new_get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
 
 				// Wow this is terrible
 				// It's how we handle the base case: If all SIZE_K of the closest nodes in our node map have been queried, then we're done
@@ -212,7 +269,7 @@ class Hkad_node {
 				}
 
 				// console.log(`${returnable.length} - ${our_current_k_size_bro}`)
-				// console.log(ctx._get_nodes_closest_to(key, Hkad_node.K_SIZE))
+				// console.log(ctx._new_get_nodes_closest_to(key, Hkad_node.K_SIZE))
 
 				if (returnable.length >= our_current_k_size_bro) {
 					resolve_node_lookup(new Hkad_data({type: Hkad_data.TYPE.NODE_LIST, payload: returnable}));
@@ -252,7 +309,7 @@ class Hkad_node {
 
 					// Here we check the hail mary condition
 					if (Hkad_node._get_distance(key, new_sorted[0].node_id) >= closest_bro) {
-						const current_k_number = ctx._get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
+						const current_k_number = ctx._new_get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
 						const k_closest_nodes_we_havent_queried = [];
 
 						// TODO: I'm not sure what the original paper calls for: Is our node_map supposed to max out at SIZE_K items?
@@ -277,7 +334,12 @@ class Hkad_node {
 				});
 			}
 
-			const node_infos = this._get_nodes_closest_to(key, Hkad_node.ALPHA);
+			const node_infos = this._new_get_nodes_closest_to(key, Hkad_node.ALPHA);
+
+			// console.log(key)
+			// console.log(node_infos);
+
+
 			const node_map = new Map();
 			
 			node_infos.forEach((node_info) => {
@@ -360,7 +422,7 @@ class Hkad_node {
 	}
 
 	_res_find_node(req) {
-		const nodes = this._get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
+		const nodes = this._new_get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
 
 		return new Hkad_msg({
 			rpc: Hkad_msg.RPC.FIND_NODE,
@@ -376,7 +438,7 @@ class Hkad_node {
 		let type = Hkad_data.TYPE.VAL;
 		
 		if (!payload[0]) {
-			payload = this._get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
+			payload = this._new_get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
 			type = Hkad_data.TYPE.NODE_LIST;
 		}
 
@@ -394,33 +456,39 @@ class Hkad_node {
 		this.eng._send(res, msg.from)
 	}
 
-	_get_nodes_closest_to(key, max = Hkad_node.K_SIZE) {
-		const d = Hkad_node._get_distance(key, this.node_id);
-		const b = Hutil._log2(d);
-
-		const nodes = [];
-		const search_order = Hutil._sort_by_distance_from(Array.from(this.kbuckets.keys()), b);
-
-		for (let i = 0; i < search_order.length && nodes.length < max; i += 1) {
-			// TODO: So, because our k-bucket implementation sucks so bad, we have this hack--
-			// we extract the non-undefined values from the kbucket so that we can sort them by distance
-			// (because by default, they're sorted in reverse order of time last seen)
-			// this 'bucket' we create here just holds references to the node_info objects in the kbucket
-			// Since we don't iterate through the actual kbucket, we also solve concurrency issues - but this is pure garbage
-			const bucket = this.get_kbucket(search_order[i]).to_array();
-
-			// Sort the bucket by distance from the key -- this is duplicated code, doesn't belong here, requires too much knowledge
-			// of Hkad_node_info structure -- please make this better sir
-			bucket.sort((a, b) => {
-				return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
-			})
-
-			for (let j = 0; j < bucket.length && nodes.length < max; j += 1) {
-				nodes.push(new Hkad_node_info(bucket[j]));
+	// Simplest unoptimized solution: collect all the nodes we know about by performing
+	// an arbitrary traversal of the entire routing table (we do DFS here), sort nodes by 
+	// distance from the key and return the min of the 'max' argument and the length of the collected nodes
+	// TODO: This can be optimized by starting our search at the leaf node and visiting 
+	// adjacent buckets in the routing table that are mathematically closest to us,
+	// ending the search when our collected nodes have reached or exeeced 'max' -- then we
+	// sort the collected nodes by distance from the key and return the correct amount
+	_new_get_nodes_closest_to(key, max = Hkad_node.K_SIZE) {
+		function _collect(node, arr = []) {
+			if (node.get_left() !== null) {
+				arr = _collect(node.get_left(), arr);
 			}
-		}	
 
-		return nodes;
+			if (node.get_right() !== null) {
+				arr = _collect(node.get_right(), arr);
+			}
+
+			const bucket = node.get_data();
+
+			if (bucket !== null) {
+				arr = arr.concat(bucket.to_array());
+			}
+			
+			return arr;
+		}
+
+		const all_nodes = _collect(this.routing_table.get_root());
+
+		all_nodes.sort((a, b) => {
+			return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
+		});
+
+		return all_nodes.splice(0, Math.min(max, all_nodes.length));
 	}
 
 	// **** PUBLIC API ****
@@ -454,12 +522,14 @@ class Hkad_node {
 			return false;
 		}	
 
-		const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
-		const b = Hutil._log2(d);
+		// const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
+		// const b = Hutil._log2(d);
 
 		// You never want to call the _push() method of hkad_kbucket without first checking if the node exists() first...
 		// We prob want to create an Hkbucket function that wraps both operations in one and use that one exclusively
-		const bucket = this.get_kbucket(b);
+		// const bucket = this.get_kbucket(b);
+
+		const bucket = this.find_kbucket_for_id(node_info.node_id).get_data();
 
 		// This is now redundant, scrutinize
 		if (!bucket.exists(node_info.node_id)) {
@@ -490,7 +560,7 @@ class Hkad_node {
 			await this._refresh_kbucket(i);
 		}
 
-		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
 
 		// TODO:  Resolve with a result?
 		return true;

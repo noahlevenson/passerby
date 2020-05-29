@@ -110,6 +110,12 @@ class Hbigint extends Hbigint_base {
 		return this.data.toString(2).split("").reverse().join("").padEnd(b, "0");
 	}
 
+	// TODO: This really needs to be tested
+	get_bit(i) {
+		const mask = BigInt(0x01).shiftLeft(BigInt(i));
+		return (this.data.and(mask)).greater(BigInt(0)) ? 1 : 0;
+	}
+
 	toString() {
 		return this.data.toString(16);
 	}
