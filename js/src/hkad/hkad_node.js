@@ -446,6 +446,12 @@ class Hkad_node {
 
 		const ds_rec = this.network_data.get(req.data.payload[0].toString());
 
+		// Lazy deletion - the requested data exists but has expired, so delete it from our data store
+		if (ds_rec && Date.now() > (ds_rec.get_created() + ds_rec.get_ttl())) {
+			this.network_data.delete(req.data.payload[0].toString());
+			ds_rec = undefined;
+		}
+
 		if (ds_rec) {
 			payload = [ds_rec.get_data()];
 			type = Hkad_data.TYPE.VAL;

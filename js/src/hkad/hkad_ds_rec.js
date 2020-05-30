@@ -11,6 +11,7 @@
 
 class Hkad_ds_rec {
 	ttl;
+	created;
 	data;
 
 	constructor({ttl, data} = {}) {
@@ -20,14 +21,19 @@ class Hkad_ds_rec {
 
 		this.ttl = ttl;
 		this.data = data;
+		this.created = Date.now();
 	}
 
-	get_data() {
-		return this.data;
+	get_created() {
+		return this.created;
 	}
 
 	get_ttl() {
 		return this.ttl;
+	}
+
+	get_data() {
+		return this.data;
 	}
 }
 

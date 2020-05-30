@@ -18,6 +18,9 @@ class Hkad_ds {
 		this.data = new Map();
 	}
 
+	// TODO: maybe put should require a key, an Hkad_ds_rec object, and that's it --
+	// it shouldn't concern itself with notions of TTL -- in fact, we should prob
+	// create a heritable Hkad_ds_rec base class so there can be diff kinds of records w diff fields etc
 	put({key, val, ttl} = {}) {
 		const rec = new Hkad_ds_rec({
 			ttl: ttl,
