@@ -34,11 +34,15 @@ class Hkad_net_sim extends Hkad_net {
 		let total_data_objects = 0;
 
 		nodes.forEach((node) => {
-			const pairs = Array.from(node.data.entries());
+			const pairs = Array.from(node.network_data.entries());
 
 			pairs.forEach((pair) => {
 				total_data_objects += 1;
-				unique_data_objects.set(Hutil._sha1(JSON.stringify(pair[1])), pair[0]);
+
+				// We look for stale data collisions - occurances where multiple pieces of unique data were stored on the network
+				// using the same key -- by idempotently inserting the hash of each data object's data into a map, then comparing
+				// the occurances in the map against the total occurances of data associated with the data's key
+				unique_data_objects.set(Hutil._sha1(JSON.stringify(pair[1].get_data())), pair[0]);
 			});
 		});
 

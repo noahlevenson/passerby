@@ -16,6 +16,7 @@ const { Hkad_eng } = require("./eng/hkad_eng.js");
 const { Hkad_node_info } = require("./hkad_node_info.js");
 const { Hkad_kbucket } = require("./hkad_kbucket.js");
 const { Hkad_msg } = require("./hkad_msg.js");
+const { Hkad_ds } = require("./hkad_ds.js");
 const { Hkad_data } = require("./hkad_data.js");
 const { Hbintree } = require("../htypes/hbintree/hbintree.js");
 const { Hbintree_node } = require("../htypes/hbintree/hbintree_node.js");
@@ -26,8 +27,11 @@ class Hkad_node {
 	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
-	static KBUCKET_REFRESH_INTERVAL = 1000 * 60 * 60;
-
+	static T_KBUCKET_REFRESH = 1000 * 60 * 60; // How often do we check for pathological stale k-bucket cases and force a refresh on them?
+	static T_DATA_TTL = (1000 * 60 * 60 * 24) + (1000 * 10); // How long does data live on this network? Include grace period to prevent race condition with T_REPUBLISH
+	static T_REPUBLISH = 1000 * 60 * 60 * 24; // How often do we republish data that we are the original publishers of? (We must republish before T_DATA_TTL or our data will get wiped)
+	static T_REPLICATE = 1000 * 60 * 60; // How often do we republish our entire data store?
+	
 	net;
 	eng;
 	node_id;
@@ -72,9 +76,7 @@ class Hkad_node {
 		this.routing_table = new Hbintree();
 		this.routing_table.get_root().set_data(new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: ""}));
 
-		// This is our local data store -- I guess we're rehashing keys but whatever
-		// Can we create our own data store class that abstracts the put/get interface please
-		this.data = new Map();
+		this.network_data = new Hkad_ds();
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our net module reference and call its out() method
@@ -408,7 +410,11 @@ class Hkad_node {
 	}
 
 	_res_store(req) {
-		this.data.set(req.data.payload[0].toString(), req.data.payload[1]);
+		this.network_data.put({
+			key: req.data.payload[0].toString(),
+			val: req.data.payload[1],
+			ttl: Hkad_node.T_DATA_TTL
+		});
 
 		return new Hkad_msg({
 			rpc: Hkad_msg.RPC.STORE,
@@ -432,10 +438,15 @@ class Hkad_node {
 	}
 
 	_res_find_value(req) {
-		let payload = [this.data.get(req.data.payload[0].toString())];
-		let type = Hkad_data.TYPE.VAL;
-		
-		if (!payload[0]) {
+		let payload;
+		let type;
+
+		const ds_rec = this.network_data.get(req.data.payload[0].toString());
+
+		if (ds_rec) {
+			payload = [ds_rec.get_data()];
+			type = Hkad_data.TYPE.VAL;
+		} else {
 			payload = this._new_get_nodes_closest_to(req.data.payload[0], Hkad_node.K_SIZE);
 			type = Hkad_data.TYPE.NODE_LIST;
 		}
@@ -561,12 +572,12 @@ class Hkad_node {
 		});
 
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
-		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.KBUCKET_REFRESH_INTERVAL / 60 / 60 / 1000).toFixed(1)} hours`);
+		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
 
 		// Idempotently start the bucket refresh interval
 		if (this.refresh_interval_handle === null) {
 			this.refresh_interval_handle = setInterval(() => {
-				const t1 = Date.now() - Hkad_node.KBUCKET_REFRESH_INTERVAL;
+				const t1 = Date.now() - Hkad_node.T_KBUCKET_REFRESH;
 
 				const all_buckets = this.routing_table.dfs((node, data) => {
 					const bucket = node.get_data();
@@ -583,7 +594,7 @@ class Hkad_node {
 						this._refresh_kbucket(bucket);
 					}
 				});
-			}, Hkad_node.KBUCKET_REFRESH_INTERVAL);
+			}, Hkad_node.T_KBUCKET_REFRESH);
 		}  
 
 		// TODO:  Resolve with a result?
