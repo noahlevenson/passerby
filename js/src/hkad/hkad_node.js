@@ -33,6 +33,7 @@ class Hkad_node {
 	node_id;
 	node_info;
 	routing_table;
+	refresh_interval_handle;
 	data;
 
 	RPC_RES_EXEC = new Map([
@@ -54,6 +55,8 @@ class Hkad_node {
 		if (!(eng instanceof Hkad_eng)) {
 			throw new TypeError("Argument 'eng' must be instance of Hkad_eng");
 		}
+
+		this.refresh_interval_handle = null;
 
 		this.net = net;
 		this.eng = eng;
@@ -100,27 +103,18 @@ class Hkad_node {
 		return min_bigint.add(new Hbigint(random_bytes_buf.toString("hex")));
 	}
 
-	// Currently prints DFS
+	// Prints DFS
 	_debug_print_routing_table() {
-		function _print(node) {
-			if (node.get_left() !== null) {
-				_print(node.get_left());
-			}
+		console.log(`\n******************************************`);
+		console.log(`[HKAD] HKAD_NODE _DEBUG_PRINT_ROUTING_TABLE:`);
 
-			if (node.get_right() !== null) {
-				_print(node.get_right());
-			}
-
+		this.routing_table.dfs((node, data) => {
 			const bucket = node.get_data();
-
+			
 			if (bucket !== null) {
 				console.log(`[HKAD] prefix "${bucket.get_prefix()}" - ${bucket.length()} contacts`);
 			}
-		}
-
-		console.log(`\n******************************************`);
-		console.log(`[HKAD] HKAD_NODE _DEBUG_PRINT_ROUTING_TABLE:`);
-		_print(this.routing_table.get_root());
+		});
 	}
 
 	// Here's the idea: The point of refreshing a bucket is to force some fresh traffic of contacts that are hopefully within the bucket's range, such that our _update_routing_table function
@@ -129,6 +123,7 @@ class Hkad_node {
 	// rigorous to generate a random ID in the bucket's range, as our peers might know about nodes that are closer to some undefined value than they are to the nodes we already know about.
 	async _refresh_kbucket(kbucket) {
 		const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_id;
+		console.log(`[HKAD] Refreshing k-bucket for range including ID ${random_id.toString()}`);
 		await this._node_lookup(random_id);
 	}
 
@@ -467,28 +462,18 @@ class Hkad_node {
 	// ending the search when our collected nodes have reached or exeeced 'max' -- then we
 	// sort the collected nodes by distance from the key and return the correct amount
 	_new_get_nodes_closest_to(key, max = Hkad_node.K_SIZE) {
-		function _collect(node, arr = []) {
-			if (node.get_left() !== null) {
-				arr = _collect(node.get_left(), arr);
-			}
-
-			if (node.get_right() !== null) {
-				arr = _collect(node.get_right(), arr);
-			}
-
-			const bucket = node.get_data();
-
-			if (bucket !== null) {
-				arr = arr.concat(bucket.to_array());
-			}
-			
-			return arr;
-		}
-
-		// Touch the bucket covering the key's range so we can refresh pathological cases
+		// Touch the bucket so we know it's not a pathological case
 		this.find_kbucket_for_id(key).get_data().touch();
-	
-		const all_nodes = _collect(this.routing_table.get_root());
+
+		const all_nodes = this.routing_table.dfs((node, data) => {
+			const bucket = node.get_data();
+			
+			if (bucket !== null) {
+				data = data.concat(bucket.to_array());
+			}
+
+			return data;
+		});
 
 		all_nodes.sort((a, b) => {
 			return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
@@ -578,42 +563,28 @@ class Hkad_node {
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
 		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.KBUCKET_REFRESH_INTERVAL / 60 / 60 / 1000).toFixed(1)} hours`);
 
-		const kbucket_refresh_handler = setInterval(() => {
-			// Collect all the buckets from the routing table
-			// cache the current time minus one hour
-			// for any bucket where the touched time < the cached tim
+		// Idempotently start the bucket refresh interval
+		if (this.refresh_interval_handle === null) {
+			this.refresh_interval_handle = setInterval(() => {
+				const t1 = Date.now() - Hkad_node.KBUCKET_REFRESH_INTERVAL;
 
-			// This is very duplicated with the _collect method in _new_get_nodes_closest to 
-			// this method just returns an array of buckets, the other returns an array
-			// We should prob put a DFS method on the Hbintree class and have it take a handler function for what to do at each node
-			function _collect(node, arr = []) {
-				if (node.get_left() !== null) {
-					arr = _collect(node.get_left(), arr);
-				}
+				const all_buckets = this.routing_table.dfs((node, data) => {
+					const bucket = node.get_data();
 
-				if (node.get_right() !== null) {
-					arr = _collect(node.get_right(), arr);
-				}
+					if (bucket !== null) {
+						data.push(bucket);
+					}
 
-				const bucket = node.get_data();
-
-				if (bucket !== null) {
-					arr.push(bucket);
-				}
-				
-				return arr;
-			}
-
-			const t1 = Date.now() - Hkad_node.KBUCKET_REFRESH_INTERVAL;
-			const all_buckets = _collect(this.routing_table.get_root());
-
-			all_buckets.forEach((bucket) => {
-				if (bucket.get_touched() < t1) {
-					this._refresh_kbucket(bucket);
-				}
-			});
-
-		}, Hkad_node.KBUCKET_REFRESH_INTERVAL);
+					return data;
+				});
+			
+				all_buckets.forEach((bucket) => {
+					if (bucket.get_touched() < t1) {
+						this._refresh_kbucket(bucket);
+					}
+				});
+			}, Hkad_node.KBUCKET_REFRESH_INTERVAL);
+		}  
 
 		// TODO:  Resolve with a result?
 		return true;
