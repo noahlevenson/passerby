@@ -35,6 +35,10 @@ class Hkad_ds {
 	entries() {
 		return this.data.entries();
 	}
+
+	delete(key) {
+		return this.data.delete(key);
+	}
 }
 
 module.exports.Hkad_ds = Hkad_ds;

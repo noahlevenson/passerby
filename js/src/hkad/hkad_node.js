@@ -28,7 +28,7 @@ class Hkad_node {
 	static K_SIZE = 20;
 	static ALPHA = 3;
 	static T_KBUCKET_REFRESH = 1000 * 60 * 60; // How often do we check for pathological stale k-bucket cases and force a refresh on them?
-	static T_DATA_TTL = (1000 * 60 * 60 * 24) + (1000 * 10); // How long does data live on this network? Include grace period to prevent race condition with T_REPUBLISH
+	static T_DATA_TTL = (1000 * 60 * 60 * 24) + (1000 * 20); // How long does data live on this network? Include grace period to prevent race condition with T_REPUBLISH
 	static T_REPUBLISH = 1000 * 60 * 60 * 24; // How often do we republish data that we are the original publishers of? (We must republish before T_DATA_TTL or our data will get wiped)
 	static T_REPLICATE = 1000 * 60 * 60; // How often do we republish our entire data store?
 	
@@ -38,6 +38,7 @@ class Hkad_node {
 	node_info;
 	routing_table;
 	refresh_interval_handle;
+	republish_interval_handle;
 	data;
 
 	RPC_RES_EXEC = new Map([
@@ -61,6 +62,7 @@ class Hkad_node {
 		}
 
 		this.refresh_interval_handle = null;
+		this.republish_interval_handle = null;
 
 		this.net = net;
 		this.eng = eng;
@@ -77,6 +79,7 @@ class Hkad_node {
 		this.routing_table.get_root().set_data(new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: ""}));
 
 		this.network_data = new Hkad_ds();
+		this.rp_data = new Hkad_ds();
 
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our net module reference and call its out() method
@@ -573,7 +576,10 @@ class Hkad_node {
 
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
 		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
+		console.log(`[HKAD] Data republish interval ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
 
+		// Maybe these kinds of initialization things below can be moved to an _init() function
+		
 		// Idempotently start the bucket refresh interval
 		if (this.refresh_interval_handle === null) {
 			this.refresh_interval_handle = setInterval(() => {
@@ -595,13 +601,30 @@ class Hkad_node {
 					}
 				});
 			}, Hkad_node.T_KBUCKET_REFRESH);
-		}  
+		}
+
+		// Idempotently start the data republish interval
+		if (this.republish_interval_handle === null) {
+			this.republish_interval_handle = setInterval(() => {
+				this.rp_data.forEach((val, key) => {
+					this.put(key, val, true);
+				});
+			}, Hkad_node.T_REPUBLISH);
+		}
 
 		// TODO:  Resolve with a result?
 		return true;
 	}
 
-	async put(key, val) {
+	async put(key, val, rp = false) {
+		if (rp) {
+			this.rp_data.put({
+				key: key,
+				val: val,
+				ttl: Hkad_node.T_DATA_TTL
+			});
+		}
+
 		const result = await this._node_lookup(key);
 		const kclosest = result.payload;
 		const resolutions = [];
@@ -626,6 +649,10 @@ class Hkad_node {
 	async get(key) {
 		const result = await this._node_lookup(key, this._req_find_value);
 		return result;
+	}
+
+	delete(key) {
+		return this.rp_data.delete(key);
 	}
 }
 
