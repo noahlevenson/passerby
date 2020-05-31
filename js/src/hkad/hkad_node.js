@@ -436,10 +436,21 @@ class Hkad_node {
 	}
 
 	_res_store(req) {
+		// Compute the TTL
+		// The number of nodes between us and the key is approximated from the 
+		// tree depth of the respective buckets
+		const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
+		const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
+
+		const dd1 = Math.pow(2, d1);
+		const dd2 = Math.pow(2, d2);
+
+		const ttl = Math.floor(Hkad_node.T_DATA_TTL * (1 / Math.pow(2, Math.max(dd1, dd2) - Math.min(dd1, dd2))));
+
 		this.network_data.put({
 			key: req.data.payload[0].toString(),
 			val: req.data.payload[1],
-			ttl: Hkad_node.T_DATA_TTL
+			ttl: ttl
 		});
 
 		return new Hkad_msg({
@@ -467,7 +478,7 @@ class Hkad_node {
 		let payload;
 		let type;
 
-		const ds_rec = this.network_data.get(req.data.payload[0].toString());
+		let ds_rec = this.network_data.get(req.data.payload[0].toString());
 
 		// Lazy deletion - the requested data exists but has expired, so delete it from our data store
 		if (ds_rec && Date.now() > (ds_rec.get_created() + ds_rec.get_ttl())) {
@@ -654,7 +665,7 @@ class Hkad_node {
 			this.rp_data.put({
 				key: key,
 				val: val,
-				ttl: Hkad_node.T_DATA_TTL
+				ttl: Number.POSITIVE_INFINITY
 			});
 		}
 
