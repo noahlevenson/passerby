@@ -26,7 +26,7 @@ class Hkad_eng_alpha extends Hkad_eng {
 	
 	_on_message(msg) {
 		// TODO: Is it safe to assume that the message is an Hkad_msg?
-		this.node._update_routing_table(msg.from);
+		this.node._routing_table_insert(msg.from);
 		
 		if (msg.type === Hkad_msg.TYPE.RES) {
 			this.res.emit(`${Hkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`, msg);

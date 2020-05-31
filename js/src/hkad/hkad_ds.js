@@ -36,7 +36,7 @@ class Hkad_ds {
 
 	// Get a 2D array of all [key, val] pairs
 	entries() {
-		return this.data.entries();
+		return Array.from(this.data.entries());
 	}
 
 	delete(key) {

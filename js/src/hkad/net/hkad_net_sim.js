@@ -34,7 +34,7 @@ class Hkad_net_sim extends Hkad_net {
 		let total_data_objects = 0;
 
 		nodes.forEach((node) => {
-			const pairs = Array.from(node.network_data.entries());
+			const pairs = node.network_data.entries();
 
 			pairs.forEach((pair) => {
 				total_data_objects += 1;

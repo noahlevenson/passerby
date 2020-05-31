@@ -153,7 +153,11 @@ class Hkad_node {
 		return node;
 	}
 
-	_update_routing_table(inbound_node_info) {
+	// This function sucks - it does a lot of different kinds of shit - it decides if a contact
+	// needs to be inserted, splits buckets in the routing table tree, replicates data to new contacts...
+	// we need to straighten out the design of this: how and why does Hkad_eng_alpha initiate the process
+	// of inserting new contacts into the routing table, and appropriately replicating data to them?
+	_routing_table_insert(inbound_node_info) {
 		let leaf_node = this.find_kbucket_for_id(inbound_node_info.node_id);
 		let bucket = leaf_node.get_data();
 		const node_info = bucket.exists(inbound_node_info.node_id);
@@ -165,6 +169,22 @@ class Hkad_node {
 		} else if (node_info === null && !bucket.is_full()) {
 			// We've never seen this node and the appropriate bucket isn't full, so just insert it
 			bucket.enqueue(inbound_node_info);
+
+			// Replicate any of our data that is appropriate to this new node
+			this.network_data.entries().forEach((pair) => {
+				const key = new Hbigint(pair[0]);
+				const cnodes = this._new_get_nodes_closest_to(key);
+
+				// If the new node is one of the K closest nodes to this key AND I'm closer to the key than any of my neighbors (or 
+				// the new node is now closer to the key than I am) -- then replicate this (key, value) pair to the new node
+				if (cnodes.includes(inbound_node_info) && 
+						(Hkad_node._get_distance(this.node_id, key).less_equal(Hkad_node._get_distance(cnodes[0].node_id, key) || 
+							cnodes[0] === inbound_node_info))) {
+					
+					console.log(`[HKAD] Replicating ${key.toString()} to new node ${inbound_node_info.node_id.toString()}`);
+					this._req_store(key, pair[1].get_data(), inbound_node_info); 
+				}
+			});
 		} else {
 			// We've never seen this node but the appropriate bucket is full
 			const our_bucket = this.find_kbucket_for_id(this.node_id).get_data();
@@ -191,14 +211,17 @@ class Hkad_node {
 					leaf_node.get_child_bin(b).get_data().enqueue(node_info);
 				});
 
-				// Attempt reinsertion
-				this._update_routing_table(inbound_node_info);
+				// Attempt reinsertion via recursion
+				this._routing_table_insert(inbound_node_info);
 			} else {
 				// This is the confusing/contradictory case - either we're supposed to just discard the new contact, or we're supposed to ping the oldest contact 
 				// in the bucket (below) to decide if we evict/replace or discard 
 				// NO, YOU KNOW WHAT IT IS? 
 				// per the optimizations in section 4.1, you're actually not supposed to do the ping for every new contact --
 				// instead, you're supposed to add the new contact to the "replacement cache" and then do a lazy replacement the next time you need to access the bucket
+
+				// Also a nagging question:  If a "new contact" is discarded (or moved to the replacement cache), we're definitely not supposed to replicate our data
+				// to them... right?  Is it mathematically possible for that to happen?
 			}
 		}
 	}
@@ -543,6 +566,7 @@ class Hkad_node {
 		const bucket = this.find_kbucket_for_id(node_info.node_id).get_data();
 
 		// This is now redundant, scrutinize
+		// But also aren't we possibly inserting our own contact info into the routing table in a really ugly way????
 		if (!bucket.exists(node_info.node_id)) {
 			bucket.enqueue(node_info);
 		}
@@ -582,7 +606,7 @@ class Hkad_node {
 
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
 		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
-		console.log(`[HKAD] Data republish interval ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
+		console.log(`[HKAD] Data republish interval: ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
 
 		// Maybe these kinds of initialization things below can be moved to an _init() function
 		
@@ -622,6 +646,9 @@ class Hkad_node {
 		return true;
 	}
 
+	// Publish data to the peer network
+	// If rp = true, we'll republish data every T_REPUBLISH ms 
+	// Data that is not republished will expire after T_DATA_TTL ms
 	async put(key, val, rp = false) {
 		if (rp) {
 			this.rp_data.put({
@@ -657,6 +684,10 @@ class Hkad_node {
 		return result;
 	}
 
+	// Delete (or "unpublish") data from the peer network
+	// You can only delete data that you are the original publisher of
+	// Deletion is synonymous with "cease republication of" -- so 
+	// deleted data will start to disappear from the network after T_DATA_TTL ms
 	delete(key) {
 		return this.rp_data.delete(key);
 	}
