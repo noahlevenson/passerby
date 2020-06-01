@@ -67,7 +67,7 @@ class Hkad_node {
 		this.net = net;
 		this.eng = eng;
 
-		this.node_id = id || Hkad_node.generate_random_key_between(); // You sure you wanna be able to do this bro?
+		this.node_id = id || Hkad_node.get_random_key(); // You sure you wanna be able to do this bro?
 
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
@@ -92,20 +92,8 @@ class Hkad_node {
 		return key1.xor(key2);
 	}
 
-	// min and max are the log2 of your desired integer range: 2^min - 2^max
-	// TODO: This is cryptographically insecure and pretty crappy
-	// Let's figure out how to do this properly when we implement a real portable system that doesn't realy on BigInts
-	static generate_random_key_between(min = 0, max = this.DHT_BIT_WIDTH) {
-		let min_bigint = (new Hbigint(2)).pow(new Hbigint(min));
-		const max_bigint = (new Hbigint(2)).pow(new Hbigint(max));
-		const diff = max_bigint.sub(min_bigint);
-		const bits_needed = Math.max(Hutil._log2(diff), 1);
-		const bytes_needed = Math.ceil(bits_needed / Hutil.SYS_BYTE_WIDTH);
-		const extra_bits = (bytes_needed * Hutil.SYS_BYTE_WIDTH) - bits_needed;
-		const random_bytes_buf = crypto.randomBytes(bytes_needed);
-		random_bytes_buf[0] &= (0xFF >> extra_bits);
-
-		return min_bigint.add(new Hbigint(random_bytes_buf.toString("hex")));
+	static get_random_key(len = Hkad_node.ID_LEN) {
+		return new Hbigint(crypto.randomBytes(len).toString("hex"));
 	}
 
 	// Prints DFS
@@ -383,7 +371,7 @@ class Hkad_node {
 			rpc: Hkad_msg.RPC.PING,
 			from: new Hkad_node_info(this.node_info),
 			type: Hkad_msg.TYPE.REQ,
-			id: Hkad_node.generate_random_key_between()
+			id: Hkad_node.get_random_key()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
@@ -395,7 +383,7 @@ class Hkad_node {
 			from: new Hkad_node_info(this.node_info),
 			type: Hkad_msg.TYPE.REQ,
 			data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
-			id: Hkad_node.generate_random_key_between()
+			id: Hkad_node.get_random_key()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
@@ -407,7 +395,7 @@ class Hkad_node {
 			from: new Hkad_node_info(this.node_info),
 			type: Hkad_msg.TYPE.REQ,
 			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
-			id: Hkad_node.generate_random_key_between()
+			id: Hkad_node.get_random_key()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
@@ -419,7 +407,7 @@ class Hkad_node {
 			from: new Hkad_node_info(this.node_info),
 			type: Hkad_msg.TYPE.REQ,
 			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
-			id: Hkad_node.generate_random_key_between()
+			id: Hkad_node.get_random_key()
 		});
 
 		this.eng._send(msg, node_info, success, timeout);
