@@ -39,6 +39,7 @@ class Hkad_node {
 	routing_table;
 	refresh_interval_handle;
 	republish_interval_handle;
+	replicate_interval_handle;
 	data;
 
 	RPC_RES_EXEC = new Map([
@@ -608,6 +609,7 @@ class Hkad_node {
 		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
 		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
 		console.log(`[HKAD] Data republish interval: ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
+		console.log(`[HKAD] Replication interval: ${(Hkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
 
 		// Maybe these kinds of initialization things below can be moved to an _init() function
 		
@@ -637,10 +639,24 @@ class Hkad_node {
 		// Idempotently start the data republish interval
 		if (this.republish_interval_handle === null) {
 			this.republish_interval_handle = setInterval(() => {
-				this.rp_data.forEach((val, key) => {
-					this.put(key, val, true);
+				this.rp_data.entries().forEach((pair) => {
+					this.put(new Hbigint(pair[0]), pair[1].get_data(), true);
 				});
 			}, Hkad_node.T_REPUBLISH);
+		}
+
+		// Idempotently start the data replication interval
+		if (this.replicate_interval_handle === null) {
+			this.replicate_interval_handle = setInterval(() => {
+				this.network_data.entries().forEach((pair) => {
+					const t1 = Date.now();
+
+					// If no one has issued a STORE on this data over the last hour and the data isn't expired, let's do a PUT on it
+					if (t1 > (pair[1].get_created() + Hkad_node.T_REPLICATE) && t1 < (pair[1].get_created() + pair[1].get_ttl())) {
+						this.put(new Hbigint(pair[0]), pair[1].get_data());
+					}
+				});
+			}, Hkad_node.T_REPLICATE);
 		}
 
 		// TODO:  Resolve with a result?
