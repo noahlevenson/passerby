@@ -251,7 +251,7 @@ class Hkad_node {
 				res.push(new Promise((resolve, reject) => {
 					this[rpc.name](key, node.get_data(), (res, ctx) => {
 						if (res.data.type === Hkad_data.TYPE.VAL) {
-							resolve(res.data.payload);
+							resolve([res.data.payload, active.bst_min()]);
 						}	
 
 						active.bst_insert(new Hbintree_node({data: res.from}), _by_distance.bind(this));
@@ -308,7 +308,13 @@ class Hkad_node {
 		}
 
 		if (val) {
-			return new Hkad_data({type: Hkad_data.TYPE.VAL, payload: val});
+			if (val[1] !== null) {
+				this._req_store(key, val[0], val[1].get_data(), (res, ctx) => {
+					console.log(`[HKAD] Stored ${key} to closest non-returning node ${val[1].get_data().node_id}`);
+				});
+			}
+
+			return new Hkad_data({type: Hkad_data.TYPE.VAL, payload: val[0]});
 		}
 
 		const sorted = active.inorder((node, data) => {
