@@ -478,92 +478,7 @@ class Hkad_node {
 		return all_nodes.splice(0, Math.min(max, all_nodes.length));
 	}
 
-	// **** PUBLIC API ****
-
-	async bootstrap({addr = null, port = null, node_id = null} = {}) {
-		// You can bootstrap with an addr + port OR just an ID
-		// You'd use an ID for local testing
-		// This is crap code and needs to be cleaned up
-		let node_info;
-
-		if (addr === null && port === null && node_id instanceof Hbigint) {
-			node_info = new Hkad_node_info({addr: addr, port: port, node_id: node_id});
-		} else {
-			// Here's another case where we have to wrap an RPC in a promise because we didn't implement them as async functions...
-			// Is it worth rethinking?
-			node_info = await new Promise((resolve, reject) => {
-				// Why the -1 Hbigint? Well, we always want to include a node_id in a node_info that we pass to an RPC primitive
-				// That's because Hkad_net may check an outgoing message's node_id to see if we're trying to send a message to ourself
-				this._req_ping({addr: addr, port: port, node_id: new Hbigint(-1)}, (res, ctx) => {
-					resolve(res.from);
-				}, () => {
-					resolve(null);
-				});
-			});
-		}
-		
-		console.log(`[HKAD] Joining network as ${this.node_id.toString()} via bootstrap node ${addr}:${port}...`);
-
-		if (node_info === null) {
-			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
-			return false;
-		}	
-
-		// const d = Hkad_node._get_distance(node_info.node_id, this.node_id);
-		// const b = Hutil._log2(d);
-
-		// You never want to call the _push() method of hkad_kbucket without first checking if the node exists() first...
-		// We prob want to create an Hkbucket function that wraps both operations in one and use that one exclusively
-		// const bucket = this.get_kbucket(b);
-
-		const bucket = this.find_kbucket_for_id(node_info.node_id).get_data();
-
-		// This is now redundant, scrutinize
-		// But also aren't we possibly inserting our own contact info into the routing table in a really ugly way????
-		if (!bucket.exists(node_info.node_id)) {
-			bucket.enqueue(node_info);
-		}
-
-		// Now do a node lookup for my own ID and refresh every k-bucket further away than the closest neighbor I found
-		
-		const result = await this._node_lookup(this.node_id);
-		const closest_to_me_sorted = result.payload;
-
-		// Here's our plan: get all of our neighbors in a sorted list.  Then find the first index in the list that isn't my own node ID
-		// (since I may appear in the list as the closest node to my own ID...)
-		// Increment i again by one to skip our closest neighbor
-		// Then, for all the remaining nodes, get their associated buckets and collect them as unique entries in a Set
-		// Then do refreshes on all those buckets
-
-		let i = 0;
-
-		// We never evaluate the last element of closest_to_me_sorted - that's OK, because it's either a not-us node_id (we want it) or
-		// all the previous node_id's were our node_id AND the last element is also our node_id, which means we take it either way
-		while (i < closest_to_me_sorted.length - 1 && closest_to_me_sorted[i].node_id.equals(this.node_id)) {
-			i += 1;
-		}
-
-		// i now points to my closest neighbor, so skip that dude
-		i += 1
-
-		const buckets_to_refresh = new Set();
-
-		while (i < closest_to_me_sorted.length) {
-			buckets_to_refresh.add(this.find_kbucket_for_id(closest_to_me_sorted[i].node_id).get_data());
-			i += 1
-		}	
-
-		buckets_to_refresh.forEach((bucket) => {
-			this._refresh_kbucket(bucket);
-		});
-
-		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
-		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
-		console.log(`[HKAD] Data republish interval: ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
-		console.log(`[HKAD] Replication interval: ${(Hkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
-
-		// Maybe these kinds of initialization things below can be moved to an _init() function
-		
+	_init_intervals() {
 		// Idempotently start the bucket refresh interval
 		if (this.refresh_interval_handle === null) {
 			this.refresh_interval_handle = setInterval(() => {
@@ -587,6 +502,8 @@ class Hkad_node {
 			}, Hkad_node.T_KBUCKET_REFRESH);
 		}
 
+		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
+
 		// Idempotently start the data republish interval
 		if (this.republish_interval_handle === null) {
 			this.republish_interval_handle = setInterval(() => {
@@ -595,6 +512,8 @@ class Hkad_node {
 				});
 			}, Hkad_node.T_REPUBLISH);
 		}
+
+		console.log(`[HKAD] Data republish interval: ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
 
 		// Idempotently start the data replication interval
 		if (this.replicate_interval_handle === null) {
@@ -610,7 +529,64 @@ class Hkad_node {
 			}, Hkad_node.T_REPLICATE);
 		}
 
-		// TODO:  Resolve with a result?
+		console.log(`[HKAD] Replication interval: ${(Hkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
+	}
+
+	// **** PUBLIC API ****
+
+	// Supply an addr + port (real world) or just a node_id (local simulation)
+	async bootstrap({addr = null, port = null, node_id = null} = {}) {
+		let node_info;
+
+		if (addr && port) {
+			node_info = await new Promise((resolve, reject) => {
+				this._req_ping({addr: addr, port: port, node_id: new Hbigint(-1)}, (res, ctx) => { // node_id of -1 because we must always supply a value
+					resolve(res.from);
+				}, () => {
+					resolve(null);
+				});
+			});
+		} else if (node_id instanceof Hbigint) {
+			node_info = new Hkad_node_info({addr: addr, port: port, node_id: node_id});
+		} else {
+			throw new TypeError("Argument error");
+		}
+
+		console.log(`[HKAD] Joining network as ${this.node_id.toString()} via bootstrap node ${addr}:${port}...`);
+
+		if (node_info === null) {
+			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
+			return false;
+		}	
+
+		const bucket = this.find_kbucket_for_id(node_info.node_id).get_data();
+		bucket.enqueue(node_info);
+
+		// Do a node lookup for my own ID and refresh every k-bucket further away than the closest neighbor I found
+		const res = await this._node_lookup(this.node_id);
+		const closest_nodes = res.payload;
+
+		let i = 0;
+
+		while (i < closest_nodes.length - 1 && closest_nodes[i].node_id.equals(this.node_id)) {
+			i += 1;
+		}
+
+		i += 1
+
+		const buckets = new Set();
+
+		while (i < closest_nodes.length) {
+			buckets.add(this.find_kbucket_for_id(closest_nodes[i].node_id).get_data());
+			i += 1
+		}	
+
+		buckets.forEach((bucket) => {
+			this._refresh_kbucket(bucket);
+		});
+
+		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
+		this._init_intervals();
 		return true;
 	}
 
