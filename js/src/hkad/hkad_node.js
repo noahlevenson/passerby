@@ -76,8 +76,9 @@ class Hkad_node {
 		this.node_info = new Hkad_node_info({addr: addr, port: port, node_id: new Hbigint(this.node_id)});
 
 		// Here's the new bro
-		this.routing_table = new Hbintree();
-		this.routing_table.get_root().set_data(new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: ""}));
+		this.routing_table = new Hbintree(new Hbintree_node({
+			data: new Hkad_kbucket({max_size: Hkad_node.K_SIZE, prefix: ""})
+		}));
 
 		this.network_data = new Hkad_ds();
 		this.rp_data = new Hkad_ds();
@@ -171,7 +172,7 @@ class Hkad_node {
 							cnodes[0] === inbound_node_info))) {
 					
 					console.log(`[HKAD] Replicating ${key.toString()} to new node ${inbound_node_info.node_id.toString()}`);
-					this._req_store(key, pair[1].get_data(), inbound_node_info); 
+					this._req_store(key, pair[1].get_data(), inbound_node_info);
 				}
 			});
 		} else {
@@ -215,158 +216,107 @@ class Hkad_node {
 		}
 	}
 
-	// BRO, we need to make sure keys are strings when they need to be strings and BigInt objects when they need to be BigInt objects
-	_node_lookup(key, find_rpc = this._req_find_node) {
-		return new Promise((resolve_node_lookup, reject_node_lookup) => {
-			function _do_node_lookup(res, ctx) {
-				// We preapply one of the Promise arguments to this callback, so res and ctx are shifted 
-				const resolve_find_nodes = arguments[0];
-				res = arguments[1];
-				ctx = arguments[2];
+	async _node_lookup(key, rpc = this._req_find_node) {
+		// BST comparator function to insert by distance from the key in the closure
+		function _by_distance(node, oldnode) {
+			if (Hkad_node._get_distance(key, node.get_data().node_id).equals(Hkad_node._get_distance(key, oldnode.get_data().node_id))) {
+				return 0;
+			}	
 
-				// If we received a value type, that means this was a FIND instruction and we received the jackpot - terminate immediately
-				if (res.data.type === Hkad_data.TYPE.VAL) {
-					resolve_node_lookup(new Hkad_data({type: Hkad_data.TYPE.VAL, payload: res.data.payload}));
-					return;
+			return Hkad_node._get_distance(key, node.get_data().node_id).less(Hkad_node._get_distance(key, oldnode.get_data().node_id)) ? -1 : 1;
+		}
 
-					// TODO: Are we worried about any unresolved promises we may have left dangling?
-				}
-
-				// We've heard back from a node (the sender is in the res.from field). 
-				// If it's already in our map, let's update it to be queried
-				// If it's not already in our map, let's add it as a queried node
-
-				// *** This exploits the JavaScript map property that inserting a value with the same key will just overwrite it
-				const sender = res.from;
-				sender.queried = true;
-				node_map.set(Hkad_node._get_distance(key, res.from.node_id).toString(), sender);
-
-				// Now we want to deal with the list of nodes that the sender has given us, and we want to add them to our map if they're unique
-				// Again exploit the map property that we can just overwrite old keys
-				res.data.payload.forEach((node_info) => {
-					// No - you actually don't want to stomp the node with a false queried value, because it's possible someone's giving
-					// us a node in a list that we've already talked to and we want to retain its queried status
-
-					const existing_node = node_map.get(Hkad_node._get_distance(key, node_info.node_id).toString());
-
-					if (!existing_node) {
-						node_info.queried = false;
-						node_map.set(Hkad_node._get_distance(key, node_info.node_id).toString(), node_info);
-					}
-				});
-
-				// Now we set up for the recursion:  
-				// Pick the ALPHA closest nodes from the node map that we have not yet queried and send each of them a find_node request
-				// This is very slow: we coerce a hashmap into an array and then sort the array, recalculating distance twice per comparison
-				const sorted = Array.from(node_map.values()).sort((a, b) => {
-					return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
-				});
-
-				// THE NEW MAP IS SET HERE - SO THIS IS WHERE THE FUNCTION WOULD RESOLVE IF WE'RE WAITING FOR ALL 3
-
-				if (typeof resolve_find_nodes === "function") {
-					resolve_find_nodes();
-				}
-				
-				const our_current_k_size_bro = ctx._new_get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
-
-				// Wow this is terrible
-				// It's how we handle the base case: If all SIZE_K of the closest nodes in our node map have been queried, then we're done
-				// and we should return all SIZE_K of the nodes in our node map
-				
-				// You should just be able to do this with one splice statement
-				const returnable = [];
-
-				for (let i = 0; i < our_current_k_size_bro && i < sorted.length; i += 1) {
-					if (sorted[i].queried) {
-						returnable.push(sorted[i]);
-					}
-				}
-
-				// console.log(`${returnable.length} - ${our_current_k_size_bro}`)
-				// console.log(ctx._new_get_nodes_closest_to(key, Hkad_node.K_SIZE))
-
-				if (returnable.length >= our_current_k_size_bro) {
-					resolve_node_lookup(new Hkad_data({type: Hkad_data.TYPE.NODE_LIST, payload: returnable}));
-					return;
-				}
-
-				// Now we want the ALPHA number of unqueried nodes in the closest SIZE_K number of nodes in our node_map
-				// NOTE: similar to the "hail mary" condition below, there's some ambiguity in the paper -- when we 
-				// look for the closest unqueried nodes to query next, do we consider the entire length of node_map, or 
-				// do we essentially think about node_map as being a fixed length equal to our current SIZE_K?
-				const node_infos = [];
-
-				for (let i = 0; i < sorted.length && i < our_current_k_size_bro && node_infos.length < Hkad_node.ALPHA; i += 1) {
-					if (!sorted[i].queried) {
-						node_infos.push(sorted[i]);
-					}
-				}
-
-				const closest_bro = Hkad_node._get_distance(key, sorted[0].node_id);
-				const resolutions = [];
-
-				node_infos.forEach((node_info) => {
-					resolutions.push(new Promise((resolve, reject) => {
-						ctx[find_rpc.name](key, node_info, _do_node_lookup.bind(this, resolve), () => { // Weird thing we should test - we also pass resolve
-							resolve();																      // to the failure callback, because we want to use
-						});																				  // Promise.all() to test for their completion
-					}));
-				});
-
-				// If a full round of find_node instructions has failed to find a node that's any closer than the closest one we'd previously seen,
-				// we send a round of find_node instructions to all of the SIZE_K nodes we haven't already queried
-				// TODO: Is this "hail mary" round supposed to trigger recursions?  I mean, I think so, right?
-				Promise.all(resolutions).then((values) => {
-					const new_sorted = Array.from(node_map.values()).sort((a, b) => {
-						return Hkad_node._get_distance(key, a.node_id).greater(Hkad_node._get_distance(key, b.node_id)) ? 1 : -1;
-					});
-
-					// Here we check the hail mary condition
-					if (Hkad_node._get_distance(key, new_sorted[0].node_id) >= closest_bro) {
-						const current_k_number = ctx._new_get_nodes_closest_to(key, Hkad_node.K_SIZE).length;
-						const k_closest_nodes_we_havent_queried = [];
-
-						// TODO: I'm not sure what the original paper calls for: Is our node_map supposed to max out at SIZE_K items?
-						// or are we always supposed to consider an unbounded list of unqueried nodes?
-						// This also applies above where we look for unqueried nodes in the map -- if we limit it to the first SIZE_K 
-						// items, we effectively decide that the node_map is a fixed length of SIZE_K items
-						for (let i = 0; i < new_sorted.length && i < current_k_number && k_closest_nodes_we_havent_queried.length < current_k_number; i += 1) {
-							if (!new_sorted[i].queried) {
-								k_closest_nodes_we_havent_queried.push(new_sorted[i]);
-							}
-						}
-
-						if (k_closest_nodes_we_havent_queried.length > 0 ) {
-							// console.log("WE FOUND A HAIL MARY CASE, HERE'S HOW MANY NODES WE HAVEN'T QUERIED: " + k_closest_nodes_we_havent_queried.length)
-						}	
-						
-
-						k_closest_nodes_we_havent_queried.forEach((node_info) => {
-							this[find_rpc.name](key, node_info, _do_node_lookup.bind(this, null));
-						});
-					}
-				});
+		// BST comparator function to search by node ID in a BST ordered by distance from the key in the closure
+		function _by_node_id(k, node) {
+			if (k.node_id.equals(node.get_data().node_id)) {
+				return 0;
 			}
 
-			const node_infos = this._new_get_nodes_closest_to(key, Hkad_node.ALPHA);
+			return Hkad_node._get_distance(key, k.node_id).less(Hkad_node._get_distance(key, node.get_data().node_id)) ? -1 : 1;
+		}
 
-			// console.log(key)
-			// console.log(node_infos);
+		// Send the RPCs and maintain the node lists - if a value is returned, it returns that value, otherwise returns undefined
+		async function _do_node_lookup(active, inactive, rsz = Hkad_node.ALPHA) {
+			const contacts = [];
+			let node = inactive.bst_min();
 
+			while (node !== null && contacts.length < rsz) {
+				contacts.push(node);
+				node = inactive.bst_successor(node);
+			}
 
-			const node_map = new Map();
+			const res = [];
 			
-			node_infos.forEach((node_info) => {
-				this[find_rpc.name](key, node_info, _do_node_lookup.bind(this, null));
+			contacts.forEach((node) => {
+				res.push(new Promise((resolve, reject) => {
+					this[rpc.name](key, node.get_data(), (res, ctx) => {
+						if (res.data.type === Hkad_data.TYPE.VAL) {
+							resolve(res.data.payload);
+						}	
+
+						active.bst_insert(new Hbintree_node({data: res.from}), _by_distance.bind(this));
+						inactive.bst_delete(node);
+
+						res.data.payload.forEach((node_info) => {
+							if (active.bst_search(_by_node_id.bind(this), node_info) === null) {
+								inactive.bst_insert(new Hbintree_node({data: node_info}), _by_distance.bind(this));
+							}
+						});
+
+						resolve(null);
+					}, () => {
+						inactive.bst_delete(node);
+						resolve(null);
+					});
+
+				}));
 			});
+
+			return await Promise.all(res).then((values) => {
+				if (values[0]) {
+					return values[0];
+				}
+			});
+		}
+
+		// *** INIT ***
+		const active = new Hbintree();
+		const inactive = new Hbintree();
+
+		this._new_get_nodes_closest_to(key, Hkad_node.ALPHA).forEach((node_info) => {
+			inactive.bst_insert(new Hbintree_node({data: node_info}), _by_distance.bind(this));
 		});
+
+		let lc;
+		let val;
+	
+		// *** MAIN LOOP ***
+		while (active.size() < Hkad_node.K_SIZE && !val) {
+			const c = active.bst_min();
+			const isz = inactive.size();
+
+			if (c === lc && isz === 0) {
+				break;
+			} else if (c === lc && isz > 0) {
+				val = await _do_node_lookup.bind(this, active, inactive, isz)();
+			} else {
+				lc = c;
+				val = await _do_node_lookup.bind(this, active, inactive)();
+			}
+		}
+
+		if (val) {
+			return new Hkad_data({type: Hkad_data.TYPE.VAL, payload: val});
+		}
+
+		const sorted = active.inorder((node, data) => {
+			data.push(node.get_data());
+			return data;	
+		});
+
+		return new Hkad_data({type: Hkad_data.TYPE.NODE_LIST, payload: sorted});
 	}
 
-	// How our RPC req/res system works:
-	// If you want to make an RPC req, you call the appropriate RPC function and specify what you want to want to do with the response in a callback -- 
-	// your Heng module is responsible for figuring out how to keep track of the process (some Heng modules might keep messages as state in a queue and implement GC for timeouts, some might just use promises...)
-	// Similarly, your Heng module is responsible for determining what is an incoming RPC req for us to answer, and it forwards it to our _on_req() function
 	_req_ping(node_info, success, timeout) {
 		const msg = new Hkad_msg({
 			rpc: Hkad_msg.RPC.PING,
@@ -382,6 +332,7 @@ class Hkad_node {
 		const msg = new Hkad_msg({
 			rpc: Hkad_msg.RPC.STORE,
 			from: new Hkad_node_info(this.node_info),
+
 			type: Hkad_msg.TYPE.REQ,
 			data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
 			id: Hkad_node.get_random_key()
@@ -425,9 +376,7 @@ class Hkad_node {
 	}
 
 	_res_store(req) {
-		// Compute the TTL
-		// The number of nodes between us and the key is approximated from the 
-		// tree depth of the respective buckets
+		// # of nodes between us and the key is approximated from the tree depth of their respective buckets
 		const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
 		const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
 		const depth_l = Math.min(d1, d2);

@@ -52,6 +52,14 @@ class Hbintree_node {
 	set_right(node) {
 		this.children[1] = node;
 	}
+
+	get_parent() {
+		return this.parent;
+	}
+
+	set_parent(node) {
+		this.parent = node;
+	}
 }
 
 module.exports.Hbintree_node = Hbintree_node;
