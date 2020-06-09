@@ -273,8 +273,10 @@ class Hkad_node {
 			});
 
 			return await Promise.all(res).then((values) => {
-				if (values[0]) {
-					return values[0];
+				for (let i = 0; i < values.length; i += 1) {
+					if (values[i] !== null) {
+						return values[i];
+					}
 				}
 			});
 		}
