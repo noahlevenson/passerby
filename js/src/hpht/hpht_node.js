@@ -21,7 +21,7 @@ class Hpht_node {
 	data;
 	magic;
 
-	constructor({label = null, created = new Date(), children = {0x00: null, 0x01: null}, ptrs = {"left": null, "right": null}, data = null} = {}) {
+	constructor({label = null, children = {0x00: null, 0x01: null}, ptrs = {"left": null, "right": null}, data = null} = {}) {
 		if (typeof label !== "string") {
 			throw new TypeError("Argument 'label' must be string");
 		}
@@ -33,7 +33,7 @@ class Hpht_node {
 		}
 
 		this.label = label;
-		this.created = created;
+		this.created = Date.now();
 		this.children = children;
 		this.ptrs = ptrs;
 		this.magic = Hpht_node.MAGIC_VAL.slice(0);

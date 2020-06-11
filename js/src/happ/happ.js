@@ -131,7 +131,8 @@ class Happ {
 			index_attr: Happ.GEO_INDEX_ATTR,
 			dht_lookup_func: peer_node._node_lookup, 
 			dht_lookup_args: [peer_node._req_find_value], 
-			dht_node: peer_node
+			dht_node: peer_node,
+			dht_ttl: Hkad_node.T_DATA_TTL
 		});
 
 		// Idempotently initialize the PHT
@@ -159,7 +160,8 @@ class Happ {
 			index_attr: Happ.GEO_INDEX_ATTR,
 			dht_lookup_func: peer_node._node_lookup, 
 			dht_lookup_args: [peer_node._req_find_value], 
-			dht_node: peer_node
+			dht_node: peer_node,
+			dht_ttl: Hkad_node.T_DATA_TTL
 		});
 
 		// Idempotently initialize the PHT

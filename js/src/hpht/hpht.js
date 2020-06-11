@@ -22,14 +22,22 @@ class Hpht {
 	dht_lookup_func; // reference to the above node's lookup function
 	dht_lookup_args; // an array of args that must be passed to the above DHT lookup function to make it perform a value-based lookup
 	index_attr; // Some unique string identifier for the attribute that we're indexing with this PHT interface
+	rp_data; // Replicatable data, the data we have inserted into the PHT and are responsible for republishing
+	ttl; // TTL computed from the DHT's TTL
+	refresh_interval_handle;
 	
-	constructor({index_attr = null, dht_node = null, dht_lookup_func = null, dht_lookup_args = []} = {}) {
+	constructor({index_attr = null, dht_node = null, dht_lookup_func = null, dht_ttl = null, dht_lookup_args = []} = {}) {
 		if (typeof index_attr !== "string") {
 			throw new TypeError("Argument index_attr must be a string");
 		} 
 
 		if (typeof dht_lookup_func !== "function") {
 			throw new TypeError("Argument dht_lookup must be a function");
+		}
+
+		if (typeof dht_ttl !== "number") {
+			throw new TypeError("Argument dht_ttl must be a number");
+
 		}
 
 		if (!Array.isArray(dht_lookup_args)) {
@@ -39,7 +47,10 @@ class Hpht {
 		this.dht_node = dht_node;
 		this.dht_lookup_func = dht_lookup_func;
 		this.dht_lookup_args = dht_lookup_args;
-		this.index_attr = index_attr
+		this.ttl = Math.floor(dht_ttl / 2);
+		this.index_attr = index_attr;
+		this.rp_data = new Map();
+		this.refresh_interval_handle = null;
 	}
 
 	// (DEBUG) Print PHT stats - this walks the entire tree and prints everything we know about it
@@ -116,13 +127,24 @@ class Hpht {
 		return new Hbigint(Hutil._sha1(this.index_attr + data));
 	}
 
-	// Idempotently initialize a new PHT structure, indexing on 'index_attr'
+	// Idempotently start the refresh interval and initialize a new PHT structure, indexing on 'index_attr'
 	async init() {
+		if (this.refresh_interval_handle === null) {
+			this.refresh_interval_handle = setInterval(() => {
+				this.data_rp.forEach(async (val, key) => {
+					console.log(`[HPHT] Refreshing key ${key.toString()}`);
+					await this.insert(new Hbigint(key), val);
+				});
+			}, this.ttl);
+		}
+
+		console.log(`[HPHT] Key refresh interval: ${(this.ttl / 60 / 60 / 1000).toFixed(1)} hours`);
+
 		console.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
 		const data = await this._dht_lookup();
 
 		if (data !== null) {
-			console.log(`[HPHT] Root node found! Created ${data.created}`);
+			console.log(`[HPHT] Root node found! Created ${new Date(data.created)}`);
 			return;
 		}
 
@@ -213,7 +235,7 @@ class Hpht {
 			throw new Error("Fatal PHT graph error");
 		}
 
-		if (leaf.size() < Hpht.B) {
+		if (leaf.get(key) || leaf.size() < Hpht.B) {
 			leaf.put(key, val);
 			const label_hash = this._get_label_hash(leaf.label);
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
@@ -282,6 +304,7 @@ class Hpht {
 				d += 1;
 			}
 
+			this.rp_data.set(key.toString(), val);
 			// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
 		}
 	}
@@ -406,6 +429,7 @@ class Hpht {
 			}
 		}
 
+		this.rp_data.delete(key.toString());
 		// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
 	}
 
