@@ -22,7 +22,6 @@ class Hpht_node {
 	magic;
 
 	constructor({label = null, created = new Date(), children = {0x00: null, 0x01: null}, ptrs = {"left": null, "right": null}, data = null} = {}) {
-		// TODO: validation
 		if (typeof label !== "string") {
 			throw new TypeError("Argument 'label' must be string");
 		}
@@ -40,8 +39,7 @@ class Hpht_node {
 		this.magic = Hpht_node.MAGIC_VAL.slice(0);
 	}	
 
-	// TODO: Make this more reliable - currently we just implement some dumb magic buffer but there should be some thought put into this
-	// this object identification is a big part of security as well!!!
+	// Currently this magic cookie is the only way we discern a valid PHT node from other data
 	static valid_magic(obj) {
 		try {
 			return obj.magic === Hpht_node.MAGIC_VAL ? true : false;
@@ -87,7 +85,7 @@ class Hpht_node {
 	}
 
 	is_leaf() {
-		return (this.children[0x00] === null && this.children[0x01] === null); // TODO: We only must check one because a node can't have only one child
+		return (this.children[0x00] === null && this.children[0x01] === null);
 	}
 
 	size() {

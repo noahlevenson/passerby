@@ -23,7 +23,7 @@ const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 class Happ {
-	static GEO_INDEX_ATTR = "___h00dn3t.geoha$h!!";
+	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
 
 	static BOOTSTRAP_NODES = [
 		["66.228.34.29", 27500]

@@ -15,8 +15,8 @@ const { Hpht_node } = require("./hpht_node.js");
 const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
 
 class Hpht {
-	static BIT_DEPTH = 80; // Set this to the bit depth of our input keys - currently out Hgeo linearizations are 80 bit
-	static B = 4; // Max keys per leaf - what's the most optimized value for this? I think smallish B values better distribute the data in the network
+	static BIT_DEPTH = 80; // Bit depth of our input keys (our Hgeo linearizations are 80 bits)
+	static B = 4; // Block size, or max keys per leaf
 
 	dht_node; // reference to the DHT node associated with this PHT interface
 	dht_lookup_func; // reference to the above node's lookup function
@@ -24,7 +24,6 @@ class Hpht {
 	index_attr; // Some unique string identifier for the attribute that we're indexing with this PHT interface
 	
 	constructor({index_attr = null, dht_node = null, dht_lookup_func = null, dht_lookup_args = []} = {}) {
-		// TODO: validation
 		if (typeof index_attr !== "string") {
 			throw new TypeError("Argument index_attr must be a string");
 		} 
@@ -43,7 +42,7 @@ class Hpht {
 		this.index_attr = index_attr
 	}
 
-	// DEBUG: Print PHT stats - this walks the entire tree and prints everything we know about it
+	// (DEBUG) Print PHT stats - this walks the entire tree and prints everything we know about it
 	async _debug_print_stats() {
 		async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
 			if (!pht_node.is_leaf()) {
@@ -82,13 +81,12 @@ class Hpht {
 		console.log(`[HPHT] TOTAL STATS - nodes: ${res.nodes}, leaves: ${res.leaves}, keys: ${res.keys}\n`);	
 	}
 
-	// DEBUG: Get the root node, or null if we can't find it
+	// (DEBUG) Get the root node, or null if we can't find it
 	async _debug_get_root_node() {
 		return await this._dht_lookup();
 	}
 
-	// Get a PHT node from the DHT -- returns the node if found, null if not
-	// This is where we rehydrate PHT nodes -- is this the most logical place for that?
+	// Retrieve a PHT node from the DHT -- rehydrates and returns the node if found, null if not
 	async _dht_lookup(label = "") {
 		if (label === null) {
 			return null;
@@ -107,9 +105,9 @@ class Hpht {
 		return new Hpht_node(data.get_payload()[0]);
 	}
 
-	// Get the hash of a PHT node label (the hash of a PHT node label is the key used to locate it in the DHT)
-	// In our implementation, we concatenate the index attribute and the PHT node's binary label at hash time
-	// Supplying no argument will get you the label hash of the PHT root node
+	// Compute the hash of a PHT node label (the hash of a PHT node label is the key used to locate it in the DHT)
+	// We concatenate the index attribute and the PHT node's binary label at hash time, so supplying no arg will
+	// get you the label hash of the PHT root node
 	_get_label_hash(data = "") {
 		if (typeof data !== "string") {
 			throw new TypeError("Argument 'data' must be string");
@@ -118,9 +116,7 @@ class Hpht {
 		return new Hbigint(Hutil._sha1(this.index_attr + data));
 	}
 
-	// Init a new PHT structure - this is how you create the root node structure, and some peer in the network
-	// needs to call it before any peers can start participating in the PHT associated with a given index attribute
-	// It's idempotent - subsequent calls to init() will log the creation time of the existing root node
+	// Idempotently initialize a new PHT structure, indexing on 'index_attr'
 	async init() {
 		console.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
 		const data = await this._dht_lookup();
@@ -151,7 +147,7 @@ class Hpht {
 		}
 	}
 
-	// Find the PHT leaf node responsible for housing a given key - linear search edition
+	// Find the PHT leaf node responsible for a given key - linear search edition
 	// Returns null if there's no leaf node associated with that key
 	async lookup_lin(key) {
 		// TODO: validation
@@ -175,11 +171,9 @@ class Hpht {
 		return null;
 	}	
 
-	// Find the PHT leaf node responsible for housing a given key - binary search edition
+	// Find the PHT leaf node responsible for a given key - binary search edition
 	// Returns null if there's no leaf node associated with that key
-	// TODO: Currently this is much slower than linear lookup, likely because of the BigInt computations 
-	// We eventually need to get this working faster and implement it as the default search, with a parallelized linear lookup as the backup
-	// TODO: This also needs to be refactored to use the _dht_lookup() helper function 
+	// TODO: this needs to be tested and deployed alongside lookup_lin in a "failover" configuration 
 	async lookup_bin(key) {
 		let p = 0;
 		let r = Hpht.BIT_DEPTH - 1; // Is this off by one?
@@ -207,15 +201,15 @@ class Hpht {
 		return null;
 	}
 
-	// Insert a key, value pair into the PHT, splitting leaf nodes and extending the depth of the tree as required
+	// Insert a (key, value) pair into the PHT
 	// Returns true on success, false on failure
 	async insert(key, val) {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
 
+		// If we can't find the leaf node for a key, our graph is likely corrupted
+		// TODO: probably remove me for production?
 		if (leaf === null) {
-			// If we can't find the leaf node for a key, our graph is likely corrupted
-			// TODO: OR MAYBE IT'S A TEMPORARY RACE CONDITION? BE CAREFUL HERE...
 			throw new Error("Fatal PHT graph error");
 		}
 
@@ -225,12 +219,8 @@ class Hpht {
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
 			console.log(`[HPHT] Inserted key ${key.toString()} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
 		} else {
-			// NOTE: THIS IS THE "UNLIMITED SPLIT" VERSION OF BUCKET SPLITTING - THE PAPER ALSO SPECIFIES A FASTER "STAGGERED UPDATES"
-			// MODEL WHERE EACH INSERT IS LIMITED TO ONE BUCKET SPLIT, BUT WHICH COULD RESULT IN VIOLATING PHT INVARIANTS
-			// DO WE WANT TO IMPLEMENT THE FASTER ONE?
-
-			// To figure out how much deeper we need to go, we need to get the longest common prefix of all B + 1 keys
-			// Get an array of all B + 1 (key, val) pairs with all keys as BigInts
+			// This is the "unlimited split" version of bucket splitting
+			// TODO: implement the alternate "staggered updates?"
 			const pairs = leaf.get_all_pairs();
 
 			pairs.forEach((pair, i, arr) => {
@@ -238,33 +228,15 @@ class Hpht {
 			});
 			
 			pairs.push([key, val]);
-
-			// Get an array of the binary strings for each (key, val) pair
 			const key_bin_strings = [];
 
 			pairs.forEach((pair) => {
 				key_bin_strings.push(pair[0].to_bin_str(Hpht.BIT_DEPTH));
 			});
 
-			// Since we used _bigint_to_bin_str to make our bin strings the same length, we don't have to get too fancy here
-			// TODO: This is a crappy linear search solution - there's a better way using binary search
-			// TODO: There's now an Hutil function that returns LCP -- we should be using that dummy
-			let i = 0;
+			const i = Hutil._get_lcp(key_bin_strings, true);
 
-			while (i < Hpht.BIT_DEPTH) {
-				let match = key_bin_strings.every((str) => {
-					return str[i] === key_bin_strings[0][i];
-				});
-
-				if (!match) {
-					break;
-				}
-
-				i += 1;
-			}
-
-			// i is the length of the longest common prefix - we need our new child nodes to be one level deeper than that
-			// remember, the depth of a given node is equal to the length of its label (not including the index attr)
+			// We need our new child nodes to be one level deeper than the length of the lcp of all B + 1 keys
 			let child0, child1;
 			let old_leaf = leaf;
 			let d = leaf.label.length; 
@@ -286,7 +258,6 @@ class Hpht {
 				interior_node.children[0x01] = child1.label;
 
 				// If we've reached our final depth, then the children are leaf nodes, so let's distribute the keys to them
-				// When you see this pattern, shouldn't this be a recursive algorithm where we handle the base case (d === i) instead of an iterative one?
 				if (d === i) {
 					pairs.forEach((pair, idx, arr) => {
 						// Sort them into the new children by their ith bit? 
@@ -319,22 +290,21 @@ class Hpht {
 		// TODO: validation - key must be a BigInt etc.
 		const leaf = await this.lookup_lin(key);
 
+		// Key not found
+		// TODO: handle this using whatever global pattern we decide on for operation failure
 		if (leaf === null) {
-			// Key not found
-			// TODO: this should be handled using whatever global pattern we decide on for operation failures - either true/false, or reject the promise
 			return false;
 		}
 
+		// Key not found in the leaf node
 		if (!leaf.delete(key)) {
-			// The key wasn't found in the leaf node it's supposed to be found in
-			// TODO: Do we want to handle this? Throw an error or return an error?
-			// It could also be a temporary race condition...
-			// At best, there's no reason to PUT this node back to the PHT, since we didn't actually modify its state...
 			return;
 		}
 
 		const sibling_node = await this._dht_lookup(leaf.get_sibling_label());
 
+		// If we can't find the sibling to a leaf node, our graph is likely corrupted
+		// TODO: probably remove me for production?
 		if (sibling_node === null) {
 			throw new Error("Fatal PHT graph error");
 		}
@@ -394,7 +364,7 @@ class Hpht {
 				const left_neighbor = await this._dht_lookup(child0.ptr_left());
 				const right_neighbor = await this._dht_lookup(child1.ptr_right());
 
-				// Neighbors can be null here -- that just means we reached the left or right end of the tree
+				// Neighbors can be null here -- that just means we reached the left or right terminus of the tree
 
 				if (left_neighbor !== null) {
 					left_neighbor.set_ptrs({left: left_neighbor.ptr_left(), right: parent_node.get_label()});
@@ -440,29 +410,21 @@ class Hpht {
 	}
 
 	// TODO: implement me
-	// 1D range query assumes the keys are just keys (as opposed to linearizations of some multidimensional data)
-	// We don't use 1D range query to query geohash index attributes, which are linearizations of 2D data, but
-	// maybe in the future we may want to use a PHT interface to index some 1-dimensional attribute
 	async range_query_1d(minkey, maxkey) {
 
 	}
 
-	// 2D range query assumes that each key is a linearizations of some 2D data, and currently it makes
-	// the gross assumption that we've used our Hutil._z_linearize_2d() function to produce the linearization
-	// TODO: How should this work, how do we keep it generalized and loosely coupled?
+	// 2D range query assumes that each key is a linearization of some 2D data
 	async range_query_2d(minkey, maxkey) {
 		async function _do_range_query_2d(pht_node, prefix, data = []) {
-			// Bro this shit is horrible - we should catch the base case first -- this is structured insanely 
 			if (pht_node.is_leaf()) {
-				// "apply the range query to all items within this node and report the result"
-				// i think that just means the items in this node represent the entirety of what must be returned by the range query
 				return pht_node.get_all_pairs().filter((pair) => {
 					const key = new Hbigint(pair[0]);
 					return key.greater_equal(minkey) && key.less_equal(maxkey);
 				});
 			} 
 
-			// is there any overlap between the rectangular region defined by the subtree's prefix and the range of the original query?
+			// Is there any overlap between the rectangular region defined by the subtree's prefix and the range of the original query?
 			// TODO: is this an insane way to do this?  Can't we just learn this by comparing the 0's and 1's???
 			const min_region = Hbigint.from_base2_str(key_strings[0].substring(0, prefix.length + 1));
 			const max_region = Hbigint.from_base2_str(key_strings[1].substring(0, prefix.length + 1));
@@ -473,9 +435,8 @@ class Hpht {
 			const child0_rect = Hbigint.from_base2_str(child0_label);  
 			const child1_rect = Hbigint.from_base2_str(child1_label);
 
-			// TODO: This needs to actually be parallelized for speed
+			// TODO: This needs to be parallelized for speed
 			if (child0_rect.greater_equal(min_region) && child0_rect.less_equal(max_region)) {
-				// Recurse 
 				const child_node = await this._dht_lookup(child0_label);
 
 				if (child_node === null) {
@@ -486,7 +447,6 @@ class Hpht {
 			}
 
 			if (child1_rect.greater_equal(min_region) && child1_rect.less_equal(max_region)) {
-				// Recurse
 				const child_node = await this._dht_lookup(child1_label);
 
 				if (child_node === null) {
@@ -498,6 +458,8 @@ class Hpht {
 			
 			return data;
 		}
+
+		// *** BEGIN ***
 
 		if (!(minkey instanceof Hbigint) || !(maxkey instanceof Hbigint)) {
 			throw new TypeError("Arguments 'minkey' and 'maxkey' must be Hbigint");
