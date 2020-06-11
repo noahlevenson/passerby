@@ -150,21 +150,9 @@ class Hpht {
 
 		console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
 		const root = new Hpht_node({label: ""});
-		const child0 = new Hpht_node({label: (new Hbigint(0)).to_bin_str(1)});
-		const child1 = new Hpht_node({label: (new Hbigint(1)).to_bin_str(1)});
+		const res = await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root);
 
-		child0.set_ptrs({left: null, right: child1.get_label()});
-		child1.set_ptrs({left: child0.get_label(), right: null});
-		
-		root.children[0x00] = child0.get_label();
-		root.children[0x01] = child1.get_label();
-
-		const results = [];
-		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0));
-		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1));
-		results.push(await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root));
-
-		if (results.some((result) => { return !result })) {
+		if (!res) {
 			console.log(`[HPHT] WARNING! COULD NOT CREATE NEW ROOT STRUCTURE FOR INDEX ATTR ${this.index_attr}!`);
 		}
 	}
@@ -177,17 +165,14 @@ class Hpht {
 			throw new TypeError("Argument 'key' must be Hbigint");
 		}
 
-		let mask = new Hbigint(0x01);
+		const key_str = key.to_bin_str(Hpht.BIT_DEPTH);
 
-		for (let i = 0; i < Hpht.BIT_DEPTH; i += 1) {
-			const pi_k = key.and(mask);
-			const pht_node = await this._dht_lookup(pi_k.to_bin_str(i));
-
+		for (let i = 0; i < key_str.length; i += 1) {
+			const pht_node = await this._dht_lookup(key_str.substring(0, i));
+			
 			if (pht_node !== null && pht_node.is_leaf()) {
 				return pht_node;
 			}
-
-			mask = mask.or((new Hbigint(0x01)).shift_left(new Hbigint(i)));
 		}
 
 		return null;
@@ -358,8 +343,8 @@ class Hpht {
 
 			let old_leaf = leaf;
 
-			// d > 1 ensures that we don't delete our level one nodes, since our basic structure consists of root + two children
-			while (d > 1 && d > i) {
+			// d > 0 ensures that we don't delete our level zero (root) node -- but is this necessary?
+			while (d > 0 && d > i) {
 				const parent_node = await this._dht_lookup(old_leaf.get_parent_label());
 
 				if (parent_node === null) {

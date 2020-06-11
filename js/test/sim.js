@@ -21,6 +21,10 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
         await me.pht.insert(new Hbigint(i), i);
     }
 
+    for (let i = 0; i < 500; i += 1) {
+        await me.pht.delete(new Hbigint(i));
+    }
+
     await me.pht._debug_print_stats();
     local_sim._debug_dump_network_state();
 
