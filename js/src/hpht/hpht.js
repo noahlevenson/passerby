@@ -209,11 +209,7 @@ class Hpht {
 	// Insert a (key, value) pair into the PHT
 	// Returns true on success, false on failure
 	async insert(key, val) {
-		let leaf = await this.lookup_bin(key);
-
-		if (leaf === null) {
-			leaf = await this.lookup_lin(key);
-		}
+		const leaf = await this.lookup_lin(key);
 
 		// If we can't find the leaf node for a key, our graph is likely corrupted
 		// TODO: probably remove me for production?
@@ -296,11 +292,7 @@ class Hpht {
 	}
 	
 	async delete(key) {
-		let leaf = await this.lookup_bin(key);
-
-		if (leaf === null) {
-			leaf = await this.lookup_lin(key);
-		}
+		const leaf = await this.lookup_lin(key);
 
 		// Key not found
 		// TODO: handle this using whatever global pattern we decide on for operation failure
