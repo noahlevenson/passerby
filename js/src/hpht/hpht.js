@@ -10,6 +10,7 @@
 "use strict";
 
 const { Happ_env } = require("../happ/happ_env.js");
+const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
@@ -69,7 +70,7 @@ class Hpht {
 				({nodes, keys, leaves} = await _walk.bind(this)(child1, nodes, keys, leaves));
 			}
 
-			console.log(`[HPHT] ${this.index_attr}${pht_node.label} ${pht_node.is_leaf() ? "<- LEAF, " + pht_node.size() + " KEYS" : ""}`);
+			Hlog.log(`[HPHT] ${this.index_attr}${pht_node.label} ${pht_node.is_leaf() ? "<- LEAF, " + pht_node.size() + " KEYS" : ""}`);
 
 			keys += pht_node.size();
 			nodes += 1;
@@ -84,13 +85,13 @@ class Hpht {
 		const root_node = await this._debug_get_root_node();
 
 		if (root_node === null) {
-			console.log(`[HPHT] Stats error: no root node found!`);
+			Hlog.log(`[HPHT] Stats error: no root node found!`);
 			return null;
 		}
 
-		console.log(`\n[HPHT] DEBUG - PHT STRUCTURE (INVERTED):`);
+		Hlog.log(`[HPHT] DEBUG - PHT STRUCTURE (INVERTED):`, true);
 		const res = await _walk.bind(this)(root_node);
-		console.log(`[HPHT] TOTAL STATS - nodes: ${res.nodes}, leaves: ${res.leaves}, keys: ${res.keys}\n`);	
+		Hlog.log(`[HPHT] TOTAL STATS - nodes: ${res.nodes}, leaves: ${res.leaves}, keys: ${res.keys}\n`);	
 	}
 
 	// (DEBUG) Get the root node, or null if we can't find it
@@ -135,7 +136,7 @@ class Hpht {
 				const t1 = Date.now();
 
 				this.rp_data.forEach(async (val, key) => {
-					console.log(`[HPHT] Refreshing key ${key}`);
+					Hlog.log(`[HPHT] Refreshing key ${key}`);
 					const k = new Hbigint(key);
 					await this.insert(k, val);
 
@@ -166,22 +167,22 @@ class Hpht {
 			}, this.ttl);
 		}
 
-		console.log(`[HPHT] Key refresh interval: ${(this.ttl / 60 / 60 / 1000).toFixed(1)} hours`);
+		Hlog.log(`[HPHT] Key refresh interval: ${(this.ttl / 60 / 60 / 1000).toFixed(1)} hours`);
 
-		console.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
+		Hlog.log(`[HPHT] Looking up root node for index attr ${this.index_attr}...`);
 		const data = await this._dht_lookup();
 
 		if (data !== null) {
-			console.log(`[HPHT] Root node found! Created ${new Date(data.created)}`);
+			Hlog.log(`[HPHT] Root node found! Created ${new Date(data.created)}`);
 			return;
 		}
 
-		console.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
+		Hlog.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
 		const root = new Hpht_node({label: ""});
 		const res = await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root);
 
 		if (!res) {
-			console.log(`[HPHT] WARNING! COULD NOT CREATE NEW ROOT STRUCTURE FOR INDEX ATTR ${this.index_attr}!`);
+			Hlog.log(`[HPHT] WARNING! COULD NOT CREATE NEW ROOT STRUCTURE FOR INDEX ATTR ${this.index_attr}!`);
 		}
 	}
 
@@ -248,7 +249,7 @@ class Hpht {
 			leaf.put(key, val);
 			const label_hash = this._get_label_hash(leaf.label);
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-			console.log(`[HPHT] Inserted key ${key.toString()} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
+			Hlog.log(`[HPHT] Inserted key ${key.toString()} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})\n`);
 		} else {
 			// This is the "unlimited split" version of bucket splitting
 			// TODO: implement the alternate "staggered updates?"
@@ -279,7 +280,7 @@ class Hpht {
 				child0 = new Hpht_node({label: `${old_leaf.label}0`});
 				child1 = new Hpht_node({label: `${old_leaf.label}1`});
 
-				console.log(`[HPHT] Splitting leaf ${old_leaf.label} into ${child0.label} + ${child1.label}\n`)
+				Hlog.log(`[HPHT] Splitting leaf ${old_leaf.label} into ${child0.label} + ${child1.label}\n`)
 
 				child0.set_ptrs({left: old_leaf.ptr_left(), right: child1.get_label()});
 				child1.set_ptrs({left: child0.get_label(), right: old_leaf.ptr_right()});
@@ -296,7 +297,7 @@ class Hpht {
 						const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
 						child_ref.put(pair[0], pair[1]);
 
-						console.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
+						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})\n`);
 					});
 				}
 
@@ -343,7 +344,7 @@ class Hpht {
 
 		if (leaf.size() + sibling_node.size() > Hpht.B) {
 			// Simple case: leaf + its sibling node contains more than B keys, so the invariant is maintained
-			console.log(`[HPHT] Deleted key ${key.toString()} from PHT index ${this.index_attr}, leaf ${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})\n`);
+			Hlog.log(`[HPHT] Deleted key ${key.toString()} from PHT index ${this.index_attr}, leaf ${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})\n`);
 		} else {
 			// Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
 			const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs());
@@ -415,7 +416,7 @@ class Hpht {
 				if (d - i === 1) {
 					pairs.forEach((pair, idx, arr) => {
 						parent_node.put(pair[0], pair[1]);
-						console.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})\n`);
+						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})\n`);
 					});
 				}
 

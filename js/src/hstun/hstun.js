@@ -12,6 +12,7 @@
 const crypto = require("crypto");
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
+const { Hlog } = require("../hlog/hlog.js");
 const { Hstun_msg } = require("./hstun_msg.js");
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");
@@ -28,7 +29,7 @@ class Hstun {
 		this.net = net;
 		this.res = new EventEmitter();
 		this.net.network.on("message", this._on_message.bind(this));
-		console.log(`[HSTUN] Online`);
+		Hlog.log(`[HSTUN] Online`);
 	}
 
 	// This is our one and only client function: send a binding request to some address and port
@@ -142,7 +143,7 @@ class Hstun {
 			// TODO: Shouldn't we confirm that this has the attr of the correct type? (Either XOR MAPPED ADDRESS or MAPPED ADDRESS?) 
 			// Or maybe we do that in the _decMapedAddr function itself...
 			const decoded = Hstun_attr._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
-			console.log(`[HSTUN] Binding response received: ${decoded[0]}:${decoded[1]}`)
+			Hlog.log(`[HSTUN] Binding response received: ${decoded[0]}:${decoded[1]}`)
 			this.res.emit(inMsg.hdr.id.toString("hex"), decoded);
 		}
 	}

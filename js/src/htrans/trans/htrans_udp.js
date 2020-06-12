@@ -11,6 +11,7 @@
 
 const dgram = require("dgram");
 const { Happ_env } = require("../../happ/happ_env.js");
+const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
 const { Hutil } = require("../../hutil/hutil.js");
@@ -42,7 +43,7 @@ class Htrans_udp extends Htrans {
 
 		this.socket.on("message", this._on_message.bind(this));
 		this.socket.bind(this.port);
-		console.log(`[HTRANS] UDP service starting on port ${this.port}...`);
+		Hlog.log(`[HTRANS] UDP service starting on port ${this.port}...`);
 		await this._listening();
 
 	}
@@ -51,7 +52,7 @@ class Htrans_udp extends Htrans {
 		return new Promise((resolve, reject) => {
 			this.socket.on("listening", () => {
 				const addr = this.socket.address();
-				console.log(`[HTRANS] UDP service online, listening on ${addr.address}:${addr.port}`);
+				Hlog.log(`[HTRANS] UDP service online, listening on ${addr.address}:${addr.port}`);
 				resolve();
 			});
 		});
@@ -69,11 +70,11 @@ class Htrans_udp extends Htrans {
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
 		this.socket.send(buf, 0, buf.length, port, addr, (err) => {
 			if (err) {
-				console.log(`[HTRANS] UDP socket send error ${addr}:${port} (${err})`);
+				Hlog.log(`[HTRANS] UDP socket send error ${addr}:${port} (${err})`);
 				return;
 			}
 
-			// console.log(`[HTRANS] UDP outbound to ${htrans_msg.addr}:${htrans_msg.port}`);
+			// Hlog.log(`[HTRANS] UDP outbound to ${htrans_msg.addr}:${htrans_msg.port}`);
 		});
 	}
 }

@@ -10,6 +10,7 @@
 "use strict";
 
 const { Hkad_net } = require("./hkad_net.js");
+const { Hlog } = require("../../hlog/hlog.js");
 const { Hutil } = require("../../hutil/hutil.js");
 
 class Hkad_net_sim extends Hkad_net {
@@ -63,12 +64,12 @@ class Hkad_net_sim extends Hkad_net {
 			}
 		});
 
-		console.log(`********************************************`);
-		console.log(`[HKAD] HKAD_NET_SIM _DEBUG_DUMP_NETWORK_STATE:`);
-		console.log(`[HKAD] Total peers: ${Hkad_net_sim.peer_list.size}`);
-		console.log(`[HKAD] Total data objects: ${total_data_objects} (avg ${(total_data_objects / Hkad_net_sim.peer_list.size).toFixed(1)} data objects per peer)`);
-		console.log(`[HKAD] Unique data objects: ${unique_data_objects.size}`);
-		console.log(`[HKAD] Stale data key collisions detected: ${stale}\n`);
+		Hlog.log(`********************************************`);
+		Hlog.log(`[HKAD] HKAD_NET_SIM _DEBUG_DUMP_NETWORK_STATE:`);
+		Hlog.log(`[HKAD] Total peers: ${Hkad_net_sim.peer_list.size}`);
+		Hlog.log(`[HKAD] Total data objects: ${total_data_objects} (avg ${(total_data_objects / Hkad_net_sim.peer_list.size).toFixed(1)} data objects per peer)`);
+		Hlog.log(`[HKAD] Unique data objects: ${unique_data_objects.size}`);
+		Hlog.log(`[HKAD] Stale data key collisions detected: ${stale}\n`);
 	}
 
 	_out(msg, node_info) {

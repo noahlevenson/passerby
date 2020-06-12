@@ -11,6 +11,7 @@
 
 const crypto = require("crypto");
 const { Happ_env } = require("../happ/happ_env.js");
+const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_net } = require("./net/hkad_net.js");
 const { Hkad_eng } = require("./eng/hkad_eng.js");
@@ -101,14 +102,14 @@ class Hkad_node {
 
 	// Prints DFS
 	_debug_print_routing_table() {
-		console.log(`\n******************************************`);
-		console.log(`[HKAD] HKAD_NODE _DEBUG_PRINT_ROUTING_TABLE:`);
+		Hlog.log(`*******************************************`, true);
+		Hlog.log(`[HKAD] HKAD_NODE _DEBUG_PRINT_ROUTING_TABLE:`);
 
 		this.routing_table.dfs((node, data) => {
 			const bucket = node.get_data();
 			
 			if (bucket !== null) {
-				console.log(`[HKAD] prefix "${bucket.get_prefix()}" - ${bucket.length()} contacts`);
+				Hlog.log(`[HKAD] prefix "${bucket.get_prefix()}" - ${bucket.length()} contacts`);
 			}
 		});
 	}
@@ -119,7 +120,7 @@ class Hkad_node {
 	// rigorous to generate a random ID in the bucket's range, as our peers might know about nodes that are closer to some undefined value than they are to the nodes we already know about.
 	async _refresh_kbucket(kbucket) {
 		const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_id;
-		console.log(`[HKAD] Refreshing k-bucket for range including ID ${random_id.toString()}`);
+		Hlog.log(`[HKAD] Refreshing k-bucket for range including ID ${random_id.toString()}`);
 		await this._node_lookup(random_id);
 	}
 
@@ -172,7 +173,7 @@ class Hkad_node {
 						(Hkad_node._get_distance(this.node_id, key).less_equal(Hkad_node._get_distance(cnodes[0].node_id, key) || 
 							cnodes[0] === inbound_node_info))) {
 					
-					console.log(`[HKAD] Replicating ${key.toString()} to new node ${inbound_node_info.node_id.toString()}`);
+					Hlog.log(`[HKAD] Replicating ${key.toString()} to new node ${inbound_node_info.node_id.toString()}`);
 					this._req_store(key, pair[1].get_data(), inbound_node_info);
 				}
 			});
@@ -311,7 +312,7 @@ class Hkad_node {
 		if (val) {
 			if (val[1] !== null) {
 				this._req_store(key, val[0][0], val[1].get_data(), (res, ctx) => {
-					console.log(`[HKAD] Stored ${key} to closest non-returning node ${val[1].get_data().node_id}`);
+					Hlog.log(`[HKAD] Stored ${key} to closest non-returning node ${val[1].get_data().node_id}`);
 				});
 			}
 
@@ -509,7 +510,7 @@ class Hkad_node {
 			}, Hkad_node.T_KBUCKET_REFRESH);
 		}
 
-		console.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
+		Hlog.log(`[HKAD] K-bucket refresh interval: ${(Hkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
 
 		// Idempotently start the data republish interval
 		if (this.republish_interval_handle === null) {
@@ -520,7 +521,7 @@ class Hkad_node {
 			}, Hkad_node.T_REPUBLISH);
 		}
 
-		console.log(`[HKAD] Data republish interval: ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
+		Hlog.log(`[HKAD] Data republish interval: ${(Hkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
 
 		// Idempotently start the data replication interval
 		if (this.replicate_interval_handle === null) {
@@ -536,7 +537,7 @@ class Hkad_node {
 			}, Hkad_node.T_REPLICATE);
 		}
 
-		console.log(`[HKAD] Replication interval: ${(Hkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
+		Hlog.log(`[HKAD] Replication interval: ${(Hkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
 	}
 
 	// **** PUBLIC API ****
@@ -559,10 +560,10 @@ class Hkad_node {
 			throw new TypeError("Argument error");
 		}
 
-		console.log(`[HKAD] Joining network as ${this.node_id.toString()} via bootstrap node ${addr}:${port}...`);
+		Hlog.log(`[HKAD] Joining network as ${this.node_id.toString()} via bootstrap node ${addr}:${port}...`);
 
 		if (node_info === null) {
-			console.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
+			Hlog.log(`[HKAD] No PONG from bootstrap node ${addr}:${port}`);
 			return false;
 		}	
 
@@ -592,7 +593,7 @@ class Hkad_node {
 			this._refresh_kbucket(bucket);
 		});
 
-		console.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
+		Hlog.log(`[HKAD] Success: node ${this.node_id.toString()} is online! (At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
 		this._init_intervals();
 		return true;
 	}
@@ -626,7 +627,7 @@ class Hkad_node {
 		});
 
 		await Promise.all(resolutions);
-		// console.log(`[HKAD] PUT key ${key.toString()} (${successful} / ${resolutions.length} OK)`)
+		// Hlog.log(`[HKAD] PUT key ${key.toString()} (${successful} / ${resolutions.length} OK)`)
 		return successful > 0 ? true : false;
 	}
 

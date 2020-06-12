@@ -1,5 +1,5 @@
 /** 
-* HAPP 
+* HAPP_ENV
 * Global environment settings
 *
 *
