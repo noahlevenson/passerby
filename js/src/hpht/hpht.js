@@ -105,7 +105,7 @@ class Hpht {
 
 		const label_hash = this._get_label_hash(label);
 		const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
-		
+
 		// This assumes that dht lookups always return an Hkad_data type, which I *think* is true
 		const data = new Hkad_data(res);
 
@@ -160,7 +160,6 @@ class Hpht {
 	// Find the PHT leaf node responsible for a given key - linear search edition
 	// Returns null if there's no leaf node associated with that key
 	async lookup_lin(key) {
-		// TODO: validation
 		if (!(key instanceof Hbigint)) {
 			throw new TypeError("Argument 'key' must be Hbigint");
 		}
@@ -180,29 +179,28 @@ class Hpht {
 
 	// Find the PHT leaf node responsible for a given key - binary search edition
 	// Returns null if there's no leaf node associated with that key
-	// TODO: this needs to be tested and deployed alongside lookup_lin in a "failover" configuration 
 	async lookup_bin(key) {
+		if (!(key instanceof Hbigint)) {
+			throw new TypeError("Argument 'key' must be Hbigint");
+		}
+
 		let p = 0;
 		let r = Hpht.BIT_DEPTH - 1; // Is this off by one?
-	
+
+		const key_str = key.to_bin_str(Hpht.BIT_DEPTH);
+
 		while (p <= r) {
 			let q = Math.floor((p + r) / 2);
-			//const mask = ((2n ** BigInt(Hpht.BIT_DEPTH)) - 1n) >> (BigInt(Hpht.BIT_DEPTH) - BigInt(q));   <--- old line right here, just in case your tests fail
-		
-			const mask = ((new Hbigint(2)).pow(new Hbigint(Hpht.BIT_DEPTH))).sub(new Hbigint(1)).shift_right(new Hbigint(Hpht.BIT_DEPTH) - new Hbigint(q));			
-			const pq_k = key.and(mask);
-			const label_hash = this._get_label_hash(pq_k.to_bin_str(q));
-			const hdata = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
-			
-			if (hdata.type === Hkad_data.TYPE.VAL && Hpht_node.valid_magic(hdata.payload[0])) {
-				if (hdata.payload[0].is_leaf()) {
-					return hdata.payload[0];
-				}
 
+			const pht_node = await this._dht_lookup(key_str.substring(0, q));
+
+			if (pht_node !== null && pht_node.is_leaf()) {
+				return pht_node;
+			} else if (pht_node !== null && Hpht_node.valid_magic(pht_node)) {
 				p = q + 1;
 			} else {
 				r = q - 1;
-			}
+			}	
 		}
 
 		return null;
@@ -211,8 +209,11 @@ class Hpht {
 	// Insert a (key, value) pair into the PHT
 	// Returns true on success, false on failure
 	async insert(key, val) {
-		// TODO: validation - key must be a BigInt etc.
-		const leaf = await this.lookup_lin(key);
+		let leaf = await this.lookup_bin(key);
+
+		if (leaf === null) {
+			leaf = await this.lookup_lin(key);
+		}
 
 		// If we can't find the leaf node for a key, our graph is likely corrupted
 		// TODO: probably remove me for production?
@@ -295,8 +296,11 @@ class Hpht {
 	}
 	
 	async delete(key) {
-		// TODO: validation - key must be a BigInt etc.
-		const leaf = await this.lookup_lin(key);
+		let leaf = await this.lookup_bin(key);
+
+		if (leaf === null) {
+			leaf = await this.lookup_lin(key);
+		}
 
 		// Key not found
 		// TODO: handle this using whatever global pattern we decide on for operation failure
