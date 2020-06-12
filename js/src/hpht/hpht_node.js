@@ -81,6 +81,10 @@ class Hpht_node {
 
 	// It it funky to assume that our labels are strings of 0's and 1's? At construction time, we allow the assignment of any string as a label...
 	get_parent_label() {
+		if (this.label.length < 1) {
+			return null;
+		}
+
 		return this.label.substring(0, this.label.length - 1);
 	}
 
@@ -114,6 +118,10 @@ class Hpht_node {
 
 	get_all_pairs() {
 		return Array.from(this.data.entries());
+	}
+
+	get_created() {
+		return this.created;
 	}
 }
 

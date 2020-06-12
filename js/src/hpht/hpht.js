@@ -131,9 +131,36 @@ class Hpht {
 	async init() {
 		if (this.refresh_interval_handle === null) {
 			this.refresh_interval_handle = setInterval(() => {
-				this.data_rp.forEach(async (val, key) => {
-					console.log(`[HPHT] Refreshing key ${key.toString()}`);
-					await this.insert(new Hbigint(key), val);
+				const t1 = Date.now();
+
+				this.rp_data.forEach(async (val, key) => {
+					console.log(`[HPHT] Refreshing key ${key}`);
+					const k = new Hbigint(key);
+					await this.insert(k, val);
+
+					const leaf = await this.lookup_lin(k);
+
+					if (leaf === null) {
+						throw new Error("Fatal PHT graph error");
+					}
+
+					let plabel = leaf.get_parent_label();
+
+					while (plabel !== null) {
+						let parent = await this._dht_lookup(plabel);
+
+						if (parent === null) {
+							throw new Error("Fatal PHT graph error");
+						}
+
+						if (t1 > parent.get_created() + this.ttl) {
+							await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.get_label()), parent);
+						} else {
+							break;
+						}
+
+						plabel = parent.get_parent_label();
+					}
 				});
 			}, this.ttl);
 		}
@@ -207,7 +234,6 @@ class Hpht {
 	}
 
 	// Insert a (key, value) pair into the PHT
-	// Returns true on success, false on failure
 	async insert(key, val) {
 		const leaf = await this.lookup_lin(key);
 
@@ -285,12 +311,13 @@ class Hpht {
 
 				d += 1;
 			}
-
-			this.rp_data.set(key.toString(), val);
-			// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
 		}
+
+		this.rp_data.set(key.toString(), val);
+		// TODO: return true, if we're using the true/false pattern for operations? or return a value if we're using the resolve/reject pattern?
 	}
 	
+	// Delete a key, value pair from the network by key
 	async delete(key) {
 		const leaf = await this.lookup_lin(key);
 
