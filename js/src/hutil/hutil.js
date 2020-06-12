@@ -10,12 +10,11 @@
 "use strict";
 
 const crypto = require("crypto");
-const net = require("net");
-const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
+const net = require("net"); // TODO: We currently have no browser implementation for 'net'
+const { Happ_env } = require("../happ/happ_env.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hutil {
-	static SYS_BYTE_WIDTH = 8;
-
 	// JSON serializer for javascript's Map() type -- this is set on the Map prototype at the HAPP layer as above
 	// We just turn maps into arrays of key, val pairs in our over-the-wire format
 	static _map_to_json() {

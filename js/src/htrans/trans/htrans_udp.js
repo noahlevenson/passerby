@@ -10,10 +10,11 @@
 "use strict";
 
 const dgram = require("dgram");
+const { Happ_env } = require("../../happ/happ_env.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
 const { Hutil } = require("../../hutil/hutil.js");
-const { Hbigint } = require("../../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_browser.js") : require("../../htypes/hbigint/hbigint_node.js");
 
 class Htrans_udp extends Htrans {
 	socket;

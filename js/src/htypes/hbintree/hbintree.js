@@ -9,8 +9,9 @@
 
 "use strict";
 
-const { Hbigint } = require("../hbigint/hbigint_node.js");
+const { Happ_env } = require("../../happ/happ_env.js");
 const { Hbintree_node } = require("./hbintree_node.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../hbigint/hbigint_browser.js") : require("../hbigint/hbigint_node.js");
 
 class Hbintree {
 	root;

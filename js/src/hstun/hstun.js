@@ -11,6 +11,7 @@
 
 const crypto = require("crypto");
 const EventEmitter = require("events");
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hstun_msg } = require("./hstun_msg.js");
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");

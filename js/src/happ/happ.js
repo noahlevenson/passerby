@@ -9,6 +9,7 @@
 
 "use strict";
 
+const { Happ_env } = require("./happ_env.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
@@ -20,7 +21,7 @@ const { Hpht } = require("../hpht/hpht.js");
 const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hutil } = require("../hutil/hutil.js"); 
-const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Happ {
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";

@@ -9,10 +9,11 @@
 
 "use strict";
 
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
-const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hpht {
 	static BIT_DEPTH = 80; // Bit depth of our input keys (our Hgeo linearizations are 80 bits)

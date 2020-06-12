@@ -10,6 +10,7 @@
 "use strict";
 
 const crypto = require("crypto");
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_net } = require("./net/hkad_net.js");
 const { Hkad_eng } = require("./eng/hkad_eng.js");
@@ -20,11 +21,11 @@ const { Hkad_ds } = require("./hkad_ds.js");
 const { Hkad_data } = require("./hkad_data.js");
 const { Hbintree } = require("../htypes/hbintree/hbintree.js");
 const { Hbintree_node } = require("../htypes/hbintree/hbintree_node.js");
-const { Hbigint } = require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hkad_node {
 	static DHT_BIT_WIDTH = 160;
-	static ID_LEN = this.DHT_BIT_WIDTH / Hutil.SYS_BYTE_WIDTH;
+	static ID_LEN = this.DHT_BIT_WIDTH / Happ_env.SYS_BYTE_WIDTH;
 	static K_SIZE = 20;
 	static ALPHA = 3;
 	static T_KBUCKET_REFRESH = 1000 * 60 * 60; // How often do we check for pathological stale k-bucket cases and force a refresh on them?
