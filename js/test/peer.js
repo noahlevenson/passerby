@@ -22,4 +22,7 @@ const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 
     const search_res = await network.geosearch(westchester);
     console.log(search_res);
+
+    network.pht._debug_print_stats();
+    network.node._debug_print_routing_table();
 })();

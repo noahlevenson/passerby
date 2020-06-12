@@ -309,7 +309,7 @@ class Hkad_node {
 
 		if (val) {
 			if (val[1] !== null) {
-				this._req_store(key, val[0], val[1].get_data(), (res, ctx) => {
+				this._req_store(key, val[0][0], val[1].get_data(), (res, ctx) => {
 					console.log(`[HKAD] Stored ${key} to closest non-returning node ${val[1].get_data().node_id}`);
 				});
 			}

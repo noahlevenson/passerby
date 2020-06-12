@@ -105,7 +105,7 @@ class Hpht {
 
 		const label_hash = this._get_label_hash(label);
 		const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
-
+		
 		// This assumes that dht lookups always return an Hkad_data type, which I *think* is true
 		const data = new Hkad_data(res);
 
