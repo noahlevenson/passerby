@@ -40,8 +40,13 @@ class Happ {
 	// TODO: Parameterize this to create different kinds of Happ instances
 	constructor({lat = null, long = null, port = 27500} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
-		Map.prototype.toJSON = Hutil._map_to_json;
-		Map.from_json = Hutil._map_from_json;
+		Object.defineProperty(global.Map.prototype, "toJSON", {
+			value: Hutil._map_to_json
+		});
+
+		Object.defineProperty(global.Map, "from_json", {
+			value: Hutil._map_from_json
+		});
 
 		this.loc = new Hgeo_coord({lat: lat, long: long});
 		this.port = port;
