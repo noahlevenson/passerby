@@ -249,7 +249,7 @@ class Hpht {
 			leaf.put(key, val);
 			const label_hash = this._get_label_hash(leaf.label);
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-			Hlog.log(`[HPHT] Inserted key ${key.toString()} into PHT index ${this.index_attr}, leaf ${leaf.label} (DHT key ${label_hash})`);
+			Hlog.log(`[HPHT] Inserted key ${key.toString()} >> ${this.index_attr} leaf ${leaf.label} (DHT key ${label_hash})`);
 		} else {
 			// This is the "unlimited split" version of bucket splitting
 			// TODO: implement the alternate "staggered updates?"
@@ -297,7 +297,7 @@ class Hpht {
 						const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
 						child_ref.put(pair[0], pair[1]);
 
-						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
+						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
 					});
 				}
 
@@ -344,7 +344,7 @@ class Hpht {
 
 		if (leaf.size() + sibling_node.size() > Hpht.B) {
 			// Simple case: leaf + its sibling node contains more than B keys, so the invariant is maintained
-			Hlog.log(`[HPHT] Deleted key ${key.toString()} from PHT index ${this.index_attr}, leaf ${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
+			Hlog.log(`[HPHT] Deleted key ${key.toString()} >> ${this.index_attr} leaf ${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
 		} else {
 			// Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
 			const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs());
@@ -416,7 +416,7 @@ class Hpht {
 				if (d - i === 1) {
 					pairs.forEach((pair, idx, arr) => {
 						parent_node.put(pair[0], pair[1]);
-						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} into PHT index ${this.index_attr}, leaf ${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})`);
+						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})`);
 					});
 				}
 
