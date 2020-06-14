@@ -145,6 +145,18 @@ class Happ {
 		await this.pht.init();
 	}
 
+	// This dangerously assumes that all of our network services are using the one HTRANS module that's in use by HKAD
+	// TODO: Make this better
+	async stop() {
+		if (this.node.net.trans) {
+			try {
+				this.node.net.trans._stop()
+			} catch {
+				// Do nothing
+			}
+		}
+	}
+
 	// Boot this instance on a local network simulation
 	// local_sim must be an instance of Hkad_net_sim (to assign local_sim as this node's net module, set use_local_sim to true)
 	// To make this node a bootstrap node, just don't supply a value for bootstrap_node

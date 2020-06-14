@@ -45,7 +45,14 @@ class Htrans_udp extends Htrans {
 		this.socket.bind(this.port);
 		Hlog.log(`[HTRANS] UDP service starting on port ${this.port}...`);
 		await this._listening();
+	}
 
+	_stop() {
+		this.socket.on("close", () => {
+			Hlog.log(`[HTRANS] UDP service stopped`);
+		});
+
+		this.socket.close();
 	}
 
 	_listening() {
