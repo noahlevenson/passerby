@@ -145,16 +145,38 @@ class Happ {
 		await this.pht.init();
 	}
 
-	// This dangerously assumes that all of our network services are using the one HTRANS module that's in use by HKAD
-	// TODO: Make this better
+	// Disconnect from the network (currently only works with the one kind of Happ instance we can create)
 	async stop() {
-		if (this.node.net.trans) {
-			try {
+		try {
+			if (this.node.net.trans) {
 				this.node.net.trans._stop()
-			} catch {
-				// Do nothing
+			}
+		} catch {
+			// Do nothing
+		}
+	}
+
+	// Perform a network test by pinging all our bootstrap nodes in a random sequence - returns IP addr of first PONG, null if network failure
+	async net_test() {
+		const bstrap = Array.from(Happ.BOOTSTRAP_NODES);
+
+		while (bstrap.length > 0) {
+			const peer = bstrap.splice(Math.floor(Math.random() * bstrap.length), 1);
+
+			const res = await new Promise((resolve, reject) => {
+				this.node._req_ping({addr: peer[0][0], port: peer[0][1], node_id: new Hbigint(-1)}, (res, ctx) => { 
+					resolve(peer[0][0]);
+				}, () => {
+					resolve(null);
+				});
+			});
+
+			if (res) {
+				return res;
 			}
 		}
+
+		return null;
 	}
 
 	// Boot this instance on a local network simulation
