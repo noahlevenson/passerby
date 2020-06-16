@@ -150,6 +150,9 @@ class Happ {
 		try {
 			if (this.node.net.trans) {
 				this.node.net.trans._stop()
+				this.port = null;
+				this.pht = null;
+				this.node = null;
 			}
 		} catch {
 			// Do nothing
@@ -158,25 +161,26 @@ class Happ {
 
 	// Perform a network test by pinging all our bootstrap nodes in a random sequence - returns IP addr of first PONG, null if network failure
 	async net_test() {
+		if (!this.node) {
+			return null;
+
+		}
+		
 		const bstrap = Array.from(Happ.BOOTSTRAP_NODES);
 
 		while (bstrap.length > 0) {
 			const peer = bstrap.splice(Math.floor(Math.random() * bstrap.length), 1);
 
-			try {
-				const res = await new Promise((resolve, reject) => {
-					this.node._req_ping({addr: peer[0][0], port: peer[0][1], node_id: new Hbigint(-1)}, (res, ctx) => { 
-						resolve(peer[0][0]);
-					}, () => {
-						resolve(null);
-					});
+			const res = await new Promise((resolve, reject) => {
+				this.node._req_ping({addr: peer[0][0], port: peer[0][1], node_id: new Hbigint(-1)}, (res, ctx) => { 
+					resolve(peer[0][0]);
+				}, () => {
+					resolve(null);
 				});
+			});
 
-				if (res) {
-					return res;
-				}
-			} catch {
-				// Do nothing
+			if (res) {
+				return res;
 			}
 		}
 
