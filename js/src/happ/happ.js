@@ -150,7 +150,6 @@ class Happ {
 		try {
 			if (this.node.net.trans) {
 				this.node.net.trans._stop()
-				this.port = null;
 				this.pht = null;
 				this.node = null;
 			}
@@ -165,7 +164,7 @@ class Happ {
 			return null;
 
 		}
-		
+
 		const bstrap = Array.from(Happ.BOOTSTRAP_NODES);
 
 		while (bstrap.length > 0) {
