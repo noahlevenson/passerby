@@ -163,16 +163,20 @@ class Happ {
 		while (bstrap.length > 0) {
 			const peer = bstrap.splice(Math.floor(Math.random() * bstrap.length), 1);
 
-			const res = await new Promise((resolve, reject) => {
-				this.node._req_ping({addr: peer[0][0], port: peer[0][1], node_id: new Hbigint(-1)}, (res, ctx) => { 
-					resolve(peer[0][0]);
-				}, () => {
-					resolve(null);
+			try {
+				const res = await new Promise((resolve, reject) => {
+					this.node._req_ping({addr: peer[0][0], port: peer[0][1], node_id: new Hbigint(-1)}, (res, ctx) => { 
+						resolve(peer[0][0]);
+					}, () => {
+						resolve(null);
+					});
 				});
-			});
 
-			if (res) {
-				return res;
+				if (res) {
+					return res;
+				}
+			} catch {
+				// Do nothing
 			}
 		}
 
