@@ -36,7 +36,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_br
     });
 
     network.hbuy.send(purchase, "66.228.34.29", 27500, (res, ctx) => {
-        console.log(res);
+        console.log("ayyyy");
     });
 
     network.hpht._debug_print_stats();

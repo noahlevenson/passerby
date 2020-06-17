@@ -75,6 +75,7 @@ class Hbuy {
 	}
 
 	_on_req(msg, rinfo) {
+		Hlog.log(`[HBUY] ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${msg.from} (${rinfo.address}:${rinfo.port})`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg);
 		this.send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement retransmission
 	}
