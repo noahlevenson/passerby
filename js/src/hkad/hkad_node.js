@@ -88,7 +88,7 @@ class Hkad_node {
 		// Both of the below practices need to be examined and compared to each other for consistency of philosophy - how much does each module need to be aware of other modules' interfaces?
 		this.eng.node = this; // We reach out to the message engine to give it a reference to ourself, currently just so that the message engine can reach back and get our net module reference and call its out() method
 		this.net.node = this; // Ditto for the net module
-		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // Here we have the node wire up the network module to the message engine - kinda cool, but maybe too complex and not loosely coupled enough?
+		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // TODO: move this to boostrap - don't want to handle messages until we've decided to join the network
 	}
 
 	// Get XOR "distance" between two Hbigint values

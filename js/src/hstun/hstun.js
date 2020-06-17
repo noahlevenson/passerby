@@ -40,7 +40,7 @@ class Hstun {
 			// TODO: the STUN RFC says that we SHOULD implement retransmissions, and the retransmission spec and algorithm is defined in the paper
 			// Since I think retransmission only applies to UDP, we should implement a "TRANSPORT TYPE" enum on HTRANS and check it here...
 
-			// TODO: We should have a function to generate ID's rather than just doing it ad hoc here
+			// TODO: We should have a function to generate IDs rather than just doing it ad hoc here
 			const id = crypto.randomBytes(Hstun_hdr.K_ID_LEN);
 			const id_string = id.toString("hex");
 

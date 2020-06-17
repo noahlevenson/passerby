@@ -20,6 +20,8 @@ const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
+const { Hbuy } = require("../hbuy/hbuy.js");
+const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
@@ -32,7 +34,8 @@ class Happ {
 
 	loc;
 	port;
-	pht;
+	hpht;
+	hbuy;
 	node;
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
@@ -50,7 +53,8 @@ class Happ {
 
 		this.loc = new Hgeo_coord({lat: lat, long: long});
 		this.port = port;
-		this.pht = null;
+		this.hpht = null;
+		this.hbuy = null;
 		this.node = null;
 	}
 
@@ -76,12 +80,12 @@ class Happ {
 
 	// Put data (menu) associated with our geolocation to the network
 	async put(data) {
-		await this.pht.insert(this.get_location().linearize(), data);
+		await this.hpht.insert(this.get_location().linearize(), data);
 	}
 
 	// Search the network for data (menus) within a geographic window defined by an Hgeo_rect
 	async geosearch(rect) {
-		return await this.pht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
+		return await this.hpht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
 	}
 
 	// Boot this instance and join the network
@@ -133,7 +137,7 @@ class Happ {
 		}
 
 		// Create a PHT interface
-		this.pht = new Hpht({
+		this.hpht = new Hpht({
 			index_attr: Happ.GEO_INDEX_ATTR,
 			dht_lookup_func: peer_node._node_lookup, 
 			dht_lookup_args: [peer_node._req_find_value], 
@@ -142,7 +146,12 @@ class Happ {
 		});
 
 		// Idempotently initialize the PHT
-		await this.pht.init();
+		await this.hpht.init();
+
+		// Create and start an HBUY interface
+		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);
+		this.hbuy = new Hbuy({net: happ_hbuy_net});
+		this.hbuy.start();
 	}
 
 	// Disconnect from the network (currently only works with the one kind of Happ instance we can create)
@@ -150,7 +159,7 @@ class Happ {
 		try {
 			if (this.node.net.trans) {
 				this.node.net.trans._stop()
-				this.pht = null;
+				this.hpht = null;
 				this.node = null;
 			}
 		} catch {
@@ -203,7 +212,8 @@ class Happ {
 		await this.node.bootstrap(bootstrap_node === null ? peer_node.node_info : bootstrap_node.get_node());
 
 		// Create a PHT interface
-		this.pht = new Hpht({
+		this.hpht = new Hpht({
+
 			index_attr: Happ.GEO_INDEX_ATTR,
 			dht_lookup_func: peer_node._node_lookup, 
 			dht_lookup_args: [peer_node._req_find_value], 
@@ -212,7 +222,7 @@ class Happ {
 		});
 
 		// Idempotently initialize the PHT
-		await this.pht.init();
+		await this.hpht.init();
 		console.log("");
 	}
 }
