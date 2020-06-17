@@ -10,6 +10,7 @@
 "use strict";
 
 const BigInt = require("big-integer");
+const crypto = require("crypto");
 const { Hbigint_base } = require("./hbigint_base.js");
 
 class Hbigint extends Hbigint_base {
@@ -46,6 +47,10 @@ class Hbigint extends Hbigint_base {
 		}
 
 		return val;
+	}
+
+	static random(len) {
+		return new Hbigint(crypto.randomBytes(len).toString("hex"));
 	}
 
 	get() {

@@ -47,7 +47,7 @@ class Hbuy_net_solo extends Hbuy_net {
 		// msg is a STUN message delivered from HSTUN
 		const htrans_msg = new Htrans_msg({
 			msg: hbuy_msg,
-			type: Htrans_msg.TYPE.HSTUN
+			type: Htrans_msg.TYPE.HBUY
 		});
 
 		this.trans._send(htrans_msg, rinfo.address, rinfo.port);

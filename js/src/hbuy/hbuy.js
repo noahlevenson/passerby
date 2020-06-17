@@ -10,12 +10,14 @@
 "use strict";
 
 const EventEmitter = require("events");
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
 const { Hlog } = require("../hlog/hlog.js");
 
 class Hbuy {
 	static MSG_TIMEOUT = 5000;
+	static ID_LEN = 12;
 
 	net;
 	res;
