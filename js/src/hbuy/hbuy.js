@@ -48,12 +48,12 @@ class Hbuy {
 		}
 	}
 
-	_transact_hook(req) {
+	_transact_hook(req, rinfo) {
 		// Do nothing
 	}
 
-	_res_transact(req) {
-		this._transact_hook(req);
+	_res_transact(req, rinfo) {
+		this._transact_hook(req, rinfo);
 
 		return new Hbuy_msg({
 			data: new Hbuy_transaction({order: null, payment: null, id: req.data.id}),
@@ -63,7 +63,7 @@ class Hbuy {
 		});
 	}
 
-	_res_status(req) {
+	_res_status(req, rinfo) {
 		this.status.emit(`${req.data.id}#${req.data.code}`, req);
 
 		return new Hbuy_msg({
@@ -76,7 +76,7 @@ class Hbuy {
 
 	_on_req(msg, rinfo) {
 		Hlog.log(`[HBUY] Inbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
-		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg);
+		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
 		this._send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement UDP retransmission
 	}
 
