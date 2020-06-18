@@ -18,14 +18,14 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
     await me._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim, use_local_sim: true, random_id: false});
     
     for (let i = 0; i < 500; i += 1) {
-        await me.pht.insert(new Hbigint(i), i);
+        await me.hpht.insert(new Hbigint(i), i);
     }
 
     for (let i = 0; i < 500; i += 1) {
-        await me.pht.delete(new Hbigint(i));
+        await me.hpht.delete(new Hbigint(i));
     }
 
-    await me.pht._debug_print_stats();
+    await me.hpht._debug_print_stats();
     local_sim._debug_dump_network_state();
 
     me.node._debug_print_routing_table();
@@ -38,13 +38,13 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
     
     // *** non-API functions -- PUTting menu data not associated with our geolocation...
     const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    await network.pht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
+    await network.hpht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
 
     const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    await network.pht.insert(pinos.linearize(), "Pino's La Forchetta");
+    await network.hpht.insert(pinos.linearize(), "Pino's La Forchetta");
 
     const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    await network.pht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
+    await network.hpht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
     // ***
 
     const search_res = await network.geosearch(westchester);

@@ -13,13 +13,13 @@ const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
+const { Hbuy_transaction } = require("./hbuy_transaction.js");
 const { Hlog } = require("../hlog/hlog.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hbuy {
 	static MSG_TIMEOUT = 5000;
-	static MSG_ID_LEN = 12;
-	static TRANSACTION_ID_LEN = 8;
-
+	
 	net;
 	res;
 	status;
@@ -41,6 +41,7 @@ class Hbuy {
 
 	_on_message(msg, rinfo) {
 		if (msg.type === Hbuy_msg.TYPE.RES) {
+			Hlog.log(`[HBUY] REQ # ${msg.data.id.toString()} OK`);
 			this.res.emit(msg.id.toString(), msg);
 		} else {
 			this._on_req(msg, rinfo);
@@ -55,8 +56,7 @@ class Hbuy {
 		this._transact_hook(req);
 
 		return new Hbuy_msg({
-			from: "debug",
-			data: "OK",
+			data: new Hbuy_transaction({order: null, payment: null, id: req.data.id}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.TRANSACT,
 			id: req.id
@@ -67,8 +67,7 @@ class Hbuy {
 		this.status.emit(`${req.data.id}#${req.data.code}`, req);
 
 		return new Hbuy_msg({
-			from: "debug",
-			data: "OK",
+			data: new Hbuy_status({id: req.data.id, code: req.data.code}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
 			id: req.id
@@ -76,12 +75,12 @@ class Hbuy {
 	}
 
 	_on_req(msg, rinfo) {
-		Hlog.log(`[HBUY] Inbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${msg.from} (${rinfo.address}:${rinfo.port})`)
+		Hlog.log(`[HBUY] Inbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg);
-		this.send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement UDP retransmission
+		this._send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement UDP retransmission
 	}
 
-	send(msg, addr, port, success, timeout) {
+	_send(msg, addr, port, success, timeout) {
 		if (msg.type === Hbuy_msg.TYPE.REQ) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
@@ -100,12 +99,57 @@ class Hbuy {
 				});
 			}).catch((reason) => {
 				if (typeof timeout === "function") {
-					timeout();
+					timeout(msg);
 				}
 			});
+		}	
+
+		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id.toString()} to ${addr}:${port}`);
+		this.net._out(msg, {address: addr, port: port});	
+	}
+
+	transact_req({order = null, payment = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (order === null || payment === null || addr === null || port === null) {
+
+			throw new TypeError("Arguments cannot be null");
 		}
 
-		this.net._out(msg, {address: addr, port: port});	
+		const transaction = new Hbuy_transaction({
+	    	order: order,
+	        payment: payment,
+	        id: Hbigint.random(Hbuy_transaction.ID_LEN)
+    	});
+
+		const msg = new Hbuy_msg({
+			data: transaction,
+			type: Hbuy_msg.TYPE.REQ,
+			flavor: Hbuy_msg.FLAVOR.TRANSACT,
+			id: Hbigint.random(Hbuy_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
+	}
+
+	status_req({id = null, code = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (id === null || code === null || addr === null || port === null) {
+			throw new TypeError("Arguments cannot be null");
+		}
+
+		const status = new Hbuy_status({
+			id: id,
+			code: code
+		});
+
+		const msg = new Hbuy_msg({
+			data: status,
+			type: Hbuy_msg.TYPE.REQ,
+			flavor: Hbuy_msg.FLAVOR.STATUS,
+			id: Hbigint.random(Hbuy_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
 	}
 
 	start() {

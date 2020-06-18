@@ -10,6 +10,8 @@
 "use strict";
 
 class Hbuy_transaction {
+	static ID_LEN = 8;
+	
 	order;
 	payment;
 	id;

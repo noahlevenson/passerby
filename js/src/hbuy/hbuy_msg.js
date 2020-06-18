@@ -10,6 +10,8 @@
 "use strict";
 
 class Hbuy_msg {
+	static ID_LEN = 12;
+
 	static TYPE = {
 		REQ: 0,
 		RES: 1
@@ -20,19 +22,17 @@ class Hbuy_msg {
 		STATUS: 1
 	}
 
-	from;
 	data;
 	type;
 	flavor;
 	id;
 
-	constructor({from = null, data = null, type = null, flavor = null, id = null} = {}) {
+	constructor({data = null, type = null, flavor = null, id = null} = {}) {
 		// Mostly for sanity during development: explicitly require values 
-		if (id === null || from === null || type === null || flavor === null) {
+		if (id === null || type === null || flavor === null) {
 			throw new Error("Arguments cannot be null");
 		}
 
-		this.from = from;
 		this.data = data;
 		this.type = type;
 		this.flavor = flavor;
