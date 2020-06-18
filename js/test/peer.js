@@ -5,6 +5,7 @@ const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy } = require("../src/hbuy/hbuy.js");
 const { Hbuy_msg } = require("../src/hbuy/hbuy_msg.js");
 const { Hbuy_transaction } = require("../src/hbuy/hbuy_transaction.js");
+const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_browser.js") : require("../src/htypes/hbigint/hbigint_node.js");
 
@@ -38,24 +39,25 @@ const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_br
     const transaction = new Hbuy_transaction({
         order: "debug",
         payment: "debug",
-        id: Hbigint.random(Hbuy.ORDER_ID_LEN)
+        id: Hbigint.random(Hbuy.TRANSACTION_ID_LEN)
     });
 
     const msg = new Hbuy_msg({
-        from: "debug",
+        from: [network.get_node().node_info.addr, network.get_node().node_info.port], // This must be replaced by some global level Hid object!!!
         data: transaction,
         type: Hbuy_msg.TYPE.REQ,
         flavor: Hbuy_msg.FLAVOR.TRANSACT,
-        id: Hbigint.random(Hbuy.ID_LEN)
+        id: Hbigint.random(Hbuy.MSG_ID_LEN)
     });
 
-    Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.get_data().get_id()} to 66.228.34.29:27500`); // TODO, get addr/port from node_info
+    // TODO, get addr/port dynamically from node_info
+    Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.get_data().get_id().toString()} to 66.228.34.29:27500`);
 
     network.hbuy.send(msg, "66.228.34.29", 27500, (res, ctx) => {
-        Hlog.log(`[HBUY] REQ # ${msg.get_data().get_id()} ${res.get_data()}`);
+        Hlog.log(`[HBUY] REQ # ${msg.get_data().get_id().toString()} ${res.get_data()}`);
         
-        network.hbuy.on_status(msg.get_data().get_id(), 0, () => { // 0 willl eventually be like Hbuy_status.CODE.CONFIRMED
-            console.log(`Received status confirmation for order # ${msg.get_data().get_id()}`);
+        network.hbuy.on_status(msg.get_data().get_id(), Hbuy_status.CODE.CONFIRMED, () => {
+            console.log(`Received status confirmation for order # ${msg.get_data().get_id().toString()}`);
         });
     }, () => {
         console.log("Timed out!");

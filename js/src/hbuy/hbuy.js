@@ -17,8 +17,8 @@ const { Hlog } = require("../hlog/hlog.js");
 
 class Hbuy {
 	static MSG_TIMEOUT = 5000;
-	static ID_LEN = 12;
-	static ORDER_ID_LEN = 8;
+	static MSG_ID_LEN = 12;
+	static TRANSACTION_ID_LEN = 8;
 
 	net;
 	res;
@@ -47,12 +47,12 @@ class Hbuy {
 		}
 	}
 
-	_transact_hook() {
+	_transact_hook(req) {
 		// Do nothing
 	}
 
 	_res_transact(req) {
-		this._transact_hook();
+		this._transact_hook(req);
 
 		return new Hbuy_msg({
 			from: "debug",
@@ -128,7 +128,7 @@ class Hbuy {
 
 	// Subscribe only once to the next status event for a given transaction ID and status code
 	on_status(transact_id, status_code, cb) {
-		this.status.once(`req.data.transaction_id#req.data.status_code`, cb);
+		this.status.once(`${transact_id.toString()}#${status_code}`, cb);
 	}
 }
 
