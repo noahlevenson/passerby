@@ -105,7 +105,7 @@ class Hbuy {
 			});
 		}	
 
-		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id.toString()} to ${addr}:${port}`);
+		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hbuy_msg.TYPE)[msg.type]} # ${msg.data.id.toString()} to ${addr}:${port}`);
 		this.net._out(msg, {address: addr, port: port});	
 	}
 

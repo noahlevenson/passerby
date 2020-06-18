@@ -37,7 +37,7 @@ const { Hlog } = require("../src/hlog/hlog.js");
         port: 27500,
         success: (res, ctx) => {
             network.hbuy.on_status(res.data.id, Hbuy_status.CODE.CONFIRMED, (req) => {
-                console.log(`Received status confirmation for order # ${req.data.id.toString()}`);
+                console.log(`Received confirmation for transaction # ${req.data.id.toString()}`);
             });
         },
         timeout: (req) => {
