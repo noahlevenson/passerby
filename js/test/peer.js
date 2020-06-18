@@ -4,6 +4,8 @@ const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy } = require("../src/hbuy/hbuy.js");
 const { Hbuy_msg } = require("../src/hbuy/hbuy_msg.js");
+const { Hbuy_transaction } = require("../src/hbuy/hbuy_transaction.js");
+const { Hlog } = require("../src/hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_browser.js") : require("../src/htypes/hbigint/hbigint_node.js");
 
 (async function run() {
@@ -27,18 +29,36 @@ const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_br
     const search_res = await network.geosearch(westchester);
     console.log(search_res);
 
-    const purchase = new Hbuy_msg({
-        from: "placeholder for hbuy_id",
-        data: "here's where an Hbuy_transact would go",
+
+    // network.hpht._debug_print_stats();
+    // network.node._debug_print_routing_table();
+
+
+    // *** PLACE AN ORDER -- THIS SHOULD BE ABSTRACTED AWAY ***
+    const transaction = new Hbuy_transaction({
+        order: "debug",
+        payment: "debug",
+        id: Hbigint.random(Hbuy.ORDER_ID_LEN)
+    });
+
+    const msg = new Hbuy_msg({
+        from: "debug",
+        data: transaction,
         type: Hbuy_msg.TYPE.REQ,
         flavor: Hbuy_msg.FLAVOR.TRANSACT,
         id: Hbigint.random(Hbuy.ID_LEN)
     });
 
-    network.hbuy.send(purchase, "66.228.34.29", 27500, (res, ctx) => {
-        console.log("ayyyy");
-    });
+    Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.get_data().get_id()} to 66.228.34.29:27500`); // TODO, get addr/port from node_info
 
-    network.hpht._debug_print_stats();
-    network.node._debug_print_routing_table();
+    network.hbuy.send(msg, "66.228.34.29", 27500, (res, ctx) => {
+        Hlog.log(`[HBUY] REQ # ${msg.get_data().get_id()} ${res.get_data()}`);
+        
+        network.hbuy.on_status(msg.get_data().get_id(), 0, () => { // 0 willl eventually be like Hbuy_status.CODE.CONFIRMED
+            console.log(`Received status confirmation for order # ${msg.get_data().get_id()}`);
+        });
+    }, () => {
+        console.log("Timed out!");
+    });
+    /// *** END ORDER *** 
 })();

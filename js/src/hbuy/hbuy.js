@@ -18,6 +18,7 @@ const { Hlog } = require("../hlog/hlog.js");
 class Hbuy {
 	static MSG_TIMEOUT = 5000;
 	static ID_LEN = 12;
+	static ORDER_ID_LEN = 8;
 
 	net;
 	res;
@@ -54,8 +55,8 @@ class Hbuy {
 		this._transact_hook();
 
 		return new Hbuy_msg({
-			from: "placeholder for Hbuy_id type",
-			data: "res transact OK",
+			from: "debug",
+			data: "OK",
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.TRANSACT,
 			id: req.id
@@ -66,8 +67,8 @@ class Hbuy {
 		this.status.emit(`req.data.transaction_id#req.data.status_code`, req.from); // TODO: Still pending design of an Hbuy_status object
 
 		return new Hbuy_msg({
-			from: "placeholder for Hbuy_id type",
-			data: "res status OK",
+			from: "debug",
+			data: "OK",
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
 			id: req.id
@@ -75,7 +76,7 @@ class Hbuy {
 	}
 
 	_on_req(msg, rinfo) {
-		Hlog.log(`[HBUY] ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${msg.from} (${rinfo.address}:${rinfo.port})`)
+		Hlog.log(`[HBUY] Inbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${msg.from} (${rinfo.address}:${rinfo.port})`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg);
 		this.send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement retransmission
 	}
@@ -125,7 +126,7 @@ class Hbuy {
 		this._transact_hook = f;
 	}
 
-	// Subscribe once to status events for a given transaction ID and status code
+	// Subscribe only once to the next status event for a given transaction ID and status code
 	on_status(transact_id, status_code, cb) {
 		this.status.once(`req.data.transaction_id#req.data.status_code`, cb);
 	}
