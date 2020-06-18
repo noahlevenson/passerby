@@ -39,9 +39,7 @@ class Hbuy_msg {
 		this.id = id;
 	}
 
-	get_data() {
-		return this.data;
-	}
+	// TODO: getters and setters
 }
 
 module.exports.Hbuy_msg = Hbuy_msg;

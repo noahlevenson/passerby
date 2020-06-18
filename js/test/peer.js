@@ -51,13 +51,13 @@ const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_br
     });
 
     // TODO, get addr/port dynamically from node_info
-    Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.get_data().get_id().toString()} to 66.228.34.29:27500`);
+    Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id.toString()} to 66.228.34.29:27500`);
 
     network.hbuy.send(msg, "66.228.34.29", 27500, (res, ctx) => {
-        Hlog.log(`[HBUY] REQ # ${msg.get_data().get_id().toString()} ${res.get_data()}`);
+        Hlog.log(`[HBUY] REQ # ${msg.data.id.toString()} ${res.data}`);
         
-        network.hbuy.on_status(msg.get_data().get_id(), Hbuy_status.CODE.CONFIRMED, () => {
-            console.log(`Received status confirmation for order # ${msg.get_data().get_id().toString()}`);
+        network.hbuy.on_status(msg.data.id, Hbuy_status.CODE.CONFIRMED, (req) => {
+            console.log(`Received status confirmation for order # ${msg.data.id.toString()}`);
         });
     }, () => {
         console.log("Timed out!");

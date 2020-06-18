@@ -22,9 +22,7 @@ class Hbuy_status {
 		this.code = code;
 	}
 
-	get_id() {
-		return this.id;
-	}
+	// TODO: getters and setters
 }
 
 module.exports.Hbuy_status = Hbuy_status;

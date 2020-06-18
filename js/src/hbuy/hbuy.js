@@ -64,7 +64,7 @@ class Hbuy {
 	}
 
 	_res_status(req) {
-		this.status.emit(`req.data.transaction_id#req.data.status_code`, req.from); // TODO: Still pending design of an Hbuy_status object
+		this.status.emit(`${req.data.id}#${req.data.code}`, req);
 
 		return new Hbuy_msg({
 			from: "debug",
@@ -78,7 +78,7 @@ class Hbuy {
 	_on_req(msg, rinfo) {
 		Hlog.log(`[HBUY] Inbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${msg.from} (${rinfo.address}:${rinfo.port})`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg);
-		this.send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement retransmission
+		this.send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement UDP retransmission
 	}
 
 	send(msg, addr, port, success, timeout) {

@@ -20,9 +20,7 @@ class Hbuy_transaction {
 		this.id = id;
 	}
 
-	get_id() {
-		return this.id;
-	}
+	// TODO: getters and setters
 }
 
 module.exports.Hbuy_transaction = Hbuy_transaction;
