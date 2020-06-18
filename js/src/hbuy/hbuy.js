@@ -14,6 +14,7 @@ const { Happ_env } = require("../happ/happ_env.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
 const { Hbuy_transaction } = require("./hbuy_transaction.js");
+const { Hbuy_status } = require("./hbuy_status.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
