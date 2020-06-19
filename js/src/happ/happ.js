@@ -171,7 +171,6 @@ class Happ {
 	async net_test() {
 		if (!this.node) {
 			return null;
-
 		}
 
 		const bstrap = Array.from(Happ.BOOTSTRAP_NODES);
