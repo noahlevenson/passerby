@@ -251,7 +251,7 @@ class Hkad_node {
 			
 			contacts.forEach((node) => {
 				res.push(new Promise((resolve, reject) => {
-					this[rpc.name](key, node.get_data(), (res, ctx) => {
+					rpc.bind(this)(key, node.get_data(), (res, ctx) => {
 						if (res.data.type === Hkad_data.TYPE.VAL) {
 							resolve([res.data.payload, active.bst_min()]);
 						}	
@@ -270,7 +270,6 @@ class Hkad_node {
 						inactive.bst_delete(node);
 						resolve(null);
 					});
-
 				}));
 			});
 

@@ -75,7 +75,7 @@ class Hstun {
 			return;
 		}
 
-		Hlog.log(`[HSTUN] Inbound ${Object.keys(Hstun_hdr.K_MSG_TYPE)[Hstun_hdr._decType(inMsg.hdr.type).type]} from ${rinfo.address}:${rinfo.port}\n`);
+		Hlog.log(`[HSTUN] Inbound ${Object.keys(Hstun_hdr.K_MSG_TYPE)[Hstun_hdr._decType(inMsg.hdr.type).type]} from ${rinfo.address}:${rinfo.port}`);
 
 		// For compliance with RFCs 5389 and 3489, we return an error response for any unknown comprehension required attrs
 		const badAttrTypes = [];
