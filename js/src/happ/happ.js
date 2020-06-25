@@ -78,6 +78,17 @@ class Happ {
 		return new Hbigint(Hutil._sha1(key));
 	}
 
+	// Search the network for the Hkad_node_info object for a given node_id as Hbigint (returns null if unable to resolve)
+	async search_node_info(node_id) {
+		const data = await this.node._node_lookup(node_id);
+
+		if (data.payload[0].node_id.equals(node_id)) {
+			return data.payload[0];
+		}
+
+		return null;
+	}
+
 	// Put data (menu) associated with our geolocation to the network
 	async put(data) {
 		await this.hpht.insert(this.get_location().linearize(), data);

@@ -6,36 +6,25 @@ const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
 (async function run() {
-    const network = new Happ({lat: 40.9018663, long: -73.7912739});
+    // Ottavio's Woodworking - 711 Main St. New Rochelle NY 10801
+    const network = new Happ({lat: 40.9039873, long: -73.7908761, port: 27600});
     await network.start();
-    await network.put("Pizzeria La Rosa");
     
+    // A large region of Westchester County encompassing Pizzeria La Rosa
     const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
-    
-    // *** non-API functions -- PUTting menu data not associated with our geolocation...
-    const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    await network.hpht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
-
-    const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    await network.hpht.insert(pinos.linearize(), "Pino's La Forchetta");
-
-    const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    await network.hpht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
-    // ***
-
     const search_res = await network.geosearch(westchester);
-    console.log(search_res);
 
-    console.log(network.get_id())
-
-    // network.hpht._debug_print_stats();
-    // network.node._debug_print_routing_table();
+    console.log(search_res[0][0]);
+    
+    // Assuming search_res[0] is the [key, menu] for Pizzeria La Rosa
+    const node_id = network.get_node_id_for_key(search_res[0][0]);
+    const node_info = await network.search_node_info(node_id);
 
     network.hbuy.transact_req({
         order: "debug",
         payment: "debug",
-        addr: "66.228.34.29",
-        port: 27500,
+        addr: node_info.addr,
+        port: node_info.port,
         success: (res, ctx) => {
             network.hbuy.on_status(res.data.id, Hbuy_status.CODE.CONFIRMED, (req) => {
                 console.log(`Received confirmation for transaction # ${req.data.id.toString()}`);
