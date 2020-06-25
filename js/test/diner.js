@@ -7,7 +7,7 @@ const { Hlog } = require("../src/hlog/hlog.js");
 
 (async function run() {
     // Ottavio's Woodworking - 711 Main St. New Rochelle NY 10801
-    const network = new Happ({lat: 40.9039873, long: -73.7908761, port: 27600});
+    const network = new Happ({lat: 40.9039873, long: -73.7908761});
     await network.start();
     
     // A large region of Westchester County encompassing Pizzeria La Rosa
