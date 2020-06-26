@@ -54,11 +54,6 @@ class Hbuy_order {
 	total() {
 		return 69.69;
 	}
-
-	// Return type as string
-	get_type() {
-		return Object.keys(Hbuy_order.TYPE)[this.type];
-	}
 }
 
 module.exports.Hbuy_order = Hbuy_order;

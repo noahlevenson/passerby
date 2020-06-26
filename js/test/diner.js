@@ -4,6 +4,7 @@ const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
+const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
 (async function run() {
@@ -21,8 +22,6 @@ const { Hlog } = require("../src/hlog/hlog.js");
     const node_id = network.get_node_id_for_key(search_res[0][0]);
     const node_info = await network.search_node_info(node_id);
     
-    // TODO: Make this an actual Hbuy_order
-
     const order = new Hbuy_order({
         type: Hbuy_order.TYPE.DELIVERY,
         name: "John DeVivo",
@@ -31,9 +30,13 @@ const { Hlog } = require("../src/hlog/hlog.js");
         items: [undefined, undefined, undefined, undefined, undefined]
     });
 
+    const payment = new Hbuy_payment({
+
+    });
+
     network.hbuy.transact_req({
         order: order,
-        payment: {"debug": "debug"},
+        payment: payment,
         addr: node_info.addr,
         port: node_info.port,
         success: (res, ctx) => {
