@@ -3,6 +3,7 @@ const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
+const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
 (async function run() {
@@ -19,10 +20,20 @@ const { Hlog } = require("../src/hlog/hlog.js");
     // Assuming search_res[0] is the [key, menu] for Pizzeria La Rosa
     const node_id = network.get_node_id_for_key(search_res[0][0]);
     const node_info = await network.search_node_info(node_id);
+    
+    // TODO: Make this an actual Hbuy_order
+
+    const order = new Hbuy_order({
+        type: Hbuy_order.TYPE.DELIVERY,
+        name: "John DeVivo",
+        address: "711 Main St. New Rochelle NY 10801",
+        phone: "914-666-6666",
+        items: [undefined, undefined, undefined, undefined, undefined]
+    });
 
     network.hbuy.transact_req({
-        order: "debug",
-        payment: "debug",
+        order: order,
+        payment: {"debug": "debug"},
         addr: node_info.addr,
         port: node_info.port,
         success: (res, ctx) => {
