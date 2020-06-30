@@ -46,10 +46,12 @@ class Hbintree_node {
 	}
 
 	set_left(node) {
+		// TODO: You don't want to set node.parent to this node? Are we doing that manually?
 		this.children[0] = node;
 	} 
 
 	set_right(node) {
+		// TODO: You don't want to set node.parent to this node? Are we doing that manually?
 		this.children[1] = node;
 	}
 
