@@ -19,10 +19,10 @@ class Hbuy_order {
 	name;
 	address;
 	phone;
+	form_id;
 	items;
-	grand;
 
-	constructor({type = null, name = null, address = null, phone = null, items = []} = {}) {
+	constructor({type = null, name = null, address = null, phone = null, form_id = null, items = []} = {}) {
 		if (!Array.isArray(items)) {
 			throw new TypeError("Argument 'items' must be an Array");
 		}
@@ -31,28 +31,18 @@ class Hbuy_order {
 		this.name = name;
 		this.address = address;
 		this.phone = phone;
+		this.form_id = form_id;
 		this.items = items;
-		this.grand = this.total();
 	}
 
 	// Add an item to the order
-	add() {
-
+	add(item) {
+		this.items.push(item);
 	}
 
 	// Remove an item from the order by index?
 	delete(i) {
 
-	}
-
-	// Get the sum of all times pre-tax
-	subtotal() {
-
-	}
-
-	// Get the sum of all items plus all taxes
-	total() {
-		return 69.69;
 	}
 }
 

@@ -7,6 +7,8 @@ const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
 const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
+const { Larosa_menu } = require("./menu.js");
+
 (async function run() {
     // Ottavio's Woodworking - 711 Main St. New Rochelle NY 10801
     const network = new Happ({lat: 40.9039873, long: -73.7908761});
@@ -21,6 +23,8 @@ const { Hlog } = require("../src/hlog/hlog.js");
     // Assuming search_res[0] is the [key, menu] for Pizzeria La Rosa
     const node_id = network.get_node_id_for_key(search_res[0][0]);
     const node_info = await network.search_node_info(node_id);
+
+
     
     const order = new Hbuy_order({
         type: Hbuy_order.TYPE.DELIVERY,

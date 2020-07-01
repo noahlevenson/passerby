@@ -228,7 +228,6 @@ class Hutil {
 		}
 
 		return addr.substring(0, addr.length - 1); // Just remove the last colon
-		
 	}
 }
 

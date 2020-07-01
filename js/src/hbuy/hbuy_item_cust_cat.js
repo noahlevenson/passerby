@@ -14,15 +14,13 @@ class Hbuy_item_cust_cat {
 	custs;
 	min;
 	max;
-	choice;
 
-	constructor({desc = "", custs = [], min = 0, max = Number.POSITIVE_INFINITY, choice = new Set()} = {}) {
+	constructor({desc = "", custs = [], min = 0, max = Number.POSITIVE_INFINITY} = {}) {
 		// TODO: validation
 		this.desc = desc;
 		this.custs = custs;
 		this.min = min;
 		this.max = max;
-		this.choice = choice;
 	}
 }
 
