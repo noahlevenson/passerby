@@ -14,7 +14,7 @@ class Hntree_node {
 	parent;
 	children;
 
-	constructor({data = null, parent = null, children = new Set()} = {}) {
+	constructor({data = null, parent = null, children = []} = {}) {
 		this.data = data;
 		this.parent = parent;
 		this.children = children;
@@ -29,32 +29,26 @@ class Hntree_node {
 	}
 
 	add_child(node) {
-		this.children.add(node);
+		this.children.push(node);
 		return node;
 	}
 
 	delete_child(node) {
-		this.children.delete(node);
+		return this.children.splice(this.children.indexOf(node), 1)[0];
 	}
 
-	// Get child by index
+	// Get child by index or undefined if out of range
 	get_child(i) {
-		const nodes = Array.from(this.children.values());
-
-		if (nodes.length > i) {
-			return nodes[i];
-		} 
-
-		return null;
+		return this.children[i];
 	}
 
-	// Get an array of this node's children (empty array if none)
+	// Get a shallow copy of this node's children as an array
 	get_all_children() {
-		return Array.from(this.children.values());
+		return [...this.children];
 	}
 
 	num_children() {
-		return this.get_all_children().length;
+		return this.children.length;
 	}
 }
 

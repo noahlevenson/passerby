@@ -30,20 +30,14 @@ class Hbuy_menu {
 	// Buyers and sellers compare form IDs to make sure they're referencing items
 	// from the same order form
 	get_form_id() {
-		// Eliminate circular refs and recursively give Set objects a serializer
-		function _replacer(key, value) {
+		const json = JSON.stringify(this.data, (key, value) => {
 			if (key === "parent") {
 				return undefined;
 			}
 
-			if (value instanceof Set) {
-				return JSON.stringify(Array.from(value.values()), _replacer);
-			}
-
 			return value
-		}
+		});
 
-		const json = JSON.stringify(this.data, _replacer);
 		return Hutil._sha1(json);
 	}
 
