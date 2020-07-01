@@ -5,6 +5,7 @@ const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
 const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
+const { Hbuy_item_ref } = require("../src/hbuy/hbuy_item_ref.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
 const { Larosa_menu } = require("./menu.js");
@@ -24,15 +25,45 @@ const { Larosa_menu } = require("./menu.js");
     const node_id = network.get_node_id_for_key(search_res[0][0]);
     const node_info = await network.search_node_info(node_id);
 
-
-    
     const order = new Hbuy_order({
         type: Hbuy_order.TYPE.DELIVERY,
         name: "John DeVivo",
         address: "711 Main St. New Rochelle NY 10801",
-        phone: "914-666-6666",
-        items: [undefined, undefined, undefined, undefined, undefined]
+        phone: "914-666-6666"
     });
+
+    // Margherita pie with pepperoni + mushrooms
+    order.add(new Hbuy_item_ref({
+        form_id: Larosa_menu.get_form_id(),
+        item_list_idx: 0,
+        size_idx: 0,
+        cust_cats_idx: [[0, 10]]
+    }));
+
+    // Family size arugula salad
+    order.add(new Hbuy_item_ref({
+        form_id: Larosa_menu.get_form_id(),
+        item_list_idx: 5,
+        size_idx: 1,
+    }));
+
+    // Chicken parm with pasta
+    order.add(new Hbuy_item_ref({
+        form_id: Larosa_menu.get_form_id(),
+        item_list_idx: 8,
+        size_idx: 0,
+        cust_cats_idx: [[0]]
+    }));
+
+    // 2x Lemonade
+    order.add(new Hbuy_item_ref({
+        form_id: Larosa_menu.get_form_id(),
+        item_list_idx: 14,
+        size_idx: 0,
+        qty: 2
+    }));
+
+    console.log(order);
 
     const payment = new Hbuy_payment({
 

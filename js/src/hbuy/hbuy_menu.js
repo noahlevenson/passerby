@@ -26,23 +26,15 @@ class Hbuy_menu {
 	}
 
 	// Every kind of HBUY order form (like an Hbuy_menu) must implement a function
-	// to compute its form id, which is the hash of its Hntree
-	// Buyers and sellers compare form IDs to make sure they're referencing items
-	// from the same order form
+	// to compute its form id, which is the hash of its item list - buyers and sellers 
+	// compare form IDs to make sure they're referencing the same items
 	get_form_id() {
-		const json = JSON.stringify(this.data, (key, value) => {
-			if (key === "parent") {
-				return undefined;
-			}
-
-			return value
-		});
-
+		const json = JSON.stringify(this.get_item_list());
 		return Hutil._sha1(json);
 	}
 
-	// Return an array of all the Hbuy_item objects in this menu
-	get_items() {
+	// Return a deterministically ordered array of all the Hbuy_item objects in this menu
+	get_item_list() {
 		return this.data.dfs((node, data) => {
 			if (node.num_children() === 0) {
 				data.push(node.data);
@@ -52,8 +44,8 @@ class Hbuy_menu {
 		});
 	}
 
-	// Return an array of all the section labels of this menu
-	get_sections() {
+	// Return a deterministically ordered array of all the section labels of this menu
+	get_section_list() {
 		return this.data.dfs((node, data) => {
 			if (node.num_children() > 0) {
 				data.push(node.data);

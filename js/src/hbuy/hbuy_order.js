@@ -9,6 +9,8 @@
 
 "use strict";
 
+const { Hbuy_item_ref } = require("./hbuy_item_ref.js");
+
 class Hbuy_order {
 	static TYPE = {
 		DELIVERY: 0,
@@ -19,25 +21,23 @@ class Hbuy_order {
 	name;
 	address;
 	phone;
-	form_id;
-	items;
+	item_refs;
 
-	constructor({type = null, name = null, address = null, phone = null, form_id = null, items = []} = {}) {
-		if (!Array.isArray(items)) {
-			throw new TypeError("Argument 'items' must be an Array");
-		}
-
+	constructor({type = null, name = null, address = null, phone = null} = {}) {
 		this.type = type;
 		this.name = name;
 		this.address = address;
 		this.phone = phone;
-		this.form_id = form_id;
-		this.items = items;
+		this.item_refs = [];
 	}
 
 	// Add an item to the order
-	add(item) {
-		this.items.push(item);
+	add(item_ref) {
+		if (!(item_ref instanceof Hbuy_item_ref)) {
+			throw new TypeError("Argument 'item_ref' must be an Hbuy_item_ref");
+		}
+
+		this.item_refs.push(item_ref);
 	}
 
 	// Remove an item from the order by index?
