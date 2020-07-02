@@ -15,13 +15,15 @@ class Hbuy_item_ref {
 	size_idx;
 	cust_cats_idx;
 	qty;
+	comment;
 
-	constructor({form_id = null, item_list_idx = null, size_idx = null, cust_cats_idx = [], qty = 1} = {}) {
+	constructor({form_id = null, item_list_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
 		this.form_id = form_id;
 		this.item_list_idx = item_list_idx;
 		this.size_idx = size_idx;
 		this.cust_cats_idx = cust_cats_idx;
 		this.qty = qty;
+		this.comment = comment;
 	}
 }
 

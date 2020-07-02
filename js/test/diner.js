@@ -45,6 +45,7 @@ const { Larosa_menu } = require("./menu.js");
         form_id: Larosa_menu.get_form_id(),
         item_list_idx: 5,
         size_idx: 1,
+        comment: "please no raisins"
     }));
 
     // Chicken parm with pasta
@@ -58,7 +59,7 @@ const { Larosa_menu } = require("./menu.js");
     // 2x Lemonade
     order.add(new Hbuy_item_ref({
         form_id: Larosa_menu.get_form_id(),
-        item_list_idx: 14,
+        item_list_idx: 16,
         size_idx: 0,
         qty: 2
     }));
