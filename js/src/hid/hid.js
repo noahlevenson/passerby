@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Happ_env } = require("./happ_env.js");
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
