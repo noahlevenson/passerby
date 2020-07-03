@@ -10,6 +10,7 @@
 "use strict";
 
 const { Happ_env } = require("./happ_env.js");
+const { Happ_peer_data } = require("./happ_peer_data.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
@@ -32,8 +33,8 @@ class Happ {
 		["66.228.34.29", 27500]
 	];
 
-	loc;
 	port;
+	hid;
 	hpht;
 	hbuy;
 	node;
@@ -41,7 +42,7 @@ class Happ {
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of the z-curve linearization of our lat/long coords, and a PHT interface (indexing on GEO_INDEX_ATTR)
 	// TODO: Parameterize this to create different kinds of Happ instances
-	constructor({lat = null, long = null, port = 27500} = {}) {
+	constructor({hid = null, port = 27500} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Object.defineProperty(global.Map.prototype, "toJSON", {
 			value: Hutil._map_to_json
@@ -51,16 +52,11 @@ class Happ {
 			value: Hutil._map_from_json
 		});
 
-		this.loc = new Hgeo_coord({lat: lat, long: long});
 		this.port = port;
+		this.hid = hid;
 		this.hpht = null;
 		this.hbuy = null;
 		this.node = null;
-	}
-
-	// Return our location object
-	get_location() {
-		return this.loc;
 	}
 
 	// Return a reference to our DHT node
@@ -68,14 +64,14 @@ class Happ {
 		return this.node;
 	}
 
-	// Compute our location-based ID - the hash of the z-curve linearization of our lat/long coords
+	// Get our peer ID
 	get_id() {
-		return new Hbigint(Hutil._sha1(this.get_location().linearize().toString()));
+		return this.hid.peer_id;
 	}
 
-	// Compute the node ID associated with a data (menu) key (key as string)
-	get_node_id_for_key(key) {
-		return new Hbigint(Hutil._sha1(key));
+	// Return a reference to our latitude/longitude as an Hgeo_coord
+	get_location() {
+		return new Hgeo_coord({lat: this.hid.lat, long: this.hid.long});
 	}
 
 	// Search the network for the Hkad_node_info object for a given node_id as Hbigint (returns null if unable to resolve)
@@ -89,9 +85,13 @@ class Happ {
 		return null;
 	}
 
-	// Put data (menu) associated with our geolocation to the network
-	async put(data) {
-		await this.hpht.insert(this.get_location().linearize(), data);
+	// Put a Happ_peer_data object associated with our geolocation to the network
+	async put(peer_data) {
+		if (!(peer_data instanceof Happ_peer_data)) {
+			throw new TypeError("Argument 'peer_data' must be an Happ_peer_data object");
+		}
+
+		await this.hpht.insert(this.get_location().linearize(), peer_data);
 	}
 
 	// Search the network for data (menus) within a geographic window defined by an Hgeo_rect

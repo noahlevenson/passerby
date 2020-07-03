@@ -1,3 +1,4 @@
+const { Hid } = require("../src/hid/hid.js");
 const { Happ } = require("../src/happ/happ.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
@@ -11,8 +12,17 @@ const { Hlog } = require("../src/hlog/hlog.js");
 const { Larosa_menu } = require("./menu.js");
 
 (async function run() {
-    // Ottavio's Woodworking - 711 Main St. New Rochelle NY 10801
-    const network = new Happ({lat: 40.9039873, long: -73.7908761});
+    const ottavios_woodworking = new Hid({
+        public_key: "debug_public_key_tbd",
+        private_key: "debug_private_key_tbd",
+        name: "John DeVivo",
+        address: "711 Main St. New Rochelle NY 10801",
+        phone: "914-235-6887",
+        lat: 40.9039873,
+        long: -73.7908761
+    });
+
+    const network = new Happ({hid: ottavios_woodworking});
     await network.start();
     
     // A large region of Westchester County encompassing Pizzeria La Rosa
@@ -21,9 +31,8 @@ const { Larosa_menu } = require("./menu.js");
 
     console.log(search_res[0][0]);
     
-    // Assuming search_res[0] is the [key, menu] for Pizzeria La Rosa
-    const node_id = network.get_node_id_for_key(search_res[0][0]);
-    const node_info = await network.search_node_info(node_id);
+    // Assuming search_res[0] is the [key, Happ_peer_data] for Pizzeria La Rosa
+    const node_info = await network.search_node_info(search_res[0][1].peer_id);
 
     const order = new Hbuy_order({
         type: Hbuy_order.TYPE.DELIVERY,
@@ -37,7 +46,8 @@ const { Larosa_menu } = require("./menu.js");
         form_id: Larosa_menu.get_form_id(),
         item_list_idx: 0,
         size_idx: 0,
-        cust_cats_idx: [[0, 10]]
+        cust_cats_idx: [[0, 10]], 
+        comment: "extra char"
     }));
 
     // Family size arugula salad
