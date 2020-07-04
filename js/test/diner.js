@@ -3,6 +3,7 @@ const { Happ } = require("../src/happ/happ.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
+const { Hbuy_sms } = require("../src/hbuy/hbuy_sms.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
 const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
@@ -87,5 +88,13 @@ const { Larosa_menu } = require("./menu.js");
         timeout: (req) => {
             console.log(`Transaction request ${req.data.id.toString()} timed out`);
         }
+    });
+
+    // Send a chat message to the restaurant
+    network.hbuy.sms_req({
+       text: "Hi, I'm wondering if you have gluten free pasta?",
+       from: network.hid.public_data(),
+       addr: node_info.addr,
+       port: node_info.port
     });
 })();

@@ -13,6 +13,7 @@ const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
+const { Hbuy_sms } = require("./hbuy_sms.js");
 const { Hbuy_transaction } = require("./hbuy_transaction.js");
 const { Hbuy_status } = require("./hbuy_status.js");
 const { Hlog } = require("../hlog/hlog.js");
@@ -121,7 +122,7 @@ class Hbuy {
 			});
 		}	
 
-		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hbuy_msg.TYPE)[msg.type]} # ${msg.data.id.toString()} to ${addr}:${port}`);
+		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hbuy_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : "N/A"} to ${addr}:${port}`);
 		this.net._out(msg, {address: addr, port: port});	
 	}
 
@@ -170,9 +171,9 @@ class Hbuy {
 		this._send(msg, addr, port, success, timeout);
 	}
 
-	sms_req({text = null, from = null, data} = {}) {
+	sms_req({text = null, from = null, data, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (text === null || from === null) {
+		if (text === null || from === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
 		}
 
