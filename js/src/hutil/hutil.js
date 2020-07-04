@@ -24,8 +24,15 @@ class Hutil {
 	// Since maps come over the wire as arrays, there's no way to tell that they're supposed to be maps - so we can't write
 	// a reviver function for them...
 	// Instead, we implement a Map.from_JSON() function (curently set on the prorotype at the HAPP layer)
+	// TODO: We needlessly (?) re-stringify and re-parse the contents of the Map because the JSON.parse reviver function
+	// can't seem to deal with certain kinds of nested objects?
 	static _map_from_json(json) {
-		return new Map(JSON.parse(json));
+		const arr = JSON.parse(json);
+		const deeply_parsed = arr.map((elem) => {
+			return JSON.parse(JSON.stringify(elem), Hbigint._json_revive);
+		});
+
+		return new Map(deeply_parsed);
 	}
 
 	// Returns a hex string

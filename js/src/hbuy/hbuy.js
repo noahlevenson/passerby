@@ -109,9 +109,9 @@ class Hbuy {
 		this.net._out(msg, {address: addr, port: port});	
 	}
 
-	transact_req({order = null, payment = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	transact_req({order = null, payment = null, hid = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (order === null || payment === null || addr === null || port === null) {
+		if (order === null || payment === null || hid === null || addr === null || port === null) {
 
 			throw new TypeError("Arguments cannot be null");
 		}
@@ -119,6 +119,7 @@ class Hbuy {
 		const transaction = new Hbuy_transaction({
 	    	order: order,
 	        payment: payment,
+	        hid: hid,
 	        id: Hbigint.random(Hbuy_transaction.ID_LEN)
     	});
 

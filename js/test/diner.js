@@ -28,17 +28,12 @@ const { Larosa_menu } = require("./menu.js");
     // A large region of Westchester County encompassing Pizzeria La Rosa
     const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     const search_res = await network.geosearch(westchester);
-
-    console.log(search_res[0][0]);
     
     // Assuming search_res[0] is the [key, Happ_peer_data] for Pizzeria La Rosa
     const node_info = await network.search_node_info(search_res[0][1].peer_id);
 
     const order = new Hbuy_order({
-        type: Hbuy_order.TYPE.DELIVERY,
-        name: "John DeVivo",
-        address: "711 Main St. New Rochelle NY 10801",
-        phone: "914-666-6666"
+        type: Hbuy_order.TYPE.DELIVERY
     });
 
     // Margherita pie with pepperoni + mushrooms
@@ -74,8 +69,6 @@ const { Larosa_menu } = require("./menu.js");
         qty: 2
     }));
 
-    console.log(order);
-
     const payment = new Hbuy_payment({
 
     });
@@ -83,6 +76,7 @@ const { Larosa_menu } = require("./menu.js");
     network.hbuy.transact_req({
         order: order,
         payment: payment,
+        hid: ottavios_woodworking,
         addr: node_info.addr,
         port: node_info.port,
         success: (res, ctx) => {

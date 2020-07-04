@@ -94,7 +94,7 @@ class Happ {
 		await this.hpht.insert(this.get_location().linearize(), peer_data);
 	}
 
-	// Search the network for data (menus) within a geographic window defined by an Hgeo_rect
+	// Search the network for data within a geographic window defined by an Hgeo_rect
 	async geosearch(rect) {
 		return await this.hpht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
 	}

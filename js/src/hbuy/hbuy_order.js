@@ -18,16 +18,10 @@ class Hbuy_order {
 	};
 
 	type;
-	name;
-	address;
-	phone;
 	item_refs;
 
-	constructor({type = null, name = null, address = null, phone = null} = {}) {
+	constructor({type = null} = {}) {
 		this.type = type;
-		this.name = name;
-		this.address = address;
-		this.phone = phone;
 		this.item_refs = [];
 	}
 
