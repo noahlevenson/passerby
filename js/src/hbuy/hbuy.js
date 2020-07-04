@@ -172,7 +172,7 @@ class Hbuy {
 
 	sms_req({text = null, from = null, data} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (text === null || or from === null) {
+		if (text === null || from === null) {
 			throw new TypeError("Arguments cannot be null");
 		}
 
