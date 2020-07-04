@@ -1,3 +1,4 @@
+const { Hid } = require("../src/hid/hid.js");
 const { Happ } = require("../src/happ/happ.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
@@ -5,16 +6,46 @@ const { Hkad_net_sim } = require("../src/hkad/net/hkad_net_sim.js");
 const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
 
 (async function run() {
+    const bootstrap_node_hid = new Hid({
+        public_key: "debug_bootstrap_node_public_key",
+        private_key: "debug_bootstrap_node_private_key",
+        name: "",
+        address: "",
+        phone: "",
+        lat: 0,
+        long: 0
+    });
+
     const bootstrap_node = new Happ({lat: 0, long: 0});
     const local_sim = new Hkad_net_sim();
     await bootstrap_node._debug_sim_start({local_sim: local_sim});
     
     for (let i = 0; i < 300; i += 1) {
-       const node = new Happ({lat: 0, long: 0});
-       await node._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim});
-    }
+        const node_hid = new Hid({
+            public_key: i.toString(),
+            private_key: i.toString(),
+            name: "",
+            address: "",
+            phone: "",
+            lat: 0,
+            long: 0
+        });
         
-    const me = new Happ({lat: 40.9018663, long: -73.7912739});
+        const node = new Happ({hid: node_hid});
+        await node._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim});
+    }
+    
+    const larosa = new Hid({
+        public_key: "debug_la_rosa_public_key",
+        private_key: "debug_la_rosa_private_key",
+        name: "Pizzeria La Rosa",
+        address: "12 Russell Ave. New Rochelle NY 10801",
+        phone: "914-633-0800",
+        lat: 40.9018663,
+        long: -73.7912739
+    });
+
+    const me = new Happ({hid: larosa});
     await me._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim, use_local_sim: true, random_id: false});
     
     for (let i = 0; i < 500; i += 1) {
