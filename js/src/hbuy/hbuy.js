@@ -76,7 +76,7 @@ class Hbuy {
 		return new Hbuy_msg({
 			data: new Hbuy_sms({}),
 			type: Hbuy_msg.TYPE.RES,
-			flavor: Hbuy_msg.FLAVOR.STATUS,
+			flavor: Hbuy_msg.FLAVOR.SMS,
 			id: req.id
 		});
 	}
