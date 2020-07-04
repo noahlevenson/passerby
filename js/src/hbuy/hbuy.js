@@ -65,20 +65,26 @@ class Hbuy {
 		});
 	}
 
-	_res_status(req, rinfo) {
-		this.status.emit(`${req.data.id}#${req.data.code}`, req);
+	_sms_hook(req, rinfo) {
+		// Do nothing
+	}
+
+	_res_sms(req, rinfo) {
+		this._sms_hook(req, rinfo);
 
 		return new Hbuy_msg({
-			data: new Hbuy_status({id: req.data.id, code: req.data.code}),
+			data: new Hbuy_sms({}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
 			id: req.id
 		});
 	}
 
-	_res_sms(req, rinfo) {
+	_res_status(req, rinfo) {
+		this.status.emit(`${req.data.id}#${req.data.code}`, req);
+
 		return new Hbuy_msg({
-			data: new Hbuy_sms({}),
+			data: new Hbuy_status({id: req.data.id, code: req.data.code}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
 			id: req.id
@@ -202,6 +208,14 @@ class Hbuy {
 		}
 
 		this._transact_hook = f;
+	}
+
+	on_sms(f) {
+		if (typeof f !== "function") {
+			throw new TypeError("Argument 'f' must be a function");
+		}
+
+		this._sms_hook = f;
 	}
 
 	// Subscribe only once to the next status event for a given transaction ID and status code
