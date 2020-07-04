@@ -19,7 +19,8 @@ class Hbuy_msg {
 
 	static FLAVOR = {
 		TRANSACT: 0,
-		STATUS: 1
+		STATUS: 1,
+		SMS: 2
 	}
 
 	data;

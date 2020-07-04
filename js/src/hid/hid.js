@@ -10,9 +10,11 @@
 "use strict";
 
 const { Happ_env } = require("../happ/happ_env.js");
+const { Hid_public_data } = require("./hid_public_data.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
+// TODO: Make private information non-enumerable so it won't serialize if we accidentally try to transmit an Hid
 class Hid {
 	public_key;
 	private_key;
@@ -33,6 +35,10 @@ class Hid {
 		this.lat = lat;
 		this.long = long;
 		this.peer_id = new Hbigint(Hutil._sha1(this.public_key));
+	}
+
+	public_data() {
+		return new Hid_public_data({name: this.name, peer_id: this.peer_id});
 	}
 }
 

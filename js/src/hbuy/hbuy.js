@@ -27,7 +27,8 @@ class Hbuy {
 
 	FLAVOR_RES_EXEC = new Map([
 		[Hbuy_msg.FLAVOR.TRANSACT, this._res_transact],
-		[Hbuy_msg.FLAVOR.STATUS, this._res_status]
+		[Hbuy_msg.FLAVOR.STATUS, this._res_status],
+		[Hbuy_msg.FLAVOR.SMS, this._res_sms]
 	]);
 
 	constructor({net = null} = {}) {
@@ -69,6 +70,15 @@ class Hbuy {
 
 		return new Hbuy_msg({
 			data: new Hbuy_status({id: req.data.id, code: req.data.code}),
+			type: Hbuy_msg.TYPE.RES,
+			flavor: Hbuy_msg.FLAVOR.STATUS,
+			id: req.id
+		});
+	}
+
+	_res_sms(req, rinfo) {
+		return new Hbuy_msg({
+			data: new Hbuy_sms({}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
 			id: req.id
@@ -148,6 +158,28 @@ class Hbuy {
 			data: status,
 			type: Hbuy_msg.TYPE.REQ,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
+			id: Hbigint.random(Hbuy_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
+	}
+
+	sms_req({text = null, from = null, data} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (text === null || or from === null) {
+			throw new TypeError("Arguments cannot be null");
+		}
+
+		const sms = new Hbuy_sms({
+			text: text,
+			from: from,
+			data: data
+		});
+
+		const msg = new Hbuy_msg({
+			data: sms,
+			type: Hbuy_msg.TYPE.REQ,
+			flavor: Hbuy_msg.FLAVOR.SMS,
 			id: Hbigint.random(Hbuy_msg.ID_LEN)
 		});
 
