@@ -51,7 +51,7 @@ class Hbuy {
 
 	_on_message(msg, rinfo) {
 		if (msg.type === Hbuy_msg.TYPE.RES) {
-			Hlog.log(`[HBUY] REQ # ${msg.data.id.toString()} OK`);
+			Hlog.log(`[HBUY] ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} OK`);
 			this.res.emit(msg.id.toString(), msg);
 		} else {
 			this._on_req(msg, rinfo);
@@ -129,7 +129,7 @@ class Hbuy {
 			});
 		}	
 
-		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hbuy_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : "N/A"} to ${addr}:${port}`);
+		Hlog.log(`[HBUY] Outbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hbuy_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} to ${addr}:${port}`);
 		this.net._out(msg, {address: addr, port: port});	
 	}
 
