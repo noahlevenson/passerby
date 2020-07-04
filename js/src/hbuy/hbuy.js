@@ -11,6 +11,7 @@
 
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
+const { Hid } = require("../hid/hid.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
 const { Hbuy_sms } = require("./hbuy_sms.js");
@@ -23,6 +24,7 @@ class Hbuy {
 	static MSG_TIMEOUT = 5000;
 	
 	net;
+	hid;
 	res;
 	status;
 
@@ -32,12 +34,17 @@ class Hbuy {
 		[Hbuy_msg.FLAVOR.SMS, this._res_sms]
 	]);
 
-	constructor({net = null} = {}) {
+	constructor({net = null, hid = null} = {}) {
 		if (!(net instanceof Hbuy_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hbuy_net");
 		}
 
+		if (!(hid instanceof Hid)) {
+			throw new TypeError("Argument 'hid' must be instance of Hid");
+		}
+
 		this.net = net;
+		this.hid = hid;
 		this.res = new EventEmitter();
 		this.status = new EventEmitter();
 	}
@@ -74,7 +81,7 @@ class Hbuy {
 		this._sms_hook(req, rinfo);
 
 		return new Hbuy_msg({
-			data: new Hbuy_sms({}),
+			data: new Hbuy_sms({from: this.hid.public_data()}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.SMS,
 			id: req.id

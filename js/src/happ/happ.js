@@ -161,7 +161,7 @@ class Happ {
 
 		// Create and start an HBUY interface
 		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);
-		this.hbuy = new Hbuy({net: happ_hbuy_net});
+		this.hbuy = new Hbuy({net: happ_hbuy_net, hid: this.hid});
 		this.hbuy.start();
 	}
 
