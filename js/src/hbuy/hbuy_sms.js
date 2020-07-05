@@ -12,6 +12,8 @@
 const { Hid_public_data } = require("../hid/hid_public_data.js");
 
 class Hbuy_sms {
+	static MAX_CHARS = 4096;
+
 	text;
 	data;
 	from;
@@ -25,7 +27,7 @@ class Hbuy_sms {
 			throw new TypeError("Argument 'from' must be a Hid_public_data object");
 		}
 
-		this.text = text;
+		this.text = text.length < Hbuy_sms.MAX_CHARS ? text : text.substring(0, Hbuy_sms.MAX_CHARS);
 		this.data = data;
 		this.from = from;
 	}
