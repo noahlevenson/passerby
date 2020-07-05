@@ -36,7 +36,7 @@ class Hbuy_menu {
 	// Return a deterministically ordered array of all the Hbuy_item objects in this menu
 	get_item_list() {
 		return this.data.dfs((node, data) => {
-			if (node.num_children() === 0) {
+			if (node.degree() === 0) {
 				data.push(node.data);
 			}
 
@@ -47,7 +47,7 @@ class Hbuy_menu {
 	// Return a deterministically ordered array of all the section labels of this menu
 	get_section_list() {
 		return this.data.dfs((node, data) => {
-			if (node.num_children() > 0) {
+			if (node.degree() > 0) {
 				data.push(node.data);
 			}
 

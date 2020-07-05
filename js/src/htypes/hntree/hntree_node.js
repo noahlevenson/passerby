@@ -47,7 +47,7 @@ class Hntree_node {
 		return [...this.children];
 	}
 
-	num_children() {
+	degree() {
 		return this.children.length;
 	}
 }
