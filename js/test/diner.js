@@ -92,7 +92,7 @@ const { Larosa_menu } = require("./menu.js");
 
     // Send a chat message to the restaurant
     network.hbuy.sms_req({
-       text: "Hi, I'm wondering if you have gluten free pasta?",
+       text: "Hi, I'm wondering if you have gluten free pasta? My mother is allergic to gluten. Also, do you have diet Sprite? Or any other diet soda besides diet coke? What is your current delivery time???",
        from: network.hid.public_data(),
        addr: node_info.addr,
        port: node_info.port

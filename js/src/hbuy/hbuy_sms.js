@@ -27,7 +27,13 @@ class Hbuy_sms {
 			throw new TypeError("Argument 'from' must be a Hid_public_data object");
 		}
 
-		this.text = text.length < Hbuy_sms.MAX_CHARS ? text : text.substring(0, Hbuy_sms.MAX_CHARS);
+		// Enforce MAX_CHARS
+		if (text === null) {
+			this.text = text;
+		} else {
+			this.text = text.length < Hbuy_sms.MAX_CHARS ? text : text.substring(0, Hbuy_sms.MAX_CHARS);
+		}
+
 		this.data = data;
 		this.from = from;
 	}
