@@ -198,6 +198,7 @@ class Hbuy {
 		});
 
 		this._send(msg, addr, port, success, timeout);
+		return sms;
 	}
 
 	start() {
