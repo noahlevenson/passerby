@@ -155,7 +155,7 @@ class Happ {
 
 		// TODO: Keepalive should send a much smaller packet than this (it's a STUN request wrapped in an HTRANS msg)
 		if (this.keepalive) {
-			this.keepalive_interval_handle = setInterval(() => {
+			this.keepalive_interval_handle = setInterval(async () => {
 				let res = null;
 
 				for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && res === null; i += 1) {
