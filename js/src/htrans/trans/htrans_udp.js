@@ -20,7 +20,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_bro
 class Htrans_udp extends Htrans {
 	static T_NAT_KEEPALIVE = 20000;
 	static KEEPALIVE_ADDR = "0.0.0.0";
-	static KEEPALIVE_PORT = "31337";
+	static KEEPALIVE_PORT = 31337;
 
 	socket;
 	port;
