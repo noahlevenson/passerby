@@ -24,10 +24,12 @@ const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hutil } = require("../hutil/hutil.js"); 
+const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Happ {
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
+	static T_NAT_KEEPALIVE = 20000;
 
 	static BOOTSTRAP_NODES = [
 		["66.228.34.29", 27500]
@@ -38,11 +40,13 @@ class Happ {
 	hpht;
 	hbuy;
 	node;
+	keepalive;
+	keepalive_interval_handle;
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of the z-curve linearization of our lat/long coords, and a PHT interface (indexing on GEO_INDEX_ATTR)
 	// TODO: Parameterize this to create different kinds of Happ instances
-	constructor({hid = null, port = 27500} = {}) {
+	constructor({hid = null, port = 27500, keepalive = true} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Object.defineProperty(global.Map.prototype, "toJSON", {
 			value: Hutil._map_to_json
@@ -57,6 +61,8 @@ class Happ {
 		this.hpht = null;
 		this.hbuy = null;
 		this.node = null;
+		this.keepalive = keepalive;
+		this.keepalive_interval_handle = null;
 	}
 
 	// Return a reference to our DHT node
@@ -147,6 +153,19 @@ class Happ {
 			throw new Error("DHT bootstrap failed!");
 		}
 
+		// TODO: Keepalive should send a much smaller packet than this (it's a STUN request wrapped in an HTRANS msg)
+		if (this.keepalive) {
+			this.keepalive_interval_handle = setInterval(() => {
+				let res = null;
+
+				for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && res === null; i += 1) {
+					res = await happ_stun_service._binding_req(Happ.BOOTSTRAP_NODES[i][0], Happ.BOOTSTRAP_NODES[i][1]);
+				}
+			}, Happ.T_NAT_KEEPALIVE);
+
+			Hlog.log(`[HAPP] NAT keepalive enabled (${Happ.T_NAT_KEEPALIVE / 1000}s)`);
+		}
+
 		// Create a PHT interface
 		this.hpht = new Hpht({
 			index_attr: Happ.GEO_INDEX_ATTR,
@@ -172,6 +191,11 @@ class Happ {
 				this.node.net.trans._stop()
 				this.hpht = null;
 				this.node = null;
+			}
+
+			if (this.keepalive_interval_handle) {
+				cancelInterval(this.keepalive_interval_handle);
+				this.keepalive_interval_handle = null;
 			}
 		} catch {
 			// Do nothing
