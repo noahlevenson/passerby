@@ -18,18 +18,26 @@ const { Hutil } = require("../../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_browser.js") : require("../../htypes/hbigint/hbigint_node.js");
 
 class Htrans_udp extends Htrans {
+	static T_NAT_KEEPALIVE = 20000;
+	static KEEPALIVE_ADDR = "0.0.0.0";
+	static KEEPALIVE_PORT = "31337";
+
 	socket;
 	port;
 	udp4;
 	udp6;
+	keepalive;
+	keepalive_interval_handle;
 
 	// TODO: we need to have a deep think about whether mixed IPv4 + IPv6 networks will work correctly
 	// until then, we disable UPD6 by default
-	constructor({port = 27500, udp4 = true, udp6 = false} = {}) {
+	constructor({port = 27500, udp4 = true, udp6 = false, keepalive = true} = {}) {
 		super();
 		this.port = port;
 		this.udp4 = udp4;
 		this.udp6 = udp6;
+		this.keepalive = keepalive;
+		this.keepalive_interval_handle = null;
 	}
 
 	async _start() {
@@ -49,6 +57,7 @@ class Htrans_udp extends Htrans {
 
 	_stop() {
 		this.socket.on("close", () => {
+			clearInterval(this.keepalive_interval_handle);
 			Hlog.log(`[HTRANS] UDP service stopped`);
 		});
 
@@ -60,9 +69,26 @@ class Htrans_udp extends Htrans {
 			this.socket.on("listening", () => {
 				const addr = this.socket.address();
 				Hlog.log(`[HTRANS] UDP service online, listening on ${addr.address}:${addr.port}`);
+
+				if (this.keepalive) {
+					this._keepalive_interval();
+				}
+					
 				resolve();
 			});
 		});
+	}
+
+	_keepalive_interval() {
+		this.keepalive_interval_handle = setInterval(() => {
+			this.socket.send(Buffer.from([0x01]), 0, 1, Htrans_udp.KEEPALIVE_PORT, Htrans_udp.KEEPALIVE_ADDR, (err) => {
+				if (err) {
+					Hlog.log(`[HTRANS] NAT keepalive UDP socket send error ${addr}:${port} (${err})`);
+				}
+			});
+		}, Htrans_udp.T_NAT_KEEPALIVE);
+
+		Hlog.log(`[HTRANS] UDP NAT keepalive enabled (${Htrans_udp.T_NAT_KEEPALIVE / 1000}s)`);
 	}
 
 	_on_message(msg, rinfo) {
