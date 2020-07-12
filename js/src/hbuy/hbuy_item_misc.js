@@ -12,11 +12,13 @@
 class Hbuy_item_misc {
 	desc;
 	price;
+	qty;
 
-	constructor({desc = "", price = 0.00} = {}) {
+	constructor({desc = "", price = 0.00, qty = 1} = {}) {
 		// TODO: validation
 		this.desc = desc;
 		this.price = price;
+		this.qty = qty;
 	}
 }
 
