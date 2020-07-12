@@ -8,6 +8,7 @@ const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
 const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
 const { Hbuy_item_ref } = require("../src/hbuy/hbuy_item_ref.js");
+const { Hbuy_item_misc } = require("../src/hbuy/hbuy_item_misc.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
 const { Larosa_menu } = require("./menu.js");
@@ -68,6 +69,12 @@ const { Larosa_menu } = require("./menu.js");
         item_list_idx: 16,
         size_idx: 0,
         qty: 2
+    }));
+
+    // Off the menu item
+    order.add_misc(new Hbuy_item_misc({
+        desc: "Upside down pie",
+        price: 15.00
     }));
 
     const payment = new Hbuy_payment({

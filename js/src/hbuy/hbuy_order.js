@@ -10,6 +10,7 @@
 "use strict";
 
 const { Hbuy_item_ref } = require("./hbuy_item_ref.js");
+const { Hbuy_item_misc } = require("./hbuy_item_misc.js");
 
 class Hbuy_order {
 	static TYPE = {
@@ -19,13 +20,15 @@ class Hbuy_order {
 
 	type;
 	item_refs;
+	misc_items;
 
 	constructor({type = null} = {}) {
 		this.type = type;
 		this.item_refs = [];
+		this.misc_items = [];
 	}
 
-	// Add an item to the order
+	// Add a standard item to the order
 	add(item_ref) {
 		if (!(item_ref instanceof Hbuy_item_ref)) {
 			throw new TypeError("Argument 'item_ref' must be an Hbuy_item_ref");
@@ -34,8 +37,22 @@ class Hbuy_order {
 		this.item_refs.push(item_ref);
 	}
 
-	// Remove an item from the order by index?
+	// Add a misc item to the order
+	add_misc(misc_item) {
+		if (!(misc_item instanceof Hbuy_item_misc)) {
+			throw new TypeError("Argument 'misc_item' must be an Hbuy_item_misc");
+		}
+
+		this.misc_items.push(misc_item);
+	}
+
+	// Remove a standard item from the order by index?
 	delete(i) {
+
+	}
+
+	// Remove a misc item from the order by index?
+	delete_misc(i) {
 
 	}
 }
