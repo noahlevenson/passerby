@@ -25,6 +25,8 @@ class Hntree {
 	// executed for every node in the tree
 	// Assumes that the tree has at least 1 node
 	dfs(cb, node = this.get_root(), data = []) {
+		cb(node, data);
+
 		const children = node.get_all_children();
 
 		if (children.length > 0) {
@@ -33,7 +35,7 @@ class Hntree {
 			});
 		}
 
-		return cb(node, data);
+		return data;
 	}
 }
 
