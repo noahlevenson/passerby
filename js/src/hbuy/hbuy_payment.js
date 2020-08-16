@@ -12,10 +12,10 @@
 // TODO: This is all prototype-grade crap that was slugged in for the August 2020 demo - this should all be wiped and replaced with an actually functional system
 class Hbuy_payment {
 	static CARD_TYPE = {
-		3: "AMEX",
-		4: "VISA",
-		5: "MASTERCARD",
-		6: "DISCOVER"
+		"3": "AMEX",
+		"4": "VISA",
+		"5": "MASTERCARD",
+		"6": "DISCOVER"
 	};
 
 	pan;
@@ -35,7 +35,7 @@ class Hbuy_payment {
 	}
 
 	card_type() {
-		return Hbuy_payment.CARD_TYPE[this.pan[0]];
+		return Hbuy_payment.CARD_TYPE[this.pan.toString()[0]];
 	}
 }
 
