@@ -33,6 +33,14 @@ class Hbuy_menu {
 		return Hutil._sha1(json);
 	}
 
+	// Return a deterministically ordered array containing both section labels and Hbuy_item objects via inorder traversal
+	get_full_list() {
+		return this.data.dfs((node, data) => {
+			data.push(node.data);
+			return data;
+		});
+	}
+
 	// Return a deterministically ordered array of all the Hbuy_item objects in this menu
 	get_item_list() {
 		return this.data.dfs((node, data) => {

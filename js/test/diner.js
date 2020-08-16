@@ -78,7 +78,12 @@ const { Larosa_menu } = require("./menu.js");
     }));
 
     const payment = new Hbuy_payment({
-
+        pan: 370434978532007,
+        exp_year: 26,
+        exp_month: 11,
+        cvv: 7021,
+        name: "John DeVivo",
+        zip: 10801
     });
 
     network.hbuy.transact_req({
