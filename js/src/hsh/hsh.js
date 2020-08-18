@@ -11,9 +11,9 @@
 
 // for testing:
 // search -73.86881 -73.70985 40.93391 40.86956
-// 669800c5cb9858e59f3c8d5ce3f8127c1cc7feab
 
 const readline = require("readline");
+const util = require("util");
 const { Happ } = require("../happ/happ.js");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hid } = require("../hid/hid.js");
@@ -26,6 +26,7 @@ const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 const { Larosa_menu } = require("../../test/menu.js");
+const { Toms_hot_dogs_menu } = require("../../test/toms_hot_dogs_menu.js");
 
 const PROMPT = "hsh > ";
 
@@ -33,7 +34,7 @@ const GRAMMAR = new Map([
 	["bootstrap", _start],
 	["clear", _clear],
 	["search", _search],
-	["get", _get],
+	["getmenu", _get],
 	["sms", _sms],
 	["order", _order],
 	["add", _add],
@@ -94,37 +95,48 @@ async function _search(left, right, top, bottom) {
 	});
 	
 	const res = await happ.geosearch(rect);
+
+	console.log(util.inspect(res, false, 5, true /* enable colors */))
 	
-	res.forEach((data) => {
-		console.log(`${data[1].name}\t\t${data[1].peer_id.toString()}`);
-	});
+	// res.forEach((data) => {
+	// 	console.log(`${data[1].name}\t\t${data[1].peer_id.toString()}`);
+	// });
 }
 
 // TODO: this is all simulated for the August 2020 demo - gotta make this actually work!
 async function _get() {
-	const larosa = Larosa_menu.get_full_list();
-	console.log(`Menu ID: ${Larosa_menu.get_form_id()}`)
-	let item_idx = 0;
+	// console.log(Larosa_menu);
+	const peer_id = new Hbigint(parseInt(arguments[0]));
 
-	larosa.forEach((elem) => {
-		if (typeof elem === "string") {
-			console.log(`\n\n\x1b[4m** ${elem} **`);
-		} else {
-			console.log(`\x1b[0m\n  [${item_idx++}] ${elem.name} ${elem.desc ? "-" : ""} ${elem.desc}`);
+	if (peer_id.equals(new Hbigint(585706839200458884925582279788146498654114938539))) {
+		console.log(util.inspect(Larosa_menu.get_full_list(), {showHidden: false, depth: 4, colors: true, compact: 10, breakLength: 200}));
+	} else {
+		console.log(util.inspect(Toms_hot_dogs_menu.get_full_list(), {showHidden: false, depth: 4, colors: true, compact: 10, breakLength: 200}));
+	}
 
-			let size_idx = 0;
+	// const larosa = Larosa_menu.get_full_list();
+	// console.log(`Menu ID: ${Larosa_menu.get_form_id()}`)
+	// let item_idx = 0;
+
+	// larosa.forEach((elem) => {
+	// 	if (typeof elem === "string") {
+	// 		console.log(`\n\n\x1b[4m** ${elem} **`);
+	// 	} else {
+	// 		console.log(`\x1b[0m\n  [${item_idx++}] ${elem.name} ${elem.desc ? "-" : ""} ${elem.desc}`);
+
+	// 		let size_idx = 0;
 			
-			elem.sizes.forEach((size) => {
-				console.log(`  [${size_idx++}]${size.desc ? " " + size.desc : ""} $${size.price.toFixed(2)}`)
+	// 		elem.sizes.forEach((size) => {
+	// 			console.log(`  [${size_idx++}]${size.desc ? " " + size.desc : ""} $${size.price.toFixed(2)}`)
 
-				let customization_idx = 0;
+	// 			let customization_idx = 0;
 
-				size.cust_cats.forEach((cust_cat) => {
-					console.log(`  [${customization_idx++}] CUSTOMIZATION: ${cust_cat.desc} (${cust_cat.custs.length} avail)`)
-				});
-			});
-		}
-	});
+	// 			size.cust_cats.forEach((cust_cat) => {
+	// 				console.log(`  [${customization_idx++}] CUSTOMIZATION: ${cust_cat.desc} (${cust_cat.custs.length} avail)`)
+	// 			});
+	// 		});
+	// 	}
+	// });
 }
 
 async function _sms(peer_id) {

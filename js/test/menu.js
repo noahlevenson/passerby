@@ -7,7 +7,7 @@ const { Hbuy_item_cust_cat } = require("../src/hbuy/hbuy_item_cust_cat.js");
 const { Hbuy_item_cust } = require("../src/hbuy/hbuy_item_cust.js");
 
 const Larosa_menu = new Hbuy_menu({
-	name: "PLR lunch/dinner 2020",
+	name: "Pizzeria La Rosa Lunch/Dinner Menu",
 	min_order: 20.00,
 	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})]
 });
