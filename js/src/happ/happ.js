@@ -40,6 +40,7 @@ class Happ {
 	hpht;
 	hbuy;
 	node;
+    trans;
 	keepalive;
 	keepalive_interval_handle;
 
@@ -61,7 +62,8 @@ class Happ {
 		this.hpht = null;
 		this.hbuy = null;
 		this.node = null;
-		this.keepalive = keepalive;
+		this.trans = null;
+        this.keepalive = keepalive;
 		this.keepalive_interval_handle = null;
 	}
 
@@ -111,6 +113,8 @@ class Happ {
 		// Create and boot a UDP transport module
 		const happ_udp_trans = new Htrans_udp({port: this.port});
 		await happ_udp_trans._start();
+        
+        this.trans = happ_udp_trans;
 
 		// Create and start STUN services
 		const happ_stun_net = new Hstun_net_solo(happ_udp_trans);
@@ -187,8 +191,8 @@ class Happ {
 	// Disconnect from the network (currently only works with the one kind of Happ instance we can create)
 	async stop() {
 		try {
-			if (this.node.net.trans) {
-				this.node.net.trans._stop()
+			if (this.trans) {
+				this.trans._stop()
 				this.hpht = null;
 				this.node = null;
 			}
