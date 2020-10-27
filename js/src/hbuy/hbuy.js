@@ -11,7 +11,7 @@
 
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
-const { Hid } = require("../hid/hid.js");
+const { Hid_pub } = require("../hid/hid_pub.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
 const { Hbuy_sms } = require("./hbuy_sms.js");
@@ -24,7 +24,7 @@ class Hbuy {
 	static MSG_TIMEOUT = 5000;
 	
 	net;
-	hid;
+	hid_pub;
 	res;
 	status;
 
@@ -34,17 +34,17 @@ class Hbuy {
 		[Hbuy_msg.FLAVOR.SMS, this._res_sms]
 	]);
 
-	constructor({net = null, hid = null} = {}) {
+	constructor({net = null, hid_pub = null} = {}) {
 		if (!(net instanceof Hbuy_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hbuy_net");
 		}
 
-		if (!(hid instanceof Hid)) {
-			throw new TypeError("Argument 'hid' must be instance of Hid");
+		if (!(hid_pub instanceof Hid_pub)) {
+			throw new TypeError("Argument 'hid_pub' must be instance of Hid_pub");
 		}
 
 		this.net = net;
-		this.hid = hid;
+		this.hid_pub = hid_pub;
 		this.res = new EventEmitter();
 		this.status = new EventEmitter();
 	}
@@ -81,7 +81,7 @@ class Hbuy {
 		this._sms_hook(req, rinfo);
 
 		return new Hbuy_msg({
-			data: new Hbuy_sms({from: this.hid.public_data()}),
+			data: new Hbuy_sms({from: this.hid_pub}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.SMS,
 			id: req.id
@@ -133,9 +133,9 @@ class Hbuy {
 		this.net._out(msg, {address: addr, port: port});	
 	}
 
-	transact_req({order = null, payment = null, hid = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	transact_req({order = null, payment = null, hid_pub = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (order === null || payment === null || hid === null || addr === null || port === null) {
+		if (order === null || payment === null || hid_pub === null || addr === null || port === null) {
 
 			throw new TypeError("Arguments cannot be null");
 		}
@@ -143,7 +143,7 @@ class Hbuy {
 		const transaction = new Hbuy_transaction({
 	    	order: order,
 	        payment: payment,
-	        hid: hid,
+	        hid_pub: hid_pub,
 	        id: Hbigint.random(Hbuy_transaction.ID_LEN)
     	});
 

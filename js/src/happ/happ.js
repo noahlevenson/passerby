@@ -10,7 +10,6 @@
 "use strict";
 
 const { Happ_env } = require("./happ_env.js");
-const { Hid_public_data } = require("../hid/hid_public_data.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
@@ -45,9 +44,9 @@ class Happ {
 	keepalive_interval_handle;
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
-	// a DHT peer with a node id equal to the hash of the z-curve linearization of our lat/long coords, and a PHT interface (indexing on GEO_INDEX_ATTR)
+	// a DHT peer with a node id equal to the hash of its public key, and and a PHT interface (indexing on GEO_INDEX_ATTR)
 	// TODO: Parameterize this to create different kinds of Happ instances
-	constructor({hid = null, port = 27500, keepalive = true} = {}) {
+	constructor({hid_pub = null, port = 27500, keepalive = true} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Object.defineProperty(global.Map.prototype, "toJSON", {
 			value: Hutil._map_to_json
@@ -57,8 +56,8 @@ class Happ {
 			value: Hutil._map_from_json
 		});
 
+		this.hid_pub = hid_pub;
 		this.port = port;
-		this.hid = hid;
 		this.hpht = null;
 		this.hbuy = null;
 		this.node = null;
@@ -67,19 +66,25 @@ class Happ {
 		this.keepalive_interval_handle = null;
 	}
 
+	// Compute the peer ID derived from input 'data'
+	// Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion
+	static get_peer_id(data) {
+		return new Hbigint(Hutil._sha1(data));
+	}
+
 	// Return a reference to our DHT node
 	get_node() {
 		return this.node;
 	}
 
-	// Get our peer ID
-	get_id() {
-		return this.hid.peer_id;
+	// Get our peer ID as an Hbigint
+	my_id() {
+		return new Hbigint(this.hid_pub.peer_id); 
 	}
 
 	// Return a reference to our latitude/longitude as an Hgeo_coord
 	get_location() {
-		return new Hgeo_coord({lat: this.hid.lat, long: this.hid.long});
+		return new Hgeo_coord({lat: this.hid_pub.lat, long: this.hid_pub.long});
 	}
 
 	// Search the network for the Hkad_node_info object for a given node_id as Hbigint (returns null if unable to resolve)
@@ -95,11 +100,11 @@ class Happ {
 
 	// Put a Hid_public_data object associated with our geolocation to the network
 	async put(peer_data) {
-		if (!(peer_data instanceof Hid_public_data)) {
-			throw new TypeError("Argument 'peer_data' must be an Hid_public_data object");
-		}
+		// if (!(peer_data instanceof Hid_public_data)) {
+		// 	throw new TypeError("Argument 'peer_data' must be an Hid_public_data object");
+		// }
 
-		await this.hpht.insert(this.get_location().linearize(), peer_data);
+		// await this.hpht.insert(this.get_location().linearize(), peer_data);
 	}
 
 	// Search the network for data within a geographic window defined by an Hgeo_rect
@@ -141,7 +146,7 @@ class Happ {
 			net: new Hkad_net_solo(happ_udp_trans), 
 			addr: addr_port[0],
 			port: addr_port[1],
-			id: this.get_id()
+			id: this.my_id()
 		});
 
 		this.node = peer_node;
@@ -184,7 +189,7 @@ class Happ {
 
 		// Create and start an HBUY interface
 		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);
-		this.hbuy = new Hbuy({net: happ_hbuy_net, hid: this.hid});
+		this.hbuy = new Hbuy({net: happ_hbuy_net, hid_pub: this.hid_pub});
 		this.hbuy.start();
 	}
 
@@ -241,7 +246,7 @@ class Happ {
 		const peer_node = new Hkad_node({
 			eng: new Hkad_eng_alpha(), 
 			net: use_local_sim ? local_sim : new Hkad_net_sim(), 
-			id: random_id ? null : this.get_id()
+			id: random_id ? null : this.my_id()
 		});
 
 		this.node = peer_node;

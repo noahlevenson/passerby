@@ -1,4 +1,4 @@
-const { Hid } = require("../src/hid/hid.js");
+const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Happ } = require("../src/happ/happ.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
@@ -14,9 +14,8 @@ const { Hlog } = require("../src/hlog/hlog.js");
 const { Larosa_menu } = require("./menu.js");
 
 (async function run() {
-    const ottavios_woodworking = new Hid({
+    const ottavios_woodworking = new Hid_pub({
         public_key: "debug_public_key_tbd",
-        private_key: "debug_private_key_tbd",
         name: "John DeVivo",
         address: "711 Main St. New Rochelle NY 10801",
         phone: "914-235-6887",
@@ -24,7 +23,7 @@ const { Larosa_menu } = require("./menu.js");
         long: -73.7908761
     });
 
-    const network = new Happ({hid: ottavios_woodworking});
+    const network = new Happ({hid_pub: ottavios_woodworking});
     await network.start();
     
     // A large region of Westchester County encompassing Pizzeria La Rosa
@@ -89,7 +88,7 @@ const { Larosa_menu } = require("./menu.js");
     network.hbuy.transact_req({
         order: order,
         payment: payment,
-        hid: ottavios_woodworking,
+        hid_pub: ottavios_woodworking,
         addr: node_info.addr,
         port: node_info.port,
         success: (res, ctx) => {
@@ -105,7 +104,7 @@ const { Larosa_menu } = require("./menu.js");
     // Send a chat message to the restaurant
     network.hbuy.sms_req({
        text: "Hi, I'm wondering if you have gluten free pasta? My mother is allergic to gluten. Also, do you have diet Sprite? Or any other diet soda besides diet coke? What is your current delivery time???",
-       from: network.hid.public_data(),
+       from: network.hid_pub,
        addr: node_info.addr,
        port: node_info.port
     });

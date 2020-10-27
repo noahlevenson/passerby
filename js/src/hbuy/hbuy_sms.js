@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Hid_public_data } = require("../hid/hid_public_data.js");
+const { Hid_pub } = require("../hid/hid_pub.js");
 
 class Hbuy_sms {
 	static MAX_CHARS = 4096;
@@ -23,8 +23,8 @@ class Hbuy_sms {
 			throw new TypeError("Argument 'data' must be array");
 		}
 
-		if (!(from instanceof Hid_public_data)) {
-			throw new TypeError("Argument 'from' must be a Hid_public_data object");
+		if (!(from instanceof Hid_pub)) {
+			throw new TypeError("Argument 'from' must be a Hid_pub object");
 		}
 
 		// Enforce MAX_CHARS

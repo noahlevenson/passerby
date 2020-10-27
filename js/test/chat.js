@@ -1,4 +1,4 @@
-const { Hid } = require("../src/hid/hid.js");
+const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Happ } = require("../src/happ/happ.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
@@ -18,9 +18,8 @@ const { Larosa_menu } = require("./menu.js");
 
     const text = process.argv.slice(4, process.argv.length).join(" ");
 
-    const chat_peer = new Hid({
+    const chat_peer = new Hid_pub({
         public_key: `${first_name} ${last_name}`,
-        private_key: `${first_name} ${last_name}`,
         name: `${first_name} ${last_name}`,
         address: "",
         phone: "",
@@ -28,7 +27,7 @@ const { Larosa_menu } = require("./menu.js");
         long: 0
     });
 
-    const network = new Happ({hid: chat_peer});
+    const network = new Happ({hid_pub: chat_peer});
     await network.start();
     
     // A large region of Westchester County encompassing Pizzeria La Rosa
@@ -41,7 +40,7 @@ const { Larosa_menu } = require("./menu.js");
     // Send a chat message to the restaurant
     network.hbuy.sms_req({
        text: text,
-       from: network.hid.public_data(),
+       from: network.hid_pub,
        addr: node_info.addr,
        port: node_info.port
     });
