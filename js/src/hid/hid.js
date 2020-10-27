@@ -25,20 +25,18 @@ class Hid {
 	long;
 	peer_id;
 
-	constructor({public_key = null, private_key = null, name = null, address = null, phone = null, lat = null, long = null} = {}) {
+	constructor({public_key = null, private_key = null, name = null, address = null, phone = null, lat = null, long = null, first = null, last = null} = {}) {
 		// TODO: validation
 		this.public_key = public_key;
 		this.private_key = private_key;
-		this.name = name;
+		this.name = name; // TODO: the distinction between 'name' and 'first' and 'last' is that name would be used by a restaurant and first and last by a diner - can we simplify?
+		this.first = first;
+		this.last = last;
 		this.address = address;
 		this.phone = phone;
 		this.lat = lat;
 		this.long = long;
 		this.peer_id = new Hbigint(Hutil._sha1(this.public_key));
-	}
-
-	public_data() {
-		return new Hid_public_data({name: this.name, peer_id: this.peer_id});
 	}
 }
 
