@@ -1,6 +1,7 @@
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Happ } = require("../src/happ/happ.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
+const { Hgeo } = require("../src/hgeo/hgeo.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_sms } = require("../src/hbuy/hbuy_sms.js");
@@ -28,6 +29,11 @@ const { Larosa_menu } = require("./menu.js");
     
     // A large region of Westchester County encompassing Pizzeria La Rosa
     const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
+    
+    const search_window = Hgeo.get_exts(network.get_location(), Hgeo.SEARCH_DIST_MILES);
+    
+    // console.log(search_window);
+
     const search_res = await network.geosearch(westchester);
     
     console.log(search_res[0]);

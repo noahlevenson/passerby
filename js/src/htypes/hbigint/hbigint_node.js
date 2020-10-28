@@ -108,10 +108,10 @@ class Hbigint extends Hbigint_base {
 		return new Hbigint((this.data ** op.get()).toString(16));
 	}
 
-	// Get binary string representation of this Hbigint, leftmost bit is LSB
+	// Get binary string representation of this Hbigint, leftmost bit is MSB
 	// b is the number of bits to consider -- it adds trailing '0' bits 
 	to_bin_str(b) {
-		return this.data.toString(2).split("").reverse().join("").padEnd(b, "0");
+		return this.data.toString(2).padEnd(b, "0");
 	}
 
 	get_bit(i) {
