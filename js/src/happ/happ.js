@@ -16,6 +16,7 @@ const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
 const { Hkad_net_solo } = require("../hkad/net/hkad_net_solo.js");
 const { Hkad_net_sim } = require("../hkad/net/hkad_net_sim.js");
+const { Hgeo } = require("../hgeo/hgeo.js");
 const { Hgeo_coord } = require("../hgeo/hgeo_coord.js");
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
@@ -29,6 +30,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browse
 
 class Happ {
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
+	static SEARCH_DIST_MILES = 1.0;
 	static T_NAT_KEEPALIVE = 20000;
 
 	static BOOTSTRAP_NODES = [
@@ -104,7 +106,16 @@ class Happ {
 		await this.hpht.insert(this.get_location().linearize(), bboard);
 	}
 
+	// This is the highest level function for retrieving a list of nearby restaurant peers
+	async get_local_resources() {
+		const search_window = Hgeo.get_exts(this.get_location(), Happ.SEARCH_DIST_MILES);
+
+		return await this.geosearch(search_window);
+	}
+
 	// Search the network for data within a geographic window defined by an Hgeo_rect
+	// this is a somewhat lower level operation - for performing a standard search for
+	// nearby restaurants, use get_local_resources above
 	async geosearch(rect) {
 		return await this.hpht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
 	}

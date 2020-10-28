@@ -15,7 +15,6 @@ class Hgeo {
 	static LAT_MINUTES_MILES = 1.15;
 	static LONG_MINUTES_MILES = 0.91;
 	static MINUTES_PER_DEGREE = 60;
-	static SEARCH_DIST_MILES = 0.5; // Search bounding box dimensions are SEARCH_DISTANCE * 2 x SEARCH_DISTANCE * 2
 	
 	constructor() {
 
@@ -25,8 +24,8 @@ class Hgeo {
 	static get_exts(pair, d) {
 		// formula is CENTER_POINT +/- (DISTANCE_IN_MILES / NUMBER_OF_MINUTES_PER_MILE / NUMBER_OF_MINUTES_PER_DEGREE)
 
-		const long_offset = Hgeo.SEARCH_DIST_MILES / Hgeo.LONG_MINUTES_MILES / Hgeo.MINUTES_PER_DEGREE;
-		const lat_offset = Hgeo.SEARCH_DIST_MILES / Hgeo.LAT_MINUTES_MILES / Hgeo.MINUTES_PER_DEGREE;
+		const long_offset = d / Hgeo.LONG_MINUTES_MILES / Hgeo.MINUTES_PER_DEGREE;
+		const lat_offset = d / Hgeo.LAT_MINUTES_MILES / Hgeo.MINUTES_PER_DEGREE;
 
 		const left = pair.long - long_offset; 
 		const right = pair.long + long_offset;
