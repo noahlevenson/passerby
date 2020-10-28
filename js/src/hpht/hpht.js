@@ -503,14 +503,14 @@ class Hpht {
 			throw new RangeError("'minkey' must be less than 'maxkey'");
 		}
 
-		// First, get the longest common binary prefix of these keys
+		// First, get the longest common decimal prefix of these keys
 		const key_strings = [];
-		key_strings.push(minkey.to_bin_str(Hpht.BIT_DEPTH));
-		key_strings.push(maxkey.to_bin_str(Hpht.BIT_DEPTH));
+		key_strings.push(minkey.toString(10));
+		key_strings.push(maxkey.toString(10));
 		let lcp = Hutil._get_lcp(key_strings);
 
 		// Now get the PHT node labeled with that prefix
-		const pht_node = await this._dht_lookup(lcp);
+		const pht_node = await this.lookup_lin(new Hbigint(parseInt(lcp)));
 
 		if (pht_node === null) {
 			throw new Error("Fatal PHT graph error");

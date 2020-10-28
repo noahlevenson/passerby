@@ -2,6 +2,7 @@ const { Happ } = require("../src/happ/happ.js");
 const { Happ_bboard } = require("../src/happ/happ_bboard.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
+const { Hgeo } = require("../src/hgeo/hgeo.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
 const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
@@ -22,10 +23,12 @@ const { Larosa_menu } = require("./menu.js");
 
     const network = new Happ({hid_pub: larosa});
     await network.start();
-    await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu}));
+    // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu}));
     
-    const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
+    // const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     
+    const search_window = Hgeo.get_exts(network.get_location(), Hgeo.SEARCH_DIST_MILES);
+
     // *** non-API functions -- PUTting menu data not associated with our geolocation...
     const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
     await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: "L&B Spumoni CERT", form: null}));
@@ -34,15 +37,17 @@ const { Larosa_menu } = require("./menu.js");
     await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: null}));
 
     const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: null}));
+    await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Modern Pizza CERT", form: null}));
     // ***
 
-    const search_res = await network.geosearch(westchester);
+    const search_res = await network.geosearch(search_window);
     //console.log(search_res[0][1].form);
+    
+    console.log(search_res);
 
     const rehydrated = new Hbuy_menu(search_res[0][1].form);
 
-    console.log(rehydrated.get_full_list());
+    // console.log(rehydrated.get_full_list());
 
 
     network.hpht._debug_print_stats();

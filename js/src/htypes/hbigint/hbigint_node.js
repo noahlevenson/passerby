@@ -119,8 +119,8 @@ class Hbigint extends Hbigint_base {
 		return (this.data & mask) > BigInt(0) ? 1 : 0;
 	}
 
-	toString() {
-		return this.data.toString(16);
+	toString(base = 16) {
+		return this.data.toString(base);
 	}
 
 	toJSON() {

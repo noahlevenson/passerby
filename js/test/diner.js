@@ -34,7 +34,7 @@ const { Larosa_menu } = require("./menu.js");
     
     // console.log(search_window);
 
-    const search_res = await network.geosearch(westchester);
+    const search_res = await network.geosearch(search_window);
     
     console.log(search_res[0]);
 

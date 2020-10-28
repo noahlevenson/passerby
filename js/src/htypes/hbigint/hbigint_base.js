@@ -94,7 +94,7 @@ class Hbigint_base {
 		throw new Error("Subclasses must implement the get_bit() method");
 	}
 
-	toString() {
+	toString(base = 16) {
 		throw new Error("Subclasses must implement the toString() method");
 	}
 
