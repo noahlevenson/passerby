@@ -200,7 +200,7 @@ class Happ {
 			}
 
 			if (this.keepalive_interval_handle) {
-				cancelInterval(this.keepalive_interval_handle);
+				clearInterval(this.keepalive_interval_handle);
 				this.keepalive_interval_handle = null;
 			}
 		} catch {
