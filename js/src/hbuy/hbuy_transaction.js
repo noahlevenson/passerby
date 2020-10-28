@@ -14,13 +14,13 @@ class Hbuy_transaction {
 	
 	order;
 	payment;
-	hid;
+	hid_pub;
 	id;
 
-	constructor({order = null, payment = null, hid = null, id = null} = {}) {
+	constructor({order = null, payment = null, hid_pub = null, id = null} = {}) {
 		this.order = order;
 		this.payment = payment;
-		this.hid = hid;
+		this.hid_pub = hid_pub;
 		this.id = id;
 	}
 

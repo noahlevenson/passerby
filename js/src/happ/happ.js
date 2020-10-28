@@ -10,6 +10,7 @@
 "use strict";
 
 const { Happ_env } = require("./happ_env.js");
+const { Happ_bboard } = require("./happ_bboard.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
 const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
@@ -98,13 +99,9 @@ class Happ {
 		return null;
 	}
 
-	// Put a Hid_public_data object associated with our geolocation to the network
-	async put(peer_data) {
-		// if (!(peer_data instanceof Hid_public_data)) {
-		// 	throw new TypeError("Argument 'peer_data' must be an Hid_public_data object");
-		// }
-
-		// await this.hpht.insert(this.get_location().linearize(), peer_data);
+	// Publish a Happ_bboard to the network under our location key
+	async put(bboard) {
+		await this.hpht.insert(this.get_location().linearize(), bboard);
 	}
 
 	// Search the network for data within a geographic window defined by an Hgeo_rect

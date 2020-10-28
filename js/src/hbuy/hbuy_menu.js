@@ -18,9 +18,14 @@ class Hbuy_menu {
 	min_order;
 	taxes;
 
-	constructor({name = "", min_order = 0.00, taxes = []} = {}) {
+	constructor({name = "", min_order = 0.00, taxes = [], data = null} = {}) {
 		// TODO: validation
-		this.data = new Hntree(new Hntree_node({data: name}));
+		if (data === null) {
+			this.data = new Hntree(new Hntree_node({data: name}));
+		} else {
+			this.data = data instanceof Hntree ? data : Hntree.from_json(data);
+		}
+
 		this.min_order = min_order;
 		this.taxes = taxes;
 	}
