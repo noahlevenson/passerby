@@ -30,8 +30,10 @@ const { Larosa_menu } = require("./menu.js");
     const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     const search_res = await network.geosearch(westchester);
     
-    // Assuming search_res[0] is the [key, Hid_public_data] for Pizzeria La Rosa
-    const node_info = await network.search_node_info(search_res[0][1].peer_id);
+    console.log(search_res[0]);
+
+    // Assuming search_res[0] is the [key, Happ_bboard] for Pizzeria La Rosa
+    const node_info = await network.search_node_info(Happ.get_peer_id(search_res[0][1].cred));
 
     const order = new Hbuy_order({
         type: Hbuy_order.TYPE.DELIVERY
