@@ -1,0 +1,64 @@
+/** 
+* HTRANS_UDP
+* An HTRANS module that sends and receives over TCP
+* 
+* 
+* 
+* 
+*/ 
+
+"use strict";
+
+const { Hlog } = require("../../hlog/hlog.js");
+const { Htrans } = require("./htrans.js");
+const { Htrans_msg } = require("../htrans_msg.js");
+
+const net = require("net");
+
+class Htrans_tcp extends Htrans {
+	port;
+	server;
+
+	constructor({port = 28500} = {}) {
+		super();
+		this.port = port;
+	}
+
+	async _start() {
+		this.server = net.createServer((socket) => {
+			socket.on("data", this._on_message.bind(this));
+		});
+
+		this.server.listen(this.port, () => {
+			const addr = this.server.address();
+			Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
+		});
+	}
+
+	_on_message(msg, rinfo) {
+		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive));
+		this.network.emit("message", in_msg, rinfo);
+	}
+
+	_send(htrans_msg, addr, port) {
+		const buf = Buffer.from(JSON.stringify(htrans_msg));
+
+		const s = net.createConnection(port, addr, (err) => {
+			if (err) {
+				Hlog.log(`[HTRANS] TCP send error ${addr}:${port} (${err})`);
+				return;
+			}
+
+			s.write(buf, (err) => {
+				if (err) {
+				Hlog.log(`[HTRANS] TCP send error ${addr}:${port} (${err})`);
+				return;
+			}
+
+				s.end();
+			});
+		});
+	}
+}
+
+module.exports.Htrans_tcp = Htrans_tcp;
