@@ -20,7 +20,7 @@ class Htrans_tcp extends Htrans {
 	port;
 	server;
 
-	constructor({port = 28500} = {}) {
+	constructor({port = 27500} = {}) {
 		super();
 		this.port = port;
 	}
@@ -37,6 +37,7 @@ class Htrans_tcp extends Htrans {
 	}
 
 	_on_message(msg, rinfo) {
+		console.log("message received");
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive));
 		this.network.emit("message", in_msg, rinfo);
 	}
@@ -52,9 +53,8 @@ class Htrans_tcp extends Htrans {
 
 			s.write(buf, (err) => {
 				if (err) {
-				Hlog.log(`[HTRANS] TCP send error ${addr}:${port} (${err})`);
-				return;
-			}
+					Hlog.log(`[HTRANS] TCP send error ${addr}:${port} (${err})`);
+				}
 
 				s.end();
 			});
