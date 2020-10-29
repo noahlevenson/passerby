@@ -9,11 +9,12 @@
 
 "use strict";
 
+const net = require("net");
+const { Happ_env } = require("../../happ/happ_env.js");
 const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
-
-const net = require("net");
+const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_browser.js") : require("../../htypes/hbigint/hbigint_node.js");
 
 class Htrans_tcp extends Htrans {
 	port;
