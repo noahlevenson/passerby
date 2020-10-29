@@ -111,6 +111,10 @@ class Hbigint extends Hbigint_base {
 	// Get binary string representation of this Hbigint, leftmost bit is MSB
 	// b is the number of bits to consider -- it adds trailing '0' bits 
 	to_bin_str(b) {
+		if (!b) {
+			throw new Error("Must supply value for 'b'")
+		}
+
 		return this.data.toString(2).padEnd(b, "0");
 	}
 

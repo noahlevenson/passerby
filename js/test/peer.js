@@ -27,45 +27,63 @@ const { Larosa_menu } = require("./menu.js");
     
     // const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     
-    const search_window = Hgeo.get_exts(network.get_location(), Hgeo.SEARCH_DIST_MILES);
-
+    // const search_window = Hgeo.get_exts(network.get_location(), Happ.SEARCH_DIST_MILES);
+    
     // *** non-API functions -- PUTting menu data not associated with our geolocation...
-    const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: "L&B Spumoni CERT", form: null}));
+    // const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
+    // await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: "L&B Spumoni CERT", form: null}));
 
-    const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: null}));
+    // const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
+    // await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: null}));
 
-    const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Modern Pizza CERT", form: null}));
+    // const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
+    // await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Modern Pizza CERT", form: null}));
+    
+    // const fourbros = new Hgeo_coord({lat: 40.9074648, long: -73.7844935});
+    // await network.hpht.insert(fourbros.linearize(), new Happ_bboard({cred: "4 Bros Pizza CERT", form: null}));
+
+
+    // const test = new Hgeo_coord({lat: 40, long: 70});
+    // console.log(test.linearize())
+
+    // const test2 = new Hgeo_coord({lat: 41, long: 71});
+    // console.log(test2.linearize());
+
     // ***
 
-    const search_res = await network.geosearch(search_window);
+    // const search_res = await network.geosearch(search_window);
     //console.log(search_res[0][1].form);
     
-    console.log(search_res);
+    // console.log(search_res);
 
-    const rehydrated = new Hbuy_menu(search_res[0][1].form);
+
+    const res = await network.get_local_resources();
+
+    console.log("FINAL FINAL")
+    console.log(res);
+
+
+    // const rehydrated = new Hbuy_menu(search_res[0][1].form);
 
     // console.log(rehydrated.get_full_list());
 
 
-    network.hpht._debug_print_stats();
-    network.node._debug_print_routing_table();
+    //network.hpht._debug_print_stats();
+    //network.node._debug_print_routing_table();
 
-    network.hbuy.transact_req({
-        order: "debug",
-        payment: "debug",
-        hid_pub: larosa,
-        addr: "66.228.34.29",
-        port: 27500,
-        success: (res, ctx) => {
-            network.hbuy.on_status(res.data.id, Hbuy_status.CODE.CONFIRMED, (req) => {
-                console.log(`Received confirmation for transaction # ${req.data.id.toString()}`);
-            });
-        },
-        timeout: (req) => {
-            console.log(`Transaction request ${req.data.id.toString()} timed out`);
-        }
-    });
+    // network.hbuy.transact_req({
+    //     order: "debug",
+    //     payment: "debug",
+    //     hid_pub: larosa,
+    //     addr: "66.228.34.29",
+    //     port: 27500,
+    //     success: (res, ctx) => {
+    //         network.hbuy.on_status(res.data.id, Hbuy_status.CODE.CONFIRMED, (req) => {
+    //             console.log(`Received confirmation for transaction # ${req.data.id.toString()}`);
+    //         });
+    //     },
+    //     timeout: (req) => {
+    //         console.log(`Transaction request ${req.data.id.toString()} timed out`);
+    //     }
+    // });
 })();

@@ -16,7 +16,7 @@ const readline = require("readline");
 const util = require("util");
 const { Happ } = require("../happ/happ.js");
 const { Happ_env } = require("../happ/happ_env.js");
-const { Hid } = require("../hid/hid.js");
+const { Hid_pub } = require("../hid/hid_pub.js");
 const { Hbuy_order } = require("../hbuy/hbuy_order.js");
 const { Hbuy_payment } = require("../hbuy/hbuy_payment.js");
 const { Hbuy_transaction } = require("../hbuy/hbuy_transaction.js");
@@ -38,7 +38,8 @@ const GRAMMAR = new Map([
 	["sms", _sms],
 	["order", _order],
 	["add", _add],
-	["checkout", _checkout]
+	["checkout", _checkout],
+	["phtstat", _phtstat]
 ]);
 
 const rl = readline.createInterface({
@@ -84,6 +85,10 @@ async function _start() {
 
 function _clear() {
 	console.clear();
+}
+
+async function _phtstat() {
+	await happ.hpht._debug_print_stats();
 }
 
 async function _search(left, right, top, bottom) {
@@ -145,7 +150,7 @@ async function _sms(peer_id) {
 
 	happ.hbuy.sms_req({
 		text: text,
-		from: happ.hid.public_data(),
+		from: happ.hid_pub,
 		addr: node_info.addr,
 		port: node_info.port
 	});
@@ -207,7 +212,7 @@ function _checkout() {
 	const transaction = new Hbuy_transaction({
 		order: order,
 		payment: payment,
-		hid: id,
+		hid_pub: id,
 		id: Hbigint.random(Hbuy_transaction.ID_LEN)
 	});
 }
@@ -228,7 +233,7 @@ rl.on("line", async (input) => {
 });
 
 // TODO: Hid should come from a local .env file or command line args
-const id = new Hid({
+const id = new Hid_pub({
 	public_key: "123456789",
 	name: "Noah Levenson",
 	address: "31337 Nunya Business Ave. New Rochelle NY 10801",
@@ -245,5 +250,5 @@ const payment = new Hbuy_payment({
 	zip: 10801
 });
 	
-const happ = new Happ({hid: id, keepalive: false}); // Disabling keepalive just bc it's distracting for demos
+const happ = new Happ({hid_pub: id, keepalive: false}); // Disabling keepalive just bc it's distracting for demos
 rl.prompt();

@@ -126,7 +126,7 @@ class Hpht {
 			throw new TypeError("Argument 'data' must be string");
 		}
 
-		return new Hbigint(Hutil._sha1(this.index_attr + data));
+		return new Hbigint(Hutil._sha1(`${this.index_attr}${data}`));
 	}
 
 	// Idempotently start the refresh interval and initialize a new PHT structure, indexing on 'index_attr'
@@ -450,51 +450,62 @@ class Hpht {
 
 	// 2D range query assumes that each key is a linearization of some 2D data
 	async range_query_2d(minkey, maxkey) {
-		async function _do_range_query_2d(pht_node, prefix, data = []) {
+		async function _do_range_query_2d(pht_node, data = []) {
+			// Base case: it's a leaf node
 			if (pht_node.is_leaf()) {
-				return pht_node.get_all_pairs().filter((pair) => {
-					const key = new Hbigint(pair[0]);
-					return key.greater_equal(minkey) && key.less_equal(maxkey);
+				const valid_pairs = pht_node.get_all_pairs().filter((pair) => {
+					const zvalue = new Hbigint(pair[0]);
+					const zvalue_2d = Hutil._z_delinearize_2d(zvalue, Hpht.BIT_DEPTH / 2);
+					return zvalue_2d.x.greater_equal(minkey_2d.x) && zvalue_2d.x.less(maxkey_2d.x) && zvalue_2d.y.greater_equal(minkey_2d.y) && zvalue_2d.y.less(maxkey_2d.y);
 				});
+
+				return data.concat(valid_pairs);
 			} 
 
-			// Is there any overlap between the rectangular region defined by the subtree's prefix and the range of the original query?
-			// TODO: is this an insane way to do this?  Can't we just learn this by comparing the 0's and 1's???
-			const min_region = Hbigint.from_base2_str(key_strings[0].substring(0, prefix.length + 1));
-			const max_region = Hbigint.from_base2_str(key_strings[1].substring(0, prefix.length + 1));
+			// Recursive case: it's an interior node
+			// TODO: This needs to be parallelized, parallelization is the whole point of this algorithm!
+			const subtree0 = `${pht_node.label}0`;
+			const subtree1 = `${pht_node.label}1`;
+			const subtree_0_zvalue = Hbigint.from_base2_str(subtree0);
+			const subtree_1_zvalue = Hbigint.from_base2_str(subtree1);
 
-			const child0_label = `${prefix}0`;
-			const child1_label = `${prefix}1`;
-
-			const child0_rect = Hbigint.from_base2_str(child0_label);  
-			const child1_rect = Hbigint.from_base2_str(child1_label);
-
-			// TODO: This needs to be parallelized for speed
-			if (child0_rect.greater_equal(min_region) && child0_rect.less_equal(max_region)) {
-				const child_node = await this._dht_lookup(child0_label);
-
-				if (child_node === null) {
-					throw new Error("Fatal PHT graph error");
-				}
-
-				data = data.concat(await _do_range_query_2d.bind(this)(child_node, child0_label, data));
-			}
-
-			if (child1_rect.greater_equal(min_region) && child1_rect.less_equal(max_region)) {
-				const child_node = await this._dht_lookup(child1_label);
-
-				if (child_node === null) {
-					throw new Error("Fatal PHT graph error");
-				}
-
-				data = data.concat(await _do_range_query_2d.bind(this)(child_node, child1_label, data));
-			}
+			const subtree_0_2d = Hutil._z_delinearize_2d(subtree_0_zvalue, Hpht.BIT_DEPTH / 2);
+			const subtree_1_2d = Hutil._z_delinearize_2d(subtree_1_zvalue, Hpht.BIT_DEPTH / 2);
 			
+			// // https://en.wikipedia.org/wiki/Z-order_curve
+			// subtree_0_zvalue and subtree_1_zvalue are essentially new minimum values representing a rectangular region for which we don't know the maximum value
+			// i.e., they "anchor" a rectangular region which may have some overlay with the region defined by minkey and maxkey
+
+			// does an anchored rectangle possibly overlap, depending on where its max value is?  it's easy to figure out:
+			// ANCHOR_Z_VALUE's x value must be less than your max search x value
+			// and ANCHOR_Z_VALUE's y value must be less than your max search y value
+
+			// lat (x) is odd bits, long (y) is even bits
+			
+			if (subtree_0_2d.x.less(maxkey_2d.x) && subtree_0_2d.y.less(maxkey_2d.y)) {
+				const child_node = await this._dht_lookup(subtree0);
+
+				if (child_node === null) {
+					throw new Error("Fatal PHT graph error");
+				}
+
+				data = await _do_range_query_2d.bind(this)(child_node, data);
+			}
+
+			if (subtree_1_2d.x.less(maxkey_2d.x) && subtree_1_2d.y.less(maxkey_2d.y)) {
+				const child_node = await this._dht_lookup(subtree1);
+
+				if (child_node === null) {
+					throw new Error("Fatal PHT graph error");
+				}
+
+				data = await _do_range_query_2d.bind(this)(child_node, data);
+			}
+
 			return data;
 		}
 
 		// *** BEGIN ***
-
 		if (!(minkey instanceof Hbigint) || !(maxkey instanceof Hbigint)) {
 			throw new TypeError("Arguments 'minkey' and 'maxkey' must be Hbigint");
 		}
@@ -503,21 +514,21 @@ class Hpht {
 			throw new RangeError("'minkey' must be less than 'maxkey'");
 		}
 
-		// First, get the longest common decimal prefix of these keys
 		const key_strings = [];
-		key_strings.push(minkey.toString(10));
-		key_strings.push(maxkey.toString(10));
-		let lcp = Hutil._get_lcp(key_strings);
+		key_strings.push(minkey.to_bin_str(Hpht.BIT_DEPTH));
+		key_strings.push(maxkey.to_bin_str(Hpht.BIT_DEPTH));
+		const lcp = Hutil._get_lcp(key_strings);
 
-		// Now get the PHT node labeled with that prefix
-		const pht_node = await this.lookup_lin(new Hbigint(parseInt(lcp)));
+		const minkey_2d = Hutil._z_delinearize_2d(minkey, Hpht.BIT_DEPTH / 2); 
+		const maxkey_2d = Hutil._z_delinearize_2d(maxkey, Hpht.BIT_DEPTH / 2); 
 
-		if (pht_node === null) {
+		const start_node = await this._dht_lookup(""); // TODO: THIS IS THE ONE THING WE CAN'T FIGURE OUT 10/29/2020
+
+		if (start_node === null) {
 			throw new Error("Fatal PHT graph error");
 		}
 
-		// Perform recursive parallel traversal of this PHT node
-		return await _do_range_query_2d.bind(this)(pht_node, lcp);
+		return await _do_range_query_2d.bind(this)(start_node);
 	}
 }
 

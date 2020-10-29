@@ -83,6 +83,7 @@ class Hutil {
 
 	// Get 2D Z-curve linearization for positive values x and y, where b is the bit depth of each dimension
 	// Currently takes Number types and returns a BigInt, but we may want to roll our own Buffer-based binary format
+	// x becomes odd bits, y becomes even bits
 	static _z_linearize_2d(x, y, b) {
 		// TODO: Validate inputs
 		let xx = new Hbigint(x);
@@ -98,6 +99,22 @@ class Hutil {
 		}
 
 		return l;
+	}
+
+	// Reverse _z_linearize_2d
+	static _z_delinearize_2d(key, b) {
+		let x = "";
+		let y = "";
+
+		[...key.to_bin_str(b)].forEach((char, i) => {
+			if (i % 2 === 0) {
+				y = `${y}${char}`;
+			} else {
+				x = `${x}${char}`
+			}
+		});
+
+		return {x: Hbigint.from_base2_str(x), y: Hbigint.from_base2_str(y)};
 	}
 
 	// Return the longest common prefix of an array of strings
