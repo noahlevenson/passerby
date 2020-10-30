@@ -13,7 +13,8 @@ class Htrans_msg {
 	static TYPE = {
 		HKAD: 0,
 		HSTUN: 1,
-		HBUY: 2
+		HBUY: 2,
+		ACK: 3
 	};
 
 	msg;

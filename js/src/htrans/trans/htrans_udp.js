@@ -10,6 +10,7 @@
 "use strict";
 
 const dgram = require("dgram");
+const EventEmitter = require("events");
 const { Happ_env } = require("../../happ/happ_env.js");
 const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
@@ -18,10 +19,17 @@ const { Hutil } = require("../../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_browser.js") : require("../../htypes/hbigint/hbigint_node.js");
 
 class Htrans_udp extends Htrans {
+	static RETRANSMIT = true;
+	static MAX_RETRIES = 5;
+	static DEFAULT_RTT_MS = 100;
+	static BACKOFF_FUNC = x => x * 2;
+	static ID_LEN = 8;
+
 	socket;
 	port;
 	udp4;
 	udp6;
+	ack;
 
 	// TODO: we need to have a deep think about whether mixed IPv4 + IPv6 networks will work correctly
 	// until then, we disable UPD6 by default
@@ -30,6 +38,7 @@ class Htrans_udp extends Htrans {
 		this.port = port;
 		this.udp4 = udp4;
 		this.udp6 = udp6;
+		this.ack = new EventEmitter();
 	}
 
 	async _start() {
@@ -43,7 +52,7 @@ class Htrans_udp extends Htrans {
 
 		this.socket.on("message", this._on_message.bind(this));
 		this.socket.bind(this.port);
-		Hlog.log(`[HTRANS] UDP service starting on port ${this.port}...`);
+		Hlog.log(`[HTRANS] UDP service starting on port ${this.port}, retranmission ${Htrans_udp.RETRANSMIT ? "enabled" : "disabled"}...`);
 		await this._listening();
 	}
 
@@ -69,19 +78,70 @@ class Htrans_udp extends Htrans {
 		// The message here is a Buffer containing an Htrans_msg, delivered raw from the UDP socket
 		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive)); // this is nice! We rehydrate our Hbigints at the HTRANS layer, which is exactly where we should do it
+
+		if (Htrans_udp.RETRANSMIT && in_msg.TYPE == Htrans_msg.TYPE.ACK) {
+			this.ack.emit(in_msg.id.toString());
+		} else if (Htrans_udp.RETRANSMIT) {
+			const ack = new Htrans_msg({
+				msg: in_msg.id,
+				type: Htrans_msg.TYPE.ACK
+			});
+
+			this._send(ack, rinfo.address, rinfo.port);
+		}
+
 		this.network.emit("message", in_msg, rinfo);
 	}
 
-	_send(htrans_msg, addr, port) {
-		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
-		const buf = Buffer.from(JSON.stringify(htrans_msg));
+	_do_send(buf, port, addr, cb = () => {}) {
 		this.socket.send(buf, 0, buf.length, port, addr, (err) => {
 			if (err) {
 				Hlog.log(`[HTRANS] UDP socket send error ${addr}:${port} (${err})`);
 				return;
 			}
 
-			// Hlog.log(`[HTRANS] UDP outbound to ${htrans_msg.addr}:${htrans_msg.port}`);
+			cb();
+		});
+	}
+
+	_send(htrans_msg, addr, port) {
+		// If we're retransmitting, then augment this message with an ID
+		if (Htrans_udp.RETRANSMIT) {
+			htrans_msg.id = Hbigint.random(Htrans_udp.ID_LEN);
+		}
+
+		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
+		const buf = Buffer.from(JSON.stringify(htrans_msg));
+		
+		this._do_send(buf, port, addr, () => {
+			function _retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb) {
+				if (i > max_retries) {
+					end_cb();
+					Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
+					return;
+				}
+
+				timeout_id = setTimeout(() => {
+					lambda();
+					console.log("retried!")
+					delay = backoff_func(delay);
+					i += 1;
+					_retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb);
+				}, delay);
+			}
+
+			let timeout_id = null;
+
+			if (Htrans_udp.RETRANSMIT) {
+				this.ack.once(htrans_msg.id.toString(), (res_msg) => {
+					console.log("heard an ack!!!");
+					clearTimeout(timeout_id);
+				});
+
+				_retry_runner(this._do_send.bind(this, buf, port, addr), 0, Htrans_udp.MAX_RETRIES, Htrans_udp.DEFAULT_RTT_MS, Htrans_udp.BACKOFF_FUNC, () => {
+					this.ack.removeAllListeners(htrans_msg.id.toString());
+				});
+			}
 		});
 	}
 }
