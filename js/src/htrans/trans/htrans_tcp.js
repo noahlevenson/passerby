@@ -30,11 +30,11 @@ class Htrans_tcp extends Htrans {
 		return new Promise((resolve, reject) => {
 			this.server = net.createServer((connection) => {
 				connection.on("data", (msg) => {
-					this._on_message(msg, {address: connection.remoteAddress, port: connection.remotePort, family: connection.remoteFamily});
+					this._on_message(msg, {address: connection.remoteAddress, port: connection.remotePort});
 				});
 			});
 
-			this.server.listen(this.port, "0.0.0.0", () => {
+			this.server.listen(this.port, () => {
 				const addr = this.server.address();
 				Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);
 				resolve();
@@ -43,17 +43,14 @@ class Htrans_tcp extends Htrans {
 	}
 
 	_on_message(msg, rinfo) {
-		console.log(rinfo);
-		console.log(in_msg);
-
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive));
 		this.network.emit("message", in_msg, rinfo);
+
+		console.log(rinfo);
+		console.log(in_msg);
 	}
 
 	_send(htrans_msg, addr, port) {
-		console.log("I WANT TO SEND AN OUTGOING!!!!")
-		console.log(htrans_msg);
-
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
 
 		const s = net.createConnection(port, addr, () => {
