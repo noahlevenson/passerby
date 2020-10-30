@@ -49,19 +49,14 @@ class Htrans_tcp extends Htrans {
 	_send(htrans_msg, addr, port) {
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
 
-		const s = net.createConnection(port, addr, (err) => {
-			if (err) {
-				Hlog.log(`[HTRANS] TCP send error ${addr}:${port} (${err})`);
-				return;
-			}
-
-			s.write(buf, (err) => {
-				if (err) {
-					Hlog.log(`[HTRANS] TCP send error ${addr}:${port} (${err})`);
-				}
-
+		const s = net.createConnection(port, addr, () => {
+			s.write(buf, () => {
 				s.end();
 			});
+		});
+
+		s.on("error", (err) => {
+			console.log(`[HTRANS] TCP send error: ${err.message}`);
 		});
 	}
 }
