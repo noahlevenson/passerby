@@ -116,9 +116,11 @@ class Htrans_udp extends Htrans {
 
 		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
+		let timeout_id = null;
 		
 		this._do_send(buf, port, addr, () => {
 			function _retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb) {
+				console.log("retry runner invoked");
 				if (i > max_retries) {
 					end_cb();
 					Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
@@ -130,11 +132,9 @@ class Htrans_udp extends Htrans {
 					console.log("retried!")
 					delay = backoff_func(delay);
 					i += 1;
-					_retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb);
+					_retry_runner.bind(this, lambda, i, max_retries, delay, backoff_func, end_cb);
 				}, delay);
 			}
-
-			let timeout_id = null;
 
 			if (Htrans_udp.RETRANSMIT) {
 				console.log(`set a listener for ${htrans_msg.id}`)
