@@ -29,7 +29,9 @@ class Htrans_tcp extends Htrans {
 	_start() {
 		return new Promise((resolve, reject) => {
 			this.server = net.createServer((connection) => {
-				connection.on("data", this._on_message.bind(this));
+				connection.on("data", (msg) => {
+					this._on_message(msg, {address: connection.remoteAddress, port: connection.remotePort});
+				});
 			});
 
 			this.server.listen(this.port, () => {
