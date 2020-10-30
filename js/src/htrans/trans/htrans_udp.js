@@ -51,7 +51,7 @@ class Htrans_udp extends Htrans {
 
 		this.socket.on("message", this._on_message.bind(this));
 		this.socket.bind(this.port);
-		Hlog.log(`[HTRANS] UDP service starting on port ${this.port}, retranmission ${Htrans_udp.RETRANSMIT ? "enabled" : "disabled"}...`);
+		Hlog.log(`[HTRANS] UDP service starting on port ${this.port}, retransmission ${Htrans_udp.RETRANSMIT ? "enabled" : "disabled"}...`);
 		await this._listening();
 	}
 
