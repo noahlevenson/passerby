@@ -27,19 +27,24 @@ class Htrans_tcp extends Htrans {
 
 	async _start() {
 		this.server = net.createServer((socket) => {
-			socket.on("data", this._on_message.bind(this));
+
+			//socket.on("data", this._on_message.bind(this));
 		});
 
 		this.server.listen(this.port, () => {
 			const addr = this.server.address();
 			Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
+
+			this.server.on("connection", (socket) => {
+				socket.on("data", this._on_message.bind(this));
+			});
 		});
 	}
 
-	_on_message(msg, rinfo) {
+	_on_message(msg) {
 		console.log("message received");
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive));
-		this.network.emit("message", in_msg, rinfo);
+		this.network.emit("message", in_msg, {});
 	}
 
 	_send(htrans_msg, addr, port) {
