@@ -23,17 +23,19 @@ class Htrans_tcp extends Htrans {
 	constructor({port = 27500} = {}) {
 		super();
 		this.port = port;
+		this.server = null;
 	}
 
-	async _start() {
-		this.server = net.createServer((socket) => {
-			const addr = this.server.address();
-			Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
+	_start() {
+		return new Promise((resolve, reject) => {
+			this.server = net.createServer((connection) => {
+				connection.on("data", this._on_message.bind(this));
+			});
 
-			this.server.on("connection", (socket) => {
-				socket.on("data", (msg) => {
-					this._on_message(msg, {address: socket.remoteAddress, port: socket.remotePort});
-				});
+			this.server.listen(this.port, () => {
+				const addr = this.server.address();
+				Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);
+				resolve();
 			});
 		});
 	}
@@ -56,7 +58,7 @@ class Htrans_tcp extends Htrans {
 		});
 
 		s.on("error", (err) => {
-			console.log(`[HTRANS] TCP send error: ${err.message}`);
+			Hlog.log(`[HTRANS] TCP send error: ${err.message}`);
 		});
 	}
 }
