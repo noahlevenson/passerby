@@ -81,24 +81,24 @@ class Htrans_udp extends Htrans {
 
 		// We're in retransmit mode and someone sent us an ACK, so just fire the event for this ACK and be done
 		if (Htrans_udp.RETRANSMIT && in_msg.type === Htrans_msg.TYPE.ACK) {
-			this.ack.emit(in_msg.id.toString());
+			this.ack.emit(in_msg.id.toString(), in_msg);
 			return;
 		} 
 
-		// We're in retransmit mode and someone sent us a regular message, so send them an ACK and continue to process the message
+		// We're in retransmit mode and someone sent us a regular message, so send them an ACK with no possibility of retransmission and continue to process the message
 		if (Htrans_udp.RETRANSMIT) {
 			const ack = new Htrans_msg({
 				type: Htrans_msg.TYPE.ACK,
 				id: in_msg.id
 			});
 
-			this._send(ack, rinfo.address, rinfo.port);
+			this._do_send(Buffer.from(JSON.stringify(ack)), rinfo.address, rinfo.port);
 		}
 
 		this.network.emit("message", in_msg, rinfo);
 	}
 
-	_do_send(buf, port, addr, cb = () => {}) {
+	_do_send(buf, addr, port, cb = () => {}) {
 		this.socket.send(buf, 0, buf.length, port, addr, (err) => {
 			if (err) {
 				Hlog.log(`[HTRANS] UDP socket send error ${addr}:${port} (${err})`);
@@ -116,11 +116,11 @@ class Htrans_udp extends Htrans {
 
 		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
-		let timeout_id = null;
 		
-		this._do_send(buf, port, addr, () => {
+		this._do_send(buf, addr, port, () => {
+			let timeout_id = null;
+
 			function _retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb) {
-				console.log("retry runner invoked");
 				if (i > max_retries) {
 					end_cb();
 					Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
@@ -128,8 +128,8 @@ class Htrans_udp extends Htrans {
 				}
 
 				timeout_id = setTimeout(() => {
+					console.log("RESENDING NOW")
 					lambda();
-					console.log("retried!")
 					delay = backoff_func(delay);
 					i += 1;
 					_retry_runner.bind(this, lambda, i, max_retries, delay, backoff_func, end_cb);
@@ -137,13 +137,13 @@ class Htrans_udp extends Htrans {
 			}
 
 			if (Htrans_udp.RETRANSMIT) {
-				console.log(`set a listener for ${htrans_msg.id}`)
+				console.log("AYYY")
 				this.ack.once(htrans_msg.id.toString(), (res_msg) => {
-					console.log("heard an ack!!!");
-					clearTimeout(timeout_id);
+					console.log("HEARD AN ACK")
+					// clearTimeout(timeout_id);
 				});
 
-				_retry_runner(this._do_send.bind(this, buf, port, addr), 0, Htrans_udp.MAX_RETRIES, Htrans_udp.DEFAULT_RTT_MS, Htrans_udp.BACKOFF_FUNC, () => {
+				_retry_runner(this._do_send.bind(this, buf, addr, port), 0, Htrans_udp.MAX_RETRIES, Htrans_udp.DEFAULT_RTT_MS, Htrans_udp.BACKOFF_FUNC, () => {
 					this.ack.removeAllListeners(htrans_msg.id.toString());
 				});
 			}
