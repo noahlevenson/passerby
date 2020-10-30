@@ -21,7 +21,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_bro
 class Htrans_udp extends Htrans {
 	static RETRANSMIT = true;
 	static MAX_RETRIES = 5;
-	static DEFAULT_RTT_MS = 10;
+	static DEFAULT_RTT_MS = 100;
 	static BACKOFF_FUNC = x => x * 2;
 	static ID_LEN = 8;
 
@@ -79,13 +79,13 @@ class Htrans_udp extends Htrans {
 		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive)); // this is nice! We rehydrate our Hbigints at the HTRANS layer, which is exactly where we should do it
 
-		// We're in retransmit mode and someone sent us an ACK, so just fire the event for this ACK and be done
+		// We're in retransmit mode and someone sent us an ACK, so just fire the local event for this ACK and be done
 		if (Htrans_udp.RETRANSMIT && in_msg.type === Htrans_msg.TYPE.ACK) {
 			this.ack.emit(in_msg.id.toString(), in_msg);
 			return;
 		} 
 
-		// We're in retransmit mode and someone sent us a regular message, so send them an ACK with no possibility of retransmission and continue to process the message
+		// We're in retransmit mode and someone sent us a regular message, so send them an ACK (with no possibility of retransmitting the ACK!) and continue to process the message
 		if (Htrans_udp.RETRANSMIT) {
 			const ack = new Htrans_msg({
 				type: Htrans_msg.TYPE.ACK,
