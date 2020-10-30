@@ -26,27 +26,27 @@ class Htrans_tcp extends Htrans {
 	}
 
 	async _start() {
-		this.server = net.createServer((socket) => {
+		this.server = net.createServer();
+		this.server.listen(this.port, _listening);
+	}
 
-			//socket.on("data", this._on_message.bind(this));
-		});
+	_listening() {
+		const addr = this.server.address();
+		Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
 
-		this.server.listen(this.port, () => {
-			const addr = this.server.address();
-			Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
-
-			this.server.on("connection", (socket) => {
-				socket.on("data", this._on_message.bind(this, socket));
+		this.server.on("connection", (socket) => {
+			socket.on("data", (msg) => {
+				this._on_message(msg, {address: socket.remoteAddress, port: socket.remotePort});
 			});
 		});
 	}
 
-	_on_message(msg, socket) {
-		console.log("message received");
+	_on_message(msg, rinfo) {
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive));
-		this.network.emit("message", in_msg, {address: socket.remoteAddress, port: socket.remotePort});
+		this.network.emit("message", in_msg, rinfo);
 
-		console.log("in_msg");
+		console.log(rinfo);
+		console.log(in_msg);
 	}
 
 	_send(htrans_msg, addr, port) {
