@@ -12,6 +12,7 @@
 const { Happ_env } = require("./happ_env.js");
 const { Happ_bboard } = require("./happ_bboard.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
+const { Htrans_tcp } = require("../htrans/trans/htrans_tcp.js");
 const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
 const { Hkad_net_solo } = require("../hkad/net/hkad_net_solo.js");
@@ -197,6 +198,85 @@ class Happ {
 
 		// Create and start an HBUY interface
 		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);
+		this.hbuy = new Hbuy({net: happ_hbuy_net, hid_pub: this.hid_pub});
+		this.hbuy.start();
+	}
+
+	async start_tcp({addr = null, port = null} = {}) {
+		// Create and boot a UDP transport module
+		const happ_tcp_trans = new Htrans_tcp({port: this.port});
+		await happ_tcp_trans._start();
+        
+        this.trans = happ_tcp_trans;
+
+		// Create and start STUN services
+		const happ_stun_net = new Hstun_net_solo(happ_tcp_trans);
+		const happ_stun_service = new Hstun({net: happ_stun_net});
+
+		let addr_port = null;
+
+		if (addr !== null && port !== null) {
+			addr_port = [addr, port];
+		} else {
+			// Try all of our known bootstrap nodes' STUN servers to resolve our external addr and port (we only need one response)
+			for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && addr_port === null; i += 1) {
+				addr_port = await happ_stun_service._binding_req(Happ.BOOTSTRAP_NODES[i][0], Happ.BOOTSTRAP_NODES[i][1]);
+			}
+		}
+
+		if (addr_port === null) {
+			throw new Error("STUN binding request failed!");
+		}
+
+		// Create a DHT node
+		const peer_node = new Hkad_node({
+			eng: new Hkad_eng_alpha(), 
+			net: new Hkad_net_solo(happ_tcp_trans), 
+			addr: addr_port[0],
+			port: addr_port[1],
+			id: this.my_id()
+		});
+
+		this.node = peer_node;
+
+		// TODO: Should we bootstrap with more than one node? Bootstrap with every bootstrap node in our list?
+		let bootstrap_res = false;
+
+		for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && bootstrap_res === false; i += 1) {
+			bootstrap_res = await peer_node.bootstrap({addr: Happ.BOOTSTRAP_NODES[i][0], port: Happ.BOOTSTRAP_NODES[i][1]});
+		}
+
+		if (!bootstrap_res) {
+			throw new Error("DHT bootstrap failed!");
+		}
+
+		// TODO: Keepalive should send a much smaller packet than this (it's a STUN request wrapped in an HTRANS msg)
+		if (this.keepalive) {
+			this.keepalive_interval_handle = setInterval(async () => {
+				let res = null;
+
+				for (let i = 0; i < Happ.BOOTSTRAP_NODES.length && res === null; i += 1) {
+					res = await happ_stun_service._binding_req(Happ.BOOTSTRAP_NODES[i][0], Happ.BOOTSTRAP_NODES[i][1]);
+				}
+			}, Happ.T_NAT_KEEPALIVE);
+
+			Hlog.log(`[HAPP] NAT keepalive enabled (${Happ.T_NAT_KEEPALIVE / 1000}s)`);
+		}
+
+		// Create a PHT interface
+		this.hpht = new Hpht({
+			index_attr: Happ.GEO_INDEX_ATTR,
+			dht_lookup_func: peer_node._node_lookup, 
+			dht_lookup_args: [peer_node._req_find_value], 
+			dht_node: peer_node,
+			dht_ttl: Hkad_node.T_DATA_TTL
+		});
+
+		// Idempotently initialize the PHT
+		await this.hpht.init();
+
+		// Create and start an HBUY interface
+		const happ_hbuy_net = new Hbuy_net_solo(happ_tcp_trans);
 		this.hbuy = new Hbuy({net: happ_hbuy_net, hid_pub: this.hid_pub});
 		this.hbuy.start();
 	}
