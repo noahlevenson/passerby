@@ -22,7 +22,7 @@ const { Larosa_menu } = require("./menu.js");
     });
 
     const network = new Happ({hid_pub: larosa});
-    await network.start_tcp();
+    await network.start();
     
     await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu}));
     
