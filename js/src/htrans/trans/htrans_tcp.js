@@ -26,17 +26,14 @@ class Htrans_tcp extends Htrans {
 	}
 
 	async _start() {
-		this.server = net.createServer();
-		this.server.listen(this.port, this._listening);
-	}
+		this.server = net.createServer((socket) => {
+			const addr = this.server.address();
+			Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
 
-	_listening() {
-		const addr = this.server.address();
-		Hlog.log(`[HTRANS] TCP service online, listening on ${addr.address}:${addr.port}`);		
-
-		this.server.on("connection", (socket) => {
-			socket.on("data", (msg) => {
-				this._on_message(msg, {address: socket.remoteAddress, port: socket.remotePort});
+			this.server.on("connection", (socket) => {
+				socket.on("data", (msg) => {
+					this._on_message(msg, {address: socket.remoteAddress, port: socket.remotePort});
+				});
 			});
 		});
 	}
