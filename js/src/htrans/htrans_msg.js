@@ -20,7 +20,7 @@ class Htrans_msg {
 	msg;
 	type;
 
-	constructor({msg = null, type = null} = {}) {
+	constructor({msg = null, type = null, id = null} = {}) {
 		// TODO: Validation
 		// Since this is our over-the-wire format, we want to have checks in the constructor
 		// to discern between a valid dehydrated Htrans_msg and what might be some other garbage packet of information that may
@@ -28,6 +28,7 @@ class Htrans_msg {
 		
 		this.msg = msg;
 		this.type = type;
+		this.id = id;
 	}
 }
 

@@ -79,12 +79,17 @@ class Htrans_udp extends Htrans {
 		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive)); // this is nice! We rehydrate our Hbigints at the HTRANS layer, which is exactly where we should do it
 
-		if (Htrans_udp.RETRANSMIT && in_msg.TYPE == Htrans_msg.TYPE.ACK) {
+		// We're in retransmit mode and someone sent us an ACK, so just fire the event for this ACK and be done
+		if (Htrans_udp.RETRANSMIT && in_msg.type === Htrans_msg.TYPE.ACK) {
 			this.ack.emit(in_msg.id.toString());
-		} else if (Htrans_udp.RETRANSMIT) {
+			return;
+		} 
+
+		// We're in retransmit mode and someone sent us a regular message, so send them an ACK and continue to process the message
+		if (Htrans_udp.RETRANSMIT) {
 			const ack = new Htrans_msg({
-				msg: in_msg.id,
-				type: Htrans_msg.TYPE.ACK
+				type: Htrans_msg.TYPE.ACK,
+				id: in_msg.id
 			});
 
 			this._send(ack, rinfo.address, rinfo.port);
@@ -105,7 +110,6 @@ class Htrans_udp extends Htrans {
 	}
 
 	_send(htrans_msg, addr, port) {
-		// If we're retransmitting, then augment this message with an ID
 		if (Htrans_udp.RETRANSMIT) {
 			htrans_msg.id = Hbigint.random(Htrans_udp.ID_LEN);
 		}
@@ -133,6 +137,7 @@ class Htrans_udp extends Htrans {
 			let timeout_id = null;
 
 			if (Htrans_udp.RETRANSMIT) {
+				console.log(`set a listener for ${htrans_msg.id}`)
 				this.ack.once(htrans_msg.id.toString(), (res_msg) => {
 					console.log("heard an ack!!!");
 					clearTimeout(timeout_id);
