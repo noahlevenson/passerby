@@ -23,7 +23,6 @@ class Htrans_udp extends Htrans {
 	static MAX_RETRIES = 5;
 	static DEFAULT_RTT_MS = 100;
 	static BACKOFF_FUNC = x => x * 2;
-	static ID_LEN = 8;
 
 	socket;
 	port;
@@ -79,13 +78,13 @@ class Htrans_udp extends Htrans {
 		// TODO: Discern between a valid Htrans_msg and some garbage/malicious data!
 		const in_msg = new Htrans_msg(JSON.parse(msg.toString(), Hbigint._json_revive)); // this is nice! We rehydrate our Hbigints at the HTRANS layer, which is exactly where we should do it
 
-		// We're in retransmit mode and someone sent us an ACK, so just fire the local event for this ACK and be done
+		// We're in retransmit mode and the incoming msg is an ACK, so just fire the event to announce this ACK and be done
 		if (Htrans_udp.RETRANSMIT && in_msg.type === Htrans_msg.TYPE.ACK) {
 			this.ack.emit(in_msg.id.toString(), in_msg);
 			return;
 		} 
 
-		// We're in retransmit mode and someone sent us a regular message, so send them an ACK (with no possibility of retransmitting the ACK!) and continue to process the message
+		// We're in retransmit mode and someone sent us a regular msg, so send them an ACK (with no possibility of retransmitting the ACK!) and continue to process their message
 		if (Htrans_udp.RETRANSMIT) {
 			const ack = new Htrans_msg({
 				type: Htrans_msg.TYPE.ACK,
@@ -110,15 +109,23 @@ class Htrans_udp extends Htrans {
 	}
 
 	_send(htrans_msg, addr, port) {
-		if (Htrans_udp.RETRANSMIT && htrans_msg.id === null) {
-			htrans_msg.id = Hbigint.random(Htrans_udp.ID_LEN);
+		// The Htrans_msg 'id' property isn't used by default, though Htrans subclasses may optionally utilize it
+		// Htrans_udp uses it for UDP retransmission, so let's ensure that higher level modules aren't populating that field
+		if (htrans_msg.id !== null) {
+			throw new Error("Htrans_msg IDs should be null");
+		}
+
+		if (Htrans_udp.RETRANSMIT) {
+			htrans_msg.id = Hbigint.random(Htrans_msg.ID_LEN);
 		}
 
 		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
-		
+
 		this._do_send(buf, addr, port, () => {
-			function _retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb) {
+			let timeout_id = null;
+
+			function _retry_runner(f, i, max_retries, delay, backoff_f, end_cb) {
 				if (i === max_retries) {
 					end_cb();
 					Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
@@ -127,14 +134,10 @@ class Htrans_udp extends Htrans {
 
 				timeout_id = setTimeout(() => {
 					Hlog.log(`[HTRANS] No UDP ACK for msg # ${htrans_msg.id}, retransmitting ${i + 1}/${max_retries}`)
-					lambda();
-					delay = backoff_func(delay);
-					i += 1;
-					_retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb);
+					f();
+					_retry_runner(f, i + 1, max_retries, backoff_f(delay), backoff_f, end_cb);
 				}, delay);
 			}
-
-			let timeout_id = null;
 
 			if (Htrans_udp.RETRANSMIT) {
 				this.ack.once(htrans_msg.id.toString(), (res_msg) => {

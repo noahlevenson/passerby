@@ -10,6 +10,8 @@
 "use strict";
 
 class Htrans_msg {
+	static ID_LEN = 8;
+	
 	static TYPE = {
 		HKAD: 0,
 		HSTUN: 1,
@@ -19,6 +21,7 @@ class Htrans_msg {
 
 	msg;
 	type;
+	id;
 
 	constructor({msg = null, type = null, id = null} = {}) {
 		// TODO: Validation
