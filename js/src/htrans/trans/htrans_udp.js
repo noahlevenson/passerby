@@ -21,7 +21,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_bro
 class Htrans_udp extends Htrans {
 	static RETRANSMIT = true;
 	static MAX_RETRIES = 5;
-	static DEFAULT_RTT_MS = 100;
+	static DEFAULT_RTT_MS = 10;
 	static BACKOFF_FUNC = x => x * 2;
 	static ID_LEN = 8;
 
@@ -110,7 +110,7 @@ class Htrans_udp extends Htrans {
 	}
 
 	_send(htrans_msg, addr, port) {
-		if (Htrans_udp.RETRANSMIT) {
+		if (Htrans_udp.RETRANSMIT && htrans_msg.id === null) {
 			htrans_msg.id = Hbigint.random(Htrans_udp.ID_LEN);
 		}
 
@@ -118,29 +118,27 @@ class Htrans_udp extends Htrans {
 		const buf = Buffer.from(JSON.stringify(htrans_msg));
 		
 		this._do_send(buf, addr, port, () => {
-			let timeout_id = null;
-
 			function _retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb) {
-				if (i > max_retries) {
+				if (i === max_retries) {
 					end_cb();
 					Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
 					return;
 				}
 
 				timeout_id = setTimeout(() => {
-					console.log("RESENDING NOW")
+					Hlog.log(`[HTRANS] No UDP ACK for msg # ${htrans_msg.id}, retransmitting ${i + 1}/${max_retries}`)
 					lambda();
 					delay = backoff_func(delay);
 					i += 1;
-					_retry_runner.bind(this, lambda, i, max_retries, delay, backoff_func, end_cb);
+					_retry_runner(lambda, i, max_retries, delay, backoff_func, end_cb);
 				}, delay);
 			}
 
+			let timeout_id = null;
+
 			if (Htrans_udp.RETRANSMIT) {
-				console.log("AYYY")
 				this.ack.once(htrans_msg.id.toString(), (res_msg) => {
-					console.log("HEARD AN ACK")
-					// clearTimeout(timeout_id);
+					clearTimeout(timeout_id);
 				});
 
 				_retry_runner(this._do_send.bind(this, buf, addr, port), 0, Htrans_udp.MAX_RETRIES, Htrans_udp.DEFAULT_RTT_MS, Htrans_udp.BACKOFF_FUNC, () => {
