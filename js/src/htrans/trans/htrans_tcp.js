@@ -27,7 +27,7 @@ class Htrans_tcp extends Htrans {
 
 	async _start() {
 		this.server = net.createServer();
-		this.server.listen(this.port, _listening);
+		this.server.listen(this.port, this._listening);
 	}
 
 	_listening() {
