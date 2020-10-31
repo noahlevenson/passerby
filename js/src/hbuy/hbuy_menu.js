@@ -14,6 +14,24 @@ const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hutil } = require("../hutil/hutil.js");
 
 class Hbuy_menu {
+	static KEYWORDS = {
+		"Pizza": 0,
+		"Chinese": 1,
+		"Sandwiches": 2,
+		"Bagels": 3,
+		"Breakfast": 4,
+		"Mexican": 5,
+		"Diner": 6,
+		"Dessert": 7,
+		"Italian": 8,
+		"Latin American": 9,
+		"Japanese": 10,
+		"Thai": 11,
+		"Indian": 12,
+		"Caribbean": 13,
+		"Burgers": 14
+	};
+
 	data;
 	min_order;
 	taxes;

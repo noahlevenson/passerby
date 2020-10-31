@@ -21,7 +21,7 @@ class Hbuy_msg {
 		TRANSACT: 0,
 		STATUS: 1,
 		SMS: 2
-	}
+	};
 
 	data;
 	type;
