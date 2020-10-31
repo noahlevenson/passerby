@@ -112,6 +112,7 @@ class Happ {
 		const search_window = Hgeo.get_exts(loc, Happ.SEARCH_DIST_MILES);
 		const res = await this.geosearch(search_window);
         Hlog.log(`[HAPP] Searched ${Happ.SEARCH_DIST_MILES.toFixed(1)} from ${loc.lat}, ${loc.long}; resources discovered: ${res.length}`);
+        return res;
 	}
 
 	// Search the network for data within a geographic window defined by an Hgeo_rect
