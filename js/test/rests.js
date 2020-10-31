@@ -10,6 +10,7 @@ const { Hbuy_menu } = require("../src/hbuy/hbuy_menu.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_browser.js") : require("../src/htypes/hbigint/hbigint_node.js");
 const { Larosa_menu } = require("./menu.js");
+const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
 
 (async function run() {
     const larosa = new Hid_pub({
@@ -20,28 +21,28 @@ const { Larosa_menu } = require("./menu.js");
         lat: 40.9018663,
         long: -73.7912739
     });
-
+    
     const network = new Happ({hid_pub: larosa});
     await network.start();
     
     await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu}));
     
     const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: "L&B Spumoni Gardens CERT", form: null}));
+    await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: "L&B Spumoni Gardens CERT", form: Toms_hot_dogs_menu}));
 
     const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: null}));
+    await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: Toms_hot_dogs_menu}));
 
     const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Modern Pizzeria & Restaurant CERT", form: null}));
+    await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Modern Pizzeria & Restaurant CERT", form: Toms_hot_dogs_menu}));
     
     const ajs_burgers = new Hgeo_coord({lat: 40.9225513, long: -73.7880021});
-    await network.hpht.insert(ajs_burgers.linearize(), new Happ_bboard({cred: "AJ's Burgers CERT", form: null}));
+    await network.hpht.insert(ajs_burgers.linearize(), new Happ_bboard({cred: "AJ's Burgers CERT", form: Toms_hot_dogs_menu}));
 
     const fourbros = new Hgeo_coord({lat: 40.9074648, long: -73.7844935});
-    await network.hpht.insert(fourbros.linearize(), new Happ_bboard({cred: "4 Bros Pizza CERT", form: null}));
+    await network.hpht.insert(fourbros.linearize(), new Happ_bboard({cred: "4 Bros Pizza CERT", form: Toms_hot_dogs_menu}));
 
     const dubrovnik = new Hgeo_coord({lat: 40.9036258, long: -73.7913645});
-    await network.hpht.insert(dubrovnik.linearize(), new Happ_bboard({cred: "Dubrovnik Restaurant CERT", form: null}));
+    await network.hpht.insert(dubrovnik.linearize(), new Happ_bboard({cred: "Dubrovnik Restaurant CERT", form: Toms_hot_dogs_menu}));
     console.log("Done!")
 })();
