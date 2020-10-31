@@ -108,9 +108,10 @@ class Happ {
 
 	// This is the highest level function for retrieving a list of nearby restaurant peers
 	async get_local_resources() {
-		const search_window = Hgeo.get_exts(this.get_location(), Happ.SEARCH_DIST_MILES);
-
-		return await this.geosearch(search_window);
+        const loc = this.get_location();
+		const search_window = Hgeo.get_exts(loc, Happ.SEARCH_DIST_MILES);
+		const res = await this.geosearch(search_window);
+        Hlog.log(`[HAPP] Searched ${Happ.SEARCH_DIST_MILES.toFixed(1)} from ${loc.lat}, ${loc.long}; resources discovered: ${res.length}`);
 	}
 
 	// Search the network for data within a geographic window defined by an Hgeo_rect
