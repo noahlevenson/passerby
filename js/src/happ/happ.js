@@ -24,6 +24,7 @@ const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
+const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
@@ -68,12 +69,17 @@ class Happ {
         this.keepalive = keepalive;
 		this.keepalive_interval_handle = null;
 	}
-
+    
 	// Compute the peer ID derived from input 'data'
 	// Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion
 	static get_peer_id(data) {
 		return new Hbigint(Hutil._sha1(data));
 	}
+
+    // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
+    get_menu_keywords() {
+        return Hbuy_menu.KEYWORDS;
+    }
 
 	// Return a reference to our DHT node
 	get_node() {
