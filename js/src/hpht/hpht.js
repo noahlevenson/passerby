@@ -140,7 +140,11 @@ class Hpht {
 					const k = new Hbigint(key);
 					await this.insert(k, val);
 
-					const leaf = await this.lookup_lin(k);
+					let leaf = await this.lookup_bin(k.to_bin_str(Hpht.BIT_DEPTH), true);
+
+					if (leaf === null) {
+						leaf = await this.lookup_lin(k.to_bin_str(Hpht.BIT_DEPTH), true);
+					}
 
 					if (leaf === null) {
 						throw new Error("Fatal PHT graph error");
@@ -188,17 +192,11 @@ class Hpht {
 
 	// Find the PHT leaf node responsible for a given key - linear search edition
 	// Returns null if there's no leaf node associated with that key
-	async lookup_lin(key) {
-		if (!(key instanceof Hbigint)) {
-			throw new TypeError("Argument 'key' must be Hbigint");
-		}
-
-		const key_str = key.to_bin_str(Hpht.BIT_DEPTH);
-
+	async lookup_lin(key_str, leaf = true) {
 		for (let i = 0; i < key_str.length; i += 1) {
 			const pht_node = await this._dht_lookup(key_str.substring(0, i));
 			
-			if (pht_node !== null && pht_node.is_leaf()) {
+			if (pht_node !== null && (leaf ? pht_node.is_leaf() : true)) {
 				return pht_node;
 			}
 		}
@@ -206,24 +204,17 @@ class Hpht {
 		return null;
 	}	
 
-	// Find the PHT leaf node responsible for a given key - binary search edition
+	// Find the PHT leaf node responsible for a given key as a binary string - binary search edition
 	// Returns null if there's no leaf node associated with that key
-	async lookup_bin(key) {
-		if (!(key instanceof Hbigint)) {
-			throw new TypeError("Argument 'key' must be Hbigint");
-		}
-
+	async lookup_bin(key_str, leaf = true) {
 		let p = 0;
-		let r = Hpht.BIT_DEPTH - 1; // Is this off by one?
-
-		const key_str = key.to_bin_str(Hpht.BIT_DEPTH);
+		let r = Hpht.BIT_DEPTH - 1;
 
 		while (p <= r) {
-			let q = Math.floor((p + r) / 2);
-
+			let q = Math.floor((p + r) / 2);	
 			const pht_node = await this._dht_lookup(key_str.substring(0, q));
 
-			if (pht_node !== null && pht_node.is_leaf()) {
+			if (pht_node !== null && (leaf ? pht_node.is_leaf() : true)) {
 				return pht_node;
 			} else if (pht_node !== null && Hpht_node.valid_magic(pht_node)) {
 				p = q + 1;
@@ -237,7 +228,11 @@ class Hpht {
 
 	// Insert a (key, value) pair into the PHT
 	async insert(key, val) {
-		const leaf = await this.lookup_lin(key);
+		let leaf = await this.lookup_bin(key.to_bin_str(Hpht.BIT_DEPTH), true);
+
+		if (leaf === null) {
+			leaf = await this.lookup_lin(k.to_bin_str(Hpht.BIT_DEPTH), true);
+		}
 
 		// If we can't find the leaf node for a key, our graph is likely corrupted
 		// TODO: probably remove me for production?
@@ -321,7 +316,11 @@ class Hpht {
 	
 	// Delete a key, value pair from the network by key
 	async delete(key) {
-		const leaf = await this.lookup_lin(key);
+		let leaf = await this.lookup_bin(key.to_bin_str(Hpht.BIT_DEPTH), true);
+
+		if (leaf === null) {
+			leaf = await this.lookup_lin(key.to_bin_str(Hpht.BIT_DEPTH), true);
+		}
 
 		// Key not found
 		// TODO: handle this using whatever global pattern we decide on for operation failure
@@ -472,7 +471,7 @@ class Hpht {
 			const subtree_0_2d = Hutil._z_delinearize_2d(subtree_0_zvalue, Hpht.BIT_DEPTH / 2);
 			const subtree_1_2d = Hutil._z_delinearize_2d(subtree_1_zvalue, Hpht.BIT_DEPTH / 2);
 			
-			// // https://en.wikipedia.org/wiki/Z-order_curve
+			// https://en.wikipedia.org/wiki/Z-order_curve
 			// subtree_0_zvalue and subtree_1_zvalue are essentially new minimum values representing a rectangular region for which we don't know the maximum value
 			// i.e., they "anchor" a rectangular region which may have some overlay with the region defined by minkey and maxkey
 
@@ -514,15 +513,22 @@ class Hpht {
 			throw new RangeError("'minkey' must be less than 'maxkey'");
 		}
 
-		const key_strings = [];
-		key_strings.push(minkey.to_bin_str(Hpht.BIT_DEPTH));
-		key_strings.push(maxkey.to_bin_str(Hpht.BIT_DEPTH));
-		const lcp = Hutil._get_lcp(key_strings);
-
+		const lcp = Hutil._get_lcp([minkey.to_bin_str(Hpht.BIT_DEPTH), maxkey.to_bin_str(Hpht.BIT_DEPTH)]);
 		const minkey_2d = Hutil._z_delinearize_2d(minkey, Hpht.BIT_DEPTH / 2); 
 		const maxkey_2d = Hutil._z_delinearize_2d(maxkey, Hpht.BIT_DEPTH / 2); 
 
-		const start_node = await this._dht_lookup(""); // TODO: THIS IS THE ONE THING WE CAN'T FIGURE OUT 10/29/2020
+		// Find the node whose label corresponds to the smallest prefix range that completely covers the specified range
+		// in a perfect world, that would be a node whose label is equal to the longest common prefix of minkey and maxkey,
+		// but that node might not exist (because our trie is small, we don't have much data, we have a big block size, etc.)
+		// TODO: this is the least well understood part of the prefix hash tree - the Place Lab paper, in their "Query Performance"
+		// heading under section 5.3, suggests that binary search is used -- it's prob worth an email to Scott Shenker to clarify
+
+		let start_node = await this.lookup_bin(lcp, false);
+
+		// Just fall back to linear search, which will grab the root node
+		if (start_node === null) {
+			start_node = await this.lookup_lin(lcp, false);
+		}
 
 		if (start_node === null) {
 			throw new Error("Fatal PHT graph error");

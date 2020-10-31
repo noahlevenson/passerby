@@ -20,7 +20,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_bro
 
 class Htrans_udp extends Htrans {
 	static RETRANSMIT = true;
-	static MAX_RETRIES = 5;
+	static MAX_RETRIES = 7;
 	static DEFAULT_RTT_MS = 100;
 	static BACKOFF_FUNC = x => x * 2;
 
