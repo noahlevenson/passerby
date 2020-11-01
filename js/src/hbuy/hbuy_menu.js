@@ -1,6 +1,6 @@
 /** 
 * HBUY_MENU
-* Class for an HBUY menu
+* Class for an Hbuy menu
 * 
 * 
 * 
@@ -48,42 +48,9 @@ class Hbuy_menu {
 		this.taxes = taxes;
 	}
 
-	// Every kind of HBUY order form (like an Hbuy_menu) must implement a function
-	// to compute its form id, which is the hash of its item list - buyers and sellers 
-	// compare form IDs to make sure they're referencing the same items
-	get_form_id() {
-		const json = JSON.stringify(this.get_item_list());
-		return Hutil._sha1(json);
-	}
-
-	// Return a deterministically ordered array containing both section labels and Hbuy_item objects via inorder traversal
-	get_full_list() {
-		return this.data.dfs((node, data) => {
-			data.push(node.data);
-			return data;
-		});
-	}
-
-	// Return a deterministically ordered array of all the Hbuy_item objects in this menu
-	get_item_list() {
-		return this.data.dfs((node, data) => {
-			if (node.degree() === 0) {
-				data.push(node.data);
-			}
-
-			return data;
-		});
-	}
-
-	// Return a deterministically ordered array of all the section labels of this menu
-	get_section_list() {
-		return this.data.dfs((node, data) => {
-			if (node.degree() > 0) {
-				data.push(node.data);
-			}
-
-			return data;
-		});
+	// TODO: move me to an Hbuy_form class and make Hbuy_form_menu a subclass
+	static get_form_id(hbuy_menu) {
+		return Hutil._sha1(hbuy_menu.data.toJSON);
 	}
 
 	// TODO: Add functions for inserting/deleting sections and items

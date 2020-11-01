@@ -82,6 +82,11 @@ class Happ {
         return Hbuy_menu.KEYWORDS;
     }
 
+    // Convenience method to compute the form ID for an Hbuy_menu (which will eventually be a subclass of Hbuy_form)
+    get_form_id(hbuy_form) {
+    	return Hbuy_menu.get_form_id(hbuy_form);
+    }
+
 	// Return a reference to our DHT node
 	get_node() {
 		return this.node;
@@ -120,7 +125,9 @@ class Happ {
 		const res = await this.geosearch(search_window);
 
 		// Rehydrate each Happ_bboard's Hbuy_menu object in place
-		// TODO: They don't get rehydrated at the HTRANS layer because they're too deeply nested - this is sloppy
+		// TODO: this is a hack - we do this here because it was too hard to get them properly rehydrating 
+		// at the HTRANS layer using their _json_revive method
+		// I think because they're too deeply nested or because of the way we tried to stack reviver methods? 
 		res.forEach((keyval, i, arr) => {
 			arr[i][1].form.data = Hntree.from_json(keyval[1].form.data);
 		});
