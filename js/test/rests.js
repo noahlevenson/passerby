@@ -21,7 +21,7 @@ const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
         lat: 40.9018663,
         long: -73.7912739
     });
-    
+
     const network = new Happ({hid_pub: larosa});
     await network.start();
     

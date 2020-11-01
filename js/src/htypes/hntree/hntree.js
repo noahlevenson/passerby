@@ -12,39 +12,15 @@
 const { Hntree_node } = require("./hntree_node.js");
 
 class Hntree {
-	static JSON_PREFIX = "__$!~HNTREE~";
+	static LABELS = {
+		BLACK: 0,
+		WHITE: 1
+	};
 
 	root;
 
 	constructor(root = null) {
 		this.root = root;
-	}
-
-	// Factory function / alternate JSON constructor
-	static from_json(json) {
-		const arr = JSON.parse(json.substring(Hntree.JSON_PREFIX.length));
-		const tree = new this(new Hntree_node({data: arr[0]}));
-		    
-		let node = tree.get_root();
-
-		arr.slice(1).forEach((elem) => {
-			if (elem === null) {
-				node = node.parent;
-				return; 
-			}
-
-			node = node.add_child(new Hntree_node({data: elem, parent: node}));
-		});
-
-		return tree;
-	}
-
-	static _json_revive(key, val) {
-		if (typeof val === "string" && val.substring(0, Hntree.JSON_PREFIX.length) === Hntree.JSON_PREFIX) {
-			return Hntree.from_json(val.substring(Hntree.JSON_PREFIX.length, val.length));
-		}
-
-		return val;
 	}
 
 	get_root() {
@@ -64,18 +40,53 @@ class Hntree {
 		return data;
 	}
 
-	// Simple serializer: serialize as a flat array of node data with null sentinels
-	// to indicate that a given node has no more children 
-	toJSON() {
-		const arr = [];
+	// Breadth first search, visitation callback visit(node, distance_from_root)
+	bfs(visit = () => {}, node = this.get_root(), data = []) {
+		// Get the nodes in a list so we can refer to them by index number
+		const node_list = this.dfs((node, data) => {
+			data.push(node);
+		});
 
-	    this.dfs((node, data) => {
-	        arr.push(node.data);
-	    }, (node, data) => {
-	        arr.push(null);
-	    });
-	    
-	    return `${Hntree.JSON_PREFIX}${JSON.stringify(arr)}`;
+		// Create a parallel list of labels
+		const label_list = [];
+
+		for (let i = 0; i < node_list.length; i += 1) {
+			label_list.push({label: Hntree.LABELS.WHITE, d: Number.POSITITIVE_INFINITY});
+		}
+
+		const q = [];
+		label_list[node_list.indexOf(node)] = {label: Hntree.LABELS.BLACK, d: 0};
+		q.push(node);
+
+		while (q.length > 0) {
+			const v = q.pop();
+			visit(v, label_list[node_list.indexOf(v)].d);
+			
+			v.get_all_children().forEach((w) => {
+				if (label_list[node_list.indexOf(w)].label === Hntree.LABELS.WHITE) {
+					label_list[node_list.indexOf(w)] = {label: Hntree.LABELS.BLACK, d: label_list[node_list.indexOf(v)].d + 1};
+					q.push(w);
+				}
+			});
+		}
+	}
+
+	// Serialize as a simple "plain value" JSON object without circular references, etc.
+	toJSON() {
+		const obj_map = new Map();
+
+		this.dfs((node, data) => {
+			obj_map.set(node, {data: node.data, children: []});
+		});
+
+		this.dfs((node, data) => {
+			if (node.parent) {
+				const p = obj_map.get(node.parent);
+				p.children.push(obj_map.get(node));
+			}
+		});
+
+		return obj_map.get(this.get_root());
 	}
 }
 

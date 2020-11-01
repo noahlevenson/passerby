@@ -1,9 +1,9 @@
 /** 
 * HBUY_MENU
 * Class for an Hbuy menu
-* 
-* 
-* 
+* HBUY_MENU objects serialize to 
+* "plain values" for wire transmission
+* and compatibility with clients, Redux, etc.
 * 
 */ 
 
@@ -36,16 +36,17 @@ class Hbuy_menu {
 	min_order;
 	taxes;
 
-	constructor({name = "", min_order = 0.00, taxes = [], data = null} = {}) {
+	constructor({name = "", min_order = 0.00, taxes = []} = {}) {
 		// TODO: validation
-		if (data === null) {
-			this.data = new Hntree(new Hntree_node({data: name}));
-		} else {
-			this.data = data instanceof Hntree ? data : Hntree.from_json(data);
-		}
-
 		this.min_order = min_order;
 		this.taxes = taxes;
+		this.data = new Hntree(new Hntree_node({data: name}));
+	}
+
+	// Factory function for constructing from on-disk serialized format
+	// TODO: write me!
+	static from_json() {
+
 	}
 
 	// TODO: move me to an Hbuy_form class and make Hbuy_form_menu a subclass
