@@ -12,15 +12,17 @@
 const { Hntree_node } = require("./hntree_node.js");
 
 class Hntree {
+	static JSON_PREFIX = "__$!~HNTREE~";
+
 	root;
 
 	constructor(root = null) {
 		this.root = root;
 	}
 
-	// JSON reviver
+	// Factory function / alternate JSON constructor
 	static from_json(json) {
-		const arr = JSON.parse(json);
+		const arr = JSON.parse(json.substring(Hntree.JSON_PREFIX.length));
 		const tree = new this(new Hntree_node({data: arr[0]}));
 		    
 		let node = tree.get_root();
@@ -37,6 +39,14 @@ class Hntree {
 		return tree;
 	}
 
+	static _json_revive(key, val) {
+		if (typeof val === "string" && val.substring(0, Hntree.JSON_PREFIX.length) === Hntree.JSON_PREFIX) {
+			return Hntree.from_json(val.substring(Hntree.JSON_PREFIX.length, val.length));
+		}
+
+		return val;
+	}
+
 	get_root() {
 		return this.root;
 	}
@@ -45,8 +55,6 @@ class Hntree {
 	// Calls visitation callback pre(node, data) where you'd want it for a preorder traversal, calls post(node, data) postorder
 	dfs(pre = () => {}, post = () => {}, node = this.get_root(), data = []) {
 		pre(node, data)
-
-		const children = node.get_all_children();
 
 		node.get_all_children().forEach((child) => {
 			data = this.dfs(pre, post, child, data);
@@ -67,7 +75,7 @@ class Hntree {
 	        arr.push(null);
 	    });
 	    
-	    return JSON.stringify(arr);
+	    return `${Hntree.JSON_PREFIX}${JSON.stringify(arr)}`;
 	}
 }
 

@@ -25,6 +25,7 @@ const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
+const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
@@ -117,7 +118,13 @@ class Happ {
         const loc = this.get_location();
 		const search_window = Hgeo.get_exts(loc, Happ.SEARCH_DIST_MILES);
 		const res = await this.geosearch(search_window);
-        
+
+		// Rehydrate each Happ_bboard's Hbuy_menu object in place
+		// TODO: They don't get rehydrated at the HTRANS layer because they're too deeply nested - this is sloppy
+		res.forEach((keyval, i, arr) => {
+			arr[i][1].form.data = Hntree.from_json(keyval[1].form.data);
+		});
+
         Hlog.log(`[HAPP] Searched ${Happ.SEARCH_DIST_MILES.toFixed(1)} miles from ${loc.lat}, ${loc.long}; resources discovered: ${res.length}`);
         return res;
 	}
