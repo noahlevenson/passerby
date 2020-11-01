@@ -123,15 +123,6 @@ class Happ {
         const loc = this.get_location();
 		const search_window = Hgeo.get_exts(loc, Happ.SEARCH_DIST_MILES);
 		const res = await this.geosearch(search_window);
-
-		// Rehydrate each Happ_bboard's Hbuy_menu object in place
-		// TODO: this is a hack - we do this here because it was too hard to get them properly rehydrating 
-		// at the HTRANS layer using their _json_revive method
-		// I think because they're too deeply nested or because of the way we tried to stack reviver methods? 
-		res.forEach((keyval, i, arr) => {
-			arr[i][1].form.data = Hntree.from_json(keyval[1].form.data);
-		});
-
         Hlog.log(`[HAPP] Searched ${Happ.SEARCH_DIST_MILES.toFixed(1)} miles from ${loc.lat}, ${loc.long}; resources discovered: ${res.length}`);
         return res;
 	}
