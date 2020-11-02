@@ -51,7 +51,7 @@ class Hbuy_menu {
 
 	// TODO: move me to an Hbuy_form class and make Hbuy_form_menu a subclass
 	static get_form_id(hbuy_menu) {
-		return Hutil._sha1(hbuy_menu.data.toJSON);
+		return Hutil._sha1(JSON.stringify(hbuy_menu.data));
 	}
 
 	// TODO: Add functions for inserting/deleting sections and items

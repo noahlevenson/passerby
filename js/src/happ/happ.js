@@ -25,6 +25,7 @@ const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
+const { Hbuy_item_ref } = require("../hbuy/hbuy_item_ref.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
@@ -80,6 +81,18 @@ class Happ {
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
     get_menu_keywords() {
         return Hbuy_menu.KEYWORDS;
+    }
+
+    // Convenience factory method to create an Hbuy_item_ref
+    create_item_ref({menu = null, node = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
+    		return new Hbuy_item_ref({
+    			form_id: this.get_form_id(menu),
+    			node: node,
+    			size_idx: size_idx,
+    			cust_cats_idx: cust_cats_idx,
+    			qty: qty,
+    			comment: comment
+    		});
     }
 
     // Convenience method to compute the form ID for an Hbuy_menu (which will eventually be a subclass of Hbuy_form)
