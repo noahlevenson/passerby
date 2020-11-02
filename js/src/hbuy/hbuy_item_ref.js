@@ -11,15 +11,15 @@
 
 class Hbuy_item_ref {
 	form_id;
-	item_list_idx;
+	node;
 	size_idx;
 	cust_cats_idx;
 	qty;
 	comment;
 
-	constructor({form_id = null, item_list_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
+	constructor({form_id = null, node = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
 		this.form_id = form_id;
-		this.item_list_idx = item_list_idx;
+		this.node = node;
 		this.size_idx = size_idx;
 		this.cust_cats_idx = cust_cats_idx;
 		this.qty = qty;
