@@ -84,10 +84,10 @@ class Happ {
     }
 
     // Convenience factory method to create an Hbuy_item_ref
-    create_item_ref({menu = null, node = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
+    create_item_ref({menu = null, froz_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
     		return new Hbuy_item_ref({
     			form_id: this.get_form_id(menu),
-    			node: node,
+    			froz_idx: froz_idx,
     			size_idx: size_idx,
     			cust_cats_idx: cust_cats_idx,
     			qty: qty,
