@@ -27,11 +27,6 @@ class Hntree {
 		return this.root;
 	}
 
-	// TODO: write me -- this should return node number 'n' as enumerated by DFS preorder traversal
-	get_node(n) {
-
-	}
-
 	// Depth first search, returns array data, you can put whatever you want in there
 	// Calls visitation callback pre(node, data) where you'd want it for a preorder traversal, calls post(node, data) postorder
 	dfs(pre = () => {}, post = () => {}, node = this.get_root(), data = []) {
@@ -74,27 +69,6 @@ class Hntree {
 				}
 			});
 		}
-	}
-
-	// Serialize as a simple "plain value" JSON object without circular references, etc.
-	// Includes each node's number 'n' as enumerated by DFS preorder traversal
-	toJSON() {
-		const obj_map = new Map();
-		let n = 0;
-
-		this.dfs((node, data) => {
-			obj_map.set(node, {data: node.data, children: [], n: n});
-			n += 1;
-		});
-
-		this.dfs((node, data) => {
-			if (node.parent) {
-				const p = obj_map.get(node.parent);
-				p.children.push(obj_map.get(node));
-			}
-		});
-
-		return obj_map.get(this.get_root());
 	}
 }
 

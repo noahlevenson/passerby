@@ -44,14 +44,40 @@ class Hbuy_menu {
 	}
 
 	// Factory function for constructing from on-disk serialized format
-	// TODO: write me!
+	// TODO: write me! This should be the simple linearization method using null sentinels
 	static from_json() {
 
 	}
 
+	// Determine whether an hbuy_menu object is in a frozen or unfrozen state
+	static is_frozen(hbuy_menu) {
+		if (hbuy_menu.data instanceof Hntree) {
+			return false;
+		}
+
+		return true;
+	}
+
 	// TODO: move me to an Hbuy_form class and make Hbuy_form_menu a subclass
 	static get_form_id(hbuy_menu) {
-		return Hutil._sha1(JSON.stringify(hbuy_menu.data));
+		if (Hbuy_menu.is_frozen(hbuy_menu)) {
+			return Hutil._sha1(JSON.stringify(hbuy_menu.data));
+		}
+
+		return Hutil._sha1(JSON.stringify(hbuy_menu.get_node_list()));
+	}
+
+	// For an unfrozen tree, get its menu node list flattened as an array
+	get_node_list() {
+		return this.data.dfs((node, data) => {
+			data.push(node.data);
+		});
+	}
+
+	// Factory function to create a "frozen" menu from a non-frozen menu
+	// a frozen menu is a plain valued JSON object with its tree flattened into an array
+	freeze() {
+		return Object.assign({}, this, {data: this.get_node_list()});
 	}
 
 	// TODO: Add functions for inserting/deleting sections and items

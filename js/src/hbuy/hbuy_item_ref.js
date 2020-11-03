@@ -17,9 +17,9 @@ class Hbuy_item_ref {
 	qty;
 	comment;
 
-	constructor({form_id = null, node = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
+	constructor({form_id = null, froz_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
 		this.form_id = form_id;
-		this.node = node;
+		this.froz_idx = froz_idx;
 		this.size_idx = size_idx;
 		this.cust_cats_idx = cust_cats_idx;
 		this.qty = qty;

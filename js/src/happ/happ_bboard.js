@@ -14,7 +14,10 @@ class Happ_bboard {
 	form;
 
 	constructor({cred = null, form = null}  = {}) {
-		// TODO: validation
+		if (!Array.isArray(form.data)) {
+			throw new Error("form.data doesn't seem to be an array - are you sure you're publishing a frozen form?");
+		}
+
 		this.cred = cred; // Generalization of a signed cryptographic certificate
 		this.form = form; // Generalization of a food menu
 	}
