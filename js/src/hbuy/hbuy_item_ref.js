@@ -11,7 +11,7 @@
 
 class Hbuy_item_ref {
 	form_id;
-	node;
+	froz_idx;
 	size_idx;
 	cust_cats_idx;
 	qty;

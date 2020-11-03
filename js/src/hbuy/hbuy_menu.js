@@ -76,6 +76,8 @@ class Hbuy_menu {
 
 	// Factory function to create a "frozen" menu from a non-frozen menu
 	// a frozen menu is a plain valued JSON object with its tree flattened into an array
+	// TODO: this is a shallow copy which references the nodes in the unfrozen menu's tree
+	// this may give you some trouble...
 	freeze() {
 		return Object.assign({}, this, {data: this.get_node_list()});
 	}
