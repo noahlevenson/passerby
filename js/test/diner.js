@@ -7,6 +7,7 @@ const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_sms } = require("../src/hbuy/hbuy_sms.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
+const { Hbuy_menu } = require("../src/hbuy/hbuy_menu.js");
 const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
 const { Hbuy_item_ref } = require("../src/hbuy/hbuy_item_ref.js");
 const { Hbuy_item_misc } = require("../src/hbuy/hbuy_item_misc.js");
@@ -23,6 +24,8 @@ const { Larosa_menu } = require("./menu.js");
         lat: 40.9039873,
         long: -73.7908761
     });
+    
+    console.log(Larosa_menu.get_node_list());
 
     const network = new Happ({hid_pub: ottavios_woodworking});
     await network.start();
@@ -42,11 +45,12 @@ const { Larosa_menu } = require("./menu.js");
     const order = new Hbuy_order({
         type: Hbuy_order.TYPE.DELIVERY
     });
-
+    
+    
     // Margherita pie with pepperoni + mushrooms
     order.add(new Hbuy_item_ref({
-        form_id: Larosa_menu.get_form_id(),
-        item_list_idx: 0,
+        form_id: Hbuy_menu.get_form_id(Larosa_menu),
+        froz_idx: 2,
         size_idx: 0,
         cust_cats_idx: [[0, 10]], 
         comment: "extra char"
@@ -54,24 +58,24 @@ const { Larosa_menu } = require("./menu.js");
 
     // Family size arugula salad
     order.add(new Hbuy_item_ref({
-        form_id: Larosa_menu.get_form_id(),
-        item_list_idx: 5,
+        form_id: Hbuy_menu.get_form_id(Larosa_menu),
+        froz_idx: 8,
         size_idx: 1,
         comment: "please no raisins"
     }));
 
     // Chicken parm with pasta
     order.add(new Hbuy_item_ref({
-        form_id: Larosa_menu.get_form_id(),
-        item_list_idx: 8,
+        form_id: Hbuy_menu.get_form_id(Larosa_menu),
+        froz_idx: 12,
         size_idx: 0,
         cust_cats_idx: [[0]]
     }));
 
     // 2x Lemonade
     order.add(new Hbuy_item_ref({
-        form_id: Larosa_menu.get_form_id(),
-        item_list_idx: 16,
+        form_id: Hbuy_menu.get_form_id(Larosa_menu),
+        froz_idx: 21,
         size_idx: 0,
         qty: 2
     }));
