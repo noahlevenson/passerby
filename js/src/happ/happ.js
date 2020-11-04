@@ -78,6 +78,27 @@ class Happ {
 		return new Hbigint(Hutil._sha1(data));
 	}
 
+	// Convenience method to send a transaction request to the peer named on credential 'cred'
+	async transact_req(cred, order, payment, success, timeout) {
+		// TODO: verify the credential!
+
+		try {
+			const node_info = await this.search_node_info(Happ.get_peer_id(search_res[0][1].cred.pubkey));
+
+			this.hbuy.transact_req({
+		        order: order,
+		        payment: payment,
+		        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
+		        addr: node_info.addr,
+		        port: node_info.port,
+		        success: success,
+		        timeout: timeout
+	    	});
+		} catch (err) {
+			// TODO: handle any errors
+		}
+	}
+
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
     get_menu_keywords() {
         return Hbuy_menu.KEYWORDS;
