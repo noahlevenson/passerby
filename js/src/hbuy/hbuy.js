@@ -133,22 +133,15 @@ class Hbuy {
 		this.net._out(msg, {address: addr, port: port});	
 	}
 
-	transact_req({order = null, payment = null, hid_pub = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	// Create and send a transaction request, return the transaction ID
+	transact_req({hbuy_transaction = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (order === null || payment === null || hid_pub === null || addr === null || port === null) {
-
+		if (hbuy_transaction === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		const transaction = new Hbuy_transaction({
-	    	order: order,
-	        payment: payment,
-	        hid_pub: hid_pub,
-	        id: Hbigint.random(Hbuy_transaction.ID_LEN)
-    	});
-
 		const msg = new Hbuy_msg({
-			data: transaction,
+			data: hbuy_transaction,
 			type: Hbuy_msg.TYPE.REQ,
 			flavor: Hbuy_msg.FLAVOR.TRANSACT,
 			id: Hbigint.random(Hbuy_msg.ID_LEN)
@@ -157,6 +150,7 @@ class Hbuy {
 		this._send(msg, addr, port, success, timeout);
 	}
 
+	// TODO: this should be refactored to work like transact_req above -- don't construct the Hbuy_status, just send it
 	status_req({id = null, code = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (id === null || code === null || addr === null || port === null) {

@@ -23,9 +23,11 @@ const { Hpht } = require("../hpht/hpht.js");
 const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
+const { Hbuy_status } = require("../hbuy/hbuy_status.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
 const { Hbuy_item_ref } = require("../hbuy/hbuy_item_ref.js");
+const { Hbuy_transaction } = require("../hbuy/hbuy_transaction.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
@@ -78,16 +80,27 @@ class Happ {
 		return new Hbigint(Hutil._sha1(data));
 	}
 
-	// Convenience method to send a transaction request to the peer named on credential 'cred'
-	async transact_req({cred, order, payment, success, timeout} = {}) {
+	// Convenience method to send a transaction request to the peer named on credential 'cred' and
+	// listen once for Hbuy_status.CODE.CONFIRMED, calling status_cb if we hear it
+	async send_transaction({cred, order, payment, success, timeout, status_cb} = {}) {
 		// TODO: verify the credential!
+
+		const transaction = new Hbuy_transaction({
+	    	order: order,
+	        payment: payment,
+	        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
+	        id: Hbigint.random(Hbuy_transaction.ID_LEN)
+    	});
+
+		// Set up the status listener before sending the transaction to avoid a race condition 
+		// TODO: we never cancel this this listener - it should be cancelled if the transaction
+		// request fails due to timeout or error
+		this.on_status({transact_id: transaction.id, status_code: Hbuy_status.CODE.CONFIRMED, cb: status_cb});
 
 		try {
 			this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
 				this.hbuy.transact_req({
-			        order: order,
-			        payment: payment,
-			        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
+			  		hbuy_transaction: transaction,
 			        addr: res.addr,
 			        port: res.port,
 			        success: success,
