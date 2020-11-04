@@ -79,22 +79,24 @@ class Happ {
 	}
 
 	// Convenience method to send a transaction request to the peer named on credential 'cred'
-	transact_req({cred, order, payment, success, timeout} = {}) {
+	async transact_req({cred, order, payment, success, timeout} = {}) {
 		// TODO: verify the credential!
 
-		this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
-			this.hbuy.transact_req({
-		        order: order,
-		        payment: payment,
-		        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
-		        addr: res.addr,
-		        port: res.port,
-		        success: success,
-		        timeout: timeout
-	    	});
-		}, (err) => {
-			// TODO: handle any errors
-		});
+		try {
+			this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
+				this.hbuy.transact_req({
+			        order: order,
+			        payment: payment,
+			        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
+			        addr: res.addr,
+			        port: res.port,
+			        success: success,
+			        timeout: timeout
+		    	});
+			});
+		} catch (err) {
+			// TODO: handle any error
+		}
 	}
 
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
