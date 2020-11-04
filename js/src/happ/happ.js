@@ -79,24 +79,22 @@ class Happ {
 	}
 
 	// Convenience method to send a transaction request to the peer named on credential 'cred'
-	async transact_req(cred, order, payment, success, timeout) {
+	transact_req({cred, order, payment, success, timeout} = {}) {
 		// TODO: verify the credential!
 
-		try {
-			const node_info = await this.search_node_info(Happ.get_peer_id(search_res[0][1].cred.pubkey));
-
+		this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
 			this.hbuy.transact_req({
 		        order: order,
 		        payment: payment,
 		        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
-		        addr: node_info.addr,
-		        port: node_info.port,
+		        addr: res.addr,
+		        port: res.port,
 		        success: success,
 		        timeout: timeout
 	    	});
-		} catch (err) {
+		}, (err) => {
 			// TODO: handle any errors
-		}
+		});
 	}
 
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
@@ -106,14 +104,14 @@ class Happ {
 
     // Convenience factory method to create an Hbuy_item_ref
     create_item_ref({menu = null, froz_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
-    		return new Hbuy_item_ref({
-    			form_id: this.get_form_id(menu),
-    			froz_idx: froz_idx,
-    			size_idx: size_idx,
-    			cust_cats_idx: cust_cats_idx,
-    			qty: qty,
-    			comment: comment
-    		});
+		return new Hbuy_item_ref({
+			form_id: this.get_form_id(menu),
+			froz_idx: froz_idx,
+			size_idx: size_idx,
+			cust_cats_idx: cust_cats_idx,
+			qty: qty,
+			comment: comment
+		});
     }
 
     // Convenience method to compute the form ID for an Hbuy_menu (which will eventually be a subclass of Hbuy_form)
