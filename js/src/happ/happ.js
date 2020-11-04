@@ -99,6 +99,11 @@ class Happ {
 		}
 	}
 
+	// Convenience method which wraps hbuy.on_status: subscribe only once to the next status event for a given transaction ID and status code
+	on_status({transact_id, status_code, cb} = {}) {
+		this.hbuy.on_status(transact_id, status_code, cb);
+	}
+
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
     get_menu_keywords() {
         return Hbuy_menu.KEYWORDS;
