@@ -117,6 +117,11 @@ class Happ {
 		this.hbuy.on_status(transact_id, status_code, cb);
 	}
 
+	// Convenience method which wraps hbuy.on_sms: set the handler function for sms messages
+	on_sms({f} = {}) {
+		this.hbuy.on_sms(f);
+	}
+
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
     get_menu_keywords() {
         return Hbuy_menu.KEYWORDS;
