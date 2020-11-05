@@ -98,14 +98,33 @@ class Happ {
 		this.on_status({transact_id: transaction.id, status_code: Hbuy_status.CODE.CONFIRMED, cb: status_cb});
 
 		try {
-			this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
-				this.hbuy.transact_req({
-			  		hbuy_transaction: transaction,
-			        addr: res.addr,
-			        port: res.port,
-			        success: success,
-			        timeout: timeout
-		    	});
+			const res = await this.search_node_info(Happ.get_peer_id(cred.pubkey));
+
+			this.hbuy.transact_req({
+		  		hbuy_transaction: transaction,
+		        addr: res.addr,
+		        port: res.port,
+		        success: success,
+		        timeout: timeout
+	    	});
+		} catch (err) {
+			// TODO: handle any error
+		}
+	}
+
+	// Convenience method to send an SMS to the peer named on credential 'cred'
+	async send_sms({cred, text, data, success, timeout}) {
+		try {
+			const res = this.search_node_info(Happ.get_peer_id(cred.pubkey));
+
+			return this.hbuy.sms_req({
+				text: text,
+				from: this.hid_pub,
+				data: data,
+				addr: res.addr,
+				port: res.port,
+				success: success,
+				timeout: timeout
 			});
 		} catch (err) {
 			// TODO: handle any error
