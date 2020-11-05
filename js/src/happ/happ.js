@@ -195,6 +195,10 @@ class Happ {
         
         this.trans = happ_udp_trans;
 
+        // Create an HBUY interface
+		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);
+		this.hbuy = new Hbuy({net: happ_hbuy_net, hid_pub: this.hid_pub});
+
 		// Create and start STUN services
 		const happ_stun_net = new Hstun_net_solo(happ_udp_trans);
 		const happ_stun_service = new Hstun({net: happ_stun_net});
@@ -261,9 +265,7 @@ class Happ {
 		// Idempotently initialize the PHT
 		await this.hpht.init();
 
-		// Create and start an HBUY interface
-		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);
-		this.hbuy = new Hbuy({net: happ_hbuy_net, hid_pub: this.hid_pub});
+		// Boot HBUY
 		this.hbuy.start();
 	}
 
