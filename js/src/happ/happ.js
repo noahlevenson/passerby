@@ -112,10 +112,10 @@ class Happ {
 		}
 	}
 
-	// Convenience method to send an SMS to the peer named on credential 'cred'
-	async send_sms({cred, text, data, success, timeout}) {
+	// Convenience method to send an SMS to the peer associated with public key 'pubkey'
+	async send_sms({pubkey, text, data, success, timeout}) {
 		try {
-			const res = await this.search_node_info(Happ.get_peer_id(cred.pubkey));
+			const res = await this.search_node_info(Happ.get_peer_id(pubkey));
 
 			return this.hbuy.sms_req({
 				text: text,
