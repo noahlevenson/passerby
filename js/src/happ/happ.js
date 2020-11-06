@@ -24,6 +24,7 @@ const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_status } = require("../hbuy/hbuy_status.js");
+const { Hbuy_sms } = require("../hbuy/hbuy_sms.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
 const { Hbuy_item_ref } = require("../hbuy/hbuy_item_ref.js");
