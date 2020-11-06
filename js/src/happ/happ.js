@@ -113,22 +113,27 @@ class Happ {
 	}
 
 	// Convenience method to send an SMS to the peer associated with public key 'pubkey'
-	async send_sms({pubkey, text, data, success, timeout}) {
-		try {
-			const res = await this.search_node_info(Happ.get_peer_id(pubkey));
+	send_sms({pubkey, text, data, success, timeout}) {
+		const sms = new Hbuy_sms({
+			text: text,
+			from: this.hid_pub,
+			data: data
+		});
 
-			return this.hbuy.sms_req({
-				text: text,
-				from: this.hid_pub,
-				data: data,
+		// Do this right away but don't wait for it
+		this.search_node_info(Happ.get_peer_id(pubkey)).then((res) => {
+			this.hbuy.sms_req({
+				hbuy_sms: sms,
 				addr: res.addr,
 				port: res.port,
 				success: success,
 				timeout: timeout
 			});
-		} catch (err) {
-			// TODO: handle any error
-		}
+		}).catch((err) => {
+			// TODO: Handle any error
+		});
+
+		return sms;
 	}
 
 	// Convenience method which wraps hbuy.on_status: subscribe only once to the next status event for a given transaction ID and status code

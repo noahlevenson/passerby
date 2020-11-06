@@ -172,20 +172,15 @@ class Hbuy {
 		this._send(msg, addr, port, success, timeout);
 	}
 
-	sms_req({text = null, from = null, data, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+
+	sms_req({hbuy_sms = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (text === null || from === null || addr === null || port === null) {
+		if (hbuy_sms === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		const sms = new Hbuy_sms({
-			text: text,
-			from: from,
-			data: data
-		});
-
 		const msg = new Hbuy_msg({
-			data: sms,
+			data: hbuy_sms,
 			type: Hbuy_msg.TYPE.REQ,
 			flavor: Hbuy_msg.FLAVOR.SMS,
 			id: Hbigint.random(Hbuy_msg.ID_LEN)
