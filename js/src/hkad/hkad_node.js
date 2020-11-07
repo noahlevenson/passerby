@@ -388,13 +388,7 @@ class Hkad_node {
 		// # of nodes between us and the key is approximated from the tree depth of their respective buckets
 		const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
 		const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
-		const depth_l = Math.min(d1, d2);
-		const depth_h = Math.max(d1, d2);
-		let ttl = Hkad_node.T_DATA_TTL;
-
-		for (let i = depth_l; i < depth_h; i += 1) {
-			ttl /= 2;
-		}
+		const ttl = Hkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
 
 		this.network_data.put({
 			key: req.data.payload[0].toString(),
