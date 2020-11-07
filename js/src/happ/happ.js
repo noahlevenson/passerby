@@ -28,6 +28,7 @@ const { Hbuy_sms } = require("../hbuy/hbuy_sms.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
 const { Hbuy_item_ref } = require("../hbuy/hbuy_item_ref.js");
+const { Hbuy_item_misc } = require("../hbuy/hbuy_item_misc.js");
 const { Hbuy_transaction } = require("../hbuy/hbuy_transaction.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
