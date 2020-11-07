@@ -17,7 +17,7 @@ class Hbuy_ffment {
 
 	static DEFAULT = {
 		DELIVERY: new this({type: Hbuy_ffment.TYPE.DELIVERY, min: 20.00, radius: 1.0, est: 45}),
-		PICKUP: new this({type: Hbuy_ffment.TYPE.PICKUP, min: 0.00, radius: Number.POSITIVE_INFINITY, est: 20});
+		PICKUP: new this({type: Hbuy_ffment.TYPE.PICKUP, min: 0.00, radius: Number.POSITIVE_INFINITY, est: 20})
 	};
 
 	constructor({type = null, min = 0.00, radius = 1.0, est = 45} = {}) {
