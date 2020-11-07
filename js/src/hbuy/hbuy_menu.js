@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Hbuy_pment } = require("./hbuy_payment.js");
+const { Hbuy_pment } = require("./pment/hbuy_pment.js");
 const { Hbuy_ffment } = require("./hbuy_ffment.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
