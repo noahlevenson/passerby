@@ -9,6 +9,8 @@
 
 "use strict";
 
+const { Hbuy_pment } = require("./hbuy_payment.js");
+const { Hbuy_ffment } = require("./hbuy_ffment.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hutil } = require("../hutil/hutil.js");
@@ -33,14 +35,25 @@ class Hbuy_menu {
 	};
 
 	data;
-	min_order;
+	ffments;
+	pments;
 	taxes;
+	
+	constructor({
+		name = "Untitled Menu",
+		pments = [Hbuy_pment.TYPE.CASH, Hbuy_pment.TYPE.AMEX, Hbuy_pment.TYPE.VISA, Hbuy_pment.TYPE.MC], 
+		keywords = [], 
+		taxes = []
+	} = {}) {
+			// Give us a default fulfullment object with sensible values for each type
+			this.ffments = Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
+				[i, ffment]
+			}));
 
-	constructor({name = "", min_order = 0.00, taxes = []} = {}) {
-		// TODO: validation
-		this.min_order = min_order;
-		this.taxes = taxes;
-		this.data = new Hntree(new Hntree_node({data: name}));
+			this.pments = pments;
+			this.keywords = keywords;
+			this.taxes = taxes;
+			this.data = new Hntree(new Hntree_node({data: name}));
 	}
 
 	// Factory function for constructing from on-disk serialized format

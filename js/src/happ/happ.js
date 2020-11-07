@@ -29,7 +29,7 @@ const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
 const { Hbuy_menu } = require("../hbuy/hbuy_menu.js"); 
 const { Hbuy_item_ref } = require("../hbuy/hbuy_item_ref.js");
 const { Hbuy_item_misc } = require("../hbuy/hbuy_item_misc.js");
-const { Hbuy_transaction } = require("../hbuy/hbuy_transaction.js");
+const { Hbuy_tsact } = require("../hbuy/hbuy_tsact.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
@@ -85,14 +85,14 @@ class Happ {
 	// Convenience method: send a transaction request to the peer named on credential 'cred' and
 	// listen once for Hbuy_status.CODE.CONFIRMED, calling status_cb if we hear it
 	// Immediately returns the transaction ID as a string without regard for the success or failure of the operation
-	send_transaction({cred, order, payment, success, timeout, status_cb} = {}) {
+	send_transaction({cred, order, pment, success, timeout, status_cb} = {}) {
 		// TODO: verify the credential!
 
-		const transaction = new Hbuy_transaction({
+		const transaction = new Hbuy_tsact({
 	    	order: order,
-	        payment: payment,
-	        hid_pub: this.hid_pub, // TODO: How should we handle different addresses?
-	        id: Hbigint.random(Hbuy_transaction.ID_LEN)
+	        pment: pment,
+	        from: this.hid_pub, // TODO: How should we handle different addresses?
+	        id: Hbigint.random(Hbuy_tsact.ID_LEN)
     	});
 
 		// Set up the status listener before sending the transaction to avoid a race condition 

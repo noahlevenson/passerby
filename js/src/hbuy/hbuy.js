@@ -15,7 +15,7 @@ const { Hid_pub } = require("../hid/hid_pub.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
 const { Hbuy_sms } = require("./hbuy_sms.js");
-const { Hbuy_transaction } = require("./hbuy_transaction.js");
+const { Hbuy_tsact } = require("./hbuy_tsact.js");
 const { Hbuy_status } = require("./hbuy_status.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
@@ -66,7 +66,7 @@ class Hbuy {
 		this._transact_hook(req, rinfo);
 
 		return new Hbuy_msg({
-			data: new Hbuy_transaction({order: null, payment: null, id: req.data.id}),
+			data: new Hbuy_tsact({order: null, pment: null, id: req.data.id}),
 			type: Hbuy_msg.TYPE.RES,
 			flavor: Hbuy_msg.FLAVOR.TRANSACT,
 			id: req.id
