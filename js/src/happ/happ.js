@@ -82,9 +82,10 @@ class Happ {
 		return new Hbigint(Hutil._sha1(data));
 	}
 
-	// Convenience method to send a transaction request to the peer named on credential 'cred' and
+	// Convenience method: send a transaction request to the peer named on credential 'cred' and
 	// listen once for Hbuy_status.CODE.CONFIRMED, calling status_cb if we hear it
-	async send_transaction({cred, order, payment, success, timeout, status_cb} = {}) {
+	// Immediately returns the transaction ID as a string without regard for the success or failure of the operation
+	send_transaction({cred, order, payment, success, timeout, status_cb} = {}) {
 		// TODO: verify the credential!
 
 		const transaction = new Hbuy_transaction({
@@ -99,9 +100,7 @@ class Happ {
 		// request fails due to timeout or error
 		this.on_status({transact_id: transaction.id, status_code: Hbuy_status.CODE.CONFIRMED, cb: status_cb});
 
-		try {
-			const res = await this.search_node_info(Happ.get_peer_id(cred.pubkey));
-
+		this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
 			this.hbuy.transact_req({
 		  		hbuy_transaction: transaction,
 		        addr: res.addr,
@@ -109,12 +108,15 @@ class Happ {
 		        success: success,
 		        timeout: timeout
 	    	});
-		} catch (err) {
-			// TODO: handle any error
-		}
+		}).catch((err) => {
+			// TODO: Handle any error
+		});
+
+		return transaction.id.toString();
 	}
 
-	// Convenience method to send an SMS to the peer associated with public key 'pubkey'
+	// Convenience method to send an SMS to the peer associated with public key 'pubkey', immediately returns a 
+	// reference to the Hbuy_sms object, without regard for the success or failure of the operation
 	send_sms({pubkey, text, data, success, timeout}) {
 		const sms = new Hbuy_sms({
 			text: text,
