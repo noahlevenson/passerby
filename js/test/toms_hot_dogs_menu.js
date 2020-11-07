@@ -8,7 +8,6 @@ const { Hbuy_item_cust } = require("../src/hbuy/hbuy_item_cust.js");
 
 const Toms_hot_dogs_menu = new Hbuy_menu({
 	name: "Tom's Hot Dogs",
-	min_order: 15.00,
 	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})]
 });
 

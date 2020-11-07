@@ -47,7 +47,7 @@ class Hbuy_menu {
 	} = {}) {
 			// Give us a default fulfullment object with sensible values for each type
 			this.ffments = Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
-				[i, ffment]
+				return [i, ffment];
 			}));
 
 			this.pments = pments;
