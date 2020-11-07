@@ -27,21 +27,20 @@ const { Larosa_menu } = require("./menu.js");
         long: 0
     });
 
-    const network = new Happ({hid_pub: chat_peer});
-    await network.start();
+    const network = new Happ({hid_pub: chat_peer, port: 28500});
+    await network.start({port: 28500});
     
     // A large region of Westchester County encompassing Pizzeria La Rosa
     const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     const search_res = await network.geosearch(westchester);
     
     // Assuming search_res[0] is the [key, Happ_bboard] for Pizzeria La Rosa
-    const node_info = await network.search_node_info(Happ.get_peer_id(search_res[0][1].cred));
+    const node_info = await network.search_node_info(Happ.get_peer_id("noah_hotline_peer"));
 
     // Send a chat message to the restaurant
-    network.hbuy.sms_req({
-       text: text,
-       from: network.hid_pub,
-       addr: node_info.addr,
-       port: node_info.port
+    network.send_sms({
+        pubkey: "noah_hotline_peer",
+        text: text,
+        from: network.hid_pub
     });
 })();

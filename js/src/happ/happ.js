@@ -164,6 +164,15 @@ class Happ {
 		});
     }
 
+    // Convenience factory method to create an Hbuy_item_misc
+    create_item_misc({desc, price, qty} = {}) {
+    	return new Hbuy_item_misc({
+    		desc: desc,
+    		price: price,
+    		qty: qty
+    	});
+    }
+
     // Convenience method to compute the form ID for an Hbuy_menu (which will eventually be a subclass of Hbuy_form)
     get_form_id(hbuy_form) {
     	return Hbuy_menu.get_form_id(hbuy_form);
