@@ -112,7 +112,13 @@ class Happ {
 
 		while (i < hosts.length) {
 			try {
-				return await Happ.GEOCODING_HANDLER.get(this.geocoding)({hosts[i], street, city, state, postalcode});
+				return await Happ.GEOCODING_HANDLER.get(this.geocoding)({
+					hostname: hosts[i], 
+					street: street, 
+					city: city, 
+					state: state, 
+					postalcode: postalcode
+				});
 			} catch (err) {
 				i += 1;
 			}
