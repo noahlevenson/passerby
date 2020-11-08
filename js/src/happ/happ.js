@@ -23,6 +23,7 @@ const { Hpht } = require("../hpht/hpht.js");
 const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
+const { Hbuy_ffment } = require("../hbuy/hbuy_ffment.js");
 const { Hbuy_status } = require("../hbuy/hbuy_status.js");
 const { Hbuy_sms } = require("../hbuy/hbuy_sms.js");
 const { Hbuy_net_solo } = require("../hbuy/net/hbuy_net_solo.js");
@@ -153,6 +154,11 @@ class Happ {
     // Convenience method to return the enum-like object representing our controlled folksonomy of menu keywords
     get_menu_keywords() {
         return Hbuy_menu.KEYWORDS;
+    }
+
+    // Convenience method to return the enum-like object representing our fulfillment types
+    get_ffment_types() {
+    	return Hbuy_ffment.TYPE;
     }
 
     // Convenience factory method to create an Hbuy_item_ref
