@@ -16,6 +16,7 @@ const { Hkad_node } = require("../hkad/hkad_node.js");
 const { Hkad_eng_alpha } = require("../hkad/eng/hkad_eng_alpha.js");
 const { Hkad_net_solo } = require("../hkad/net/hkad_net_solo.js");
 const { Hkad_net_sim } = require("../hkad/net/hkad_net_sim.js");
+const { Hid } = require("../hid/hid.js");
 const { Hgeo } = require("../hgeo/hgeo.js");
 const { Hgeo_coord } = require("../hgeo/hgeo_coord.js");
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
@@ -75,6 +76,11 @@ class Happ {
 		this.trans = null;
         this.keepalive = keepalive;
 		this.keepalive_interval_handle = null;
+	}
+
+	// Convenience method to generate a public/private key pair
+	static generate_key_pair() {
+		return Hid.generate_key_pair();
 	}
     
 	// Compute the peer ID derived from input 'data'
