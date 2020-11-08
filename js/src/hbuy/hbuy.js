@@ -39,10 +39,6 @@ class Hbuy {
 			throw new TypeError("Argument 'net' must be instance of Hbuy_net");
 		}
 
-		if (!(hid_pub instanceof Hid_pub)) {
-			throw new TypeError("Argument 'hid_pub' must be instance of Hid_pub");
-		}
-
 		this.net = net;
 		this.hid_pub = hid_pub;
 		this.res = new EventEmitter();
