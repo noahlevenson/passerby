@@ -9,6 +9,8 @@
 
 "use strict";
 
+const https = Happ_env.BROWSER ? null : require("https");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 const { Happ_env } = require("./happ_env.js");
 const { Happ_bboard } = require("./happ_bboard.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");
@@ -35,12 +37,24 @@ const { Hbuy_tsact } = require("../hbuy/hbuy_tsact.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Happ {
+	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
 	static SEARCH_DIST_MILES = 1.0;
 	static T_NAT_KEEPALIVE = 20000;
+
+	static GEOCODING_METHOD = {
+		NOMINATIM: 0
+	};
+
+	static GEOCODING_HOSTS = new Map([
+		[Happ.GEOCODING_METHOD.NOMINATIM, ["nominatim.openstreetmap.org"]]
+	]);
+
+	static GEOCODING_HANDLER = new Map([
+		[Happ.GEOCODING_METHOD.NOMINATIM, _geocoding_handler_nominatim]
+	]);
 
 	static BOOTSTRAP_NODES = [
 		["66.228.34.29", 27500]
@@ -54,11 +68,12 @@ class Happ {
     trans;
 	keepalive;
 	keepalive_interval_handle;
+	geocoding;
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of its public key, and and a PHT interface (indexing on GEO_INDEX_ATTR)
 	// TODO: Parameterize this to create different kinds of Happ instances
-	constructor({hid_pub = null, port = 27500, keepalive = true} = {}) {
+	constructor({hid_pub = null, port = 27500, keepalive = true, geocoding = Happ.GEOCODING_METHOD.NOMINATIM} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Object.defineProperty(global.Map.prototype, "toJSON", {
 			value: Hutil._map_to_json
@@ -76,6 +91,7 @@ class Happ {
 		this.trans = null;
         this.keepalive = keepalive;
 		this.keepalive_interval_handle = null;
+		this.geocoding = geocoding;
 	}
 
 	// Convenience method to generate a public/private key pair
@@ -87,6 +103,59 @@ class Happ {
 	// Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion
 	static get_peer_id(data) {
 		return new Hbigint(Hutil._sha1(data));
+	}
+
+	// Derive a lat/long pair from an address using the defined geocoding method
+	static async geocode({street, city, state, postalcode} = {}) {
+		const hosts = Happ.GEOCODING_HOSTS.get(this.geocoding);
+		let i = 0;
+
+		while (i < hosts.length) {
+			try {
+				return await Happ.GEOCODING_HANDLER.get(this.geocoding)({hosts[i], street, city, state, postalcode});
+			} catch (err) {
+				i += 1;
+			}
+		}
+
+		throw new Error(`All hosts for geocoding method ${Object.keys(Happ.GEOCODING_METHOD)[this.geocoding]} failed!`);
+	}
+
+	static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
+		if (Happ_env.BROWSER) {
+			// TODO: do the browser implementation using XMLHttpRequest (or, worst case scenario, use RN "Fetch" API)
+			// and 
+			throw new Error("No browser implementation for HTTPS requests yet!"); 
+		}
+
+		const query = new URLSearchParams([
+			["street", street],
+			["city", city],
+			["state", state],
+			["postalcode", postalcode],
+			["format", "json"]
+		]);
+
+		const opt = {
+			hostname: hostname,
+			headers: {"User-Agent": Happ.USER_AGENT},
+			path: `/search?${query.toString()}`
+		};
+
+		return new Promise((resolve, reject) => {
+			const req = https.request(opt, (res) => {
+				res.on("data", (d) => {
+					try {
+						const parsed = JSON.parse(d);
+						return new Hgeo_coord({lat: parsed.lat, long: parsed.lon});
+					} catch (err) {
+						reject(err);
+					}
+				});
+			});
+
+			req.end();
+		});
 	}
 
 	// Convenience method: send a transaction request to the peer named on credential 'cred' and
