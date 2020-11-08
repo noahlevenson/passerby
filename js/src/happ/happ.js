@@ -54,7 +54,7 @@ class Happ {
 	]);
 
 	static GEOCODING_HANDLER = new Map([
-		[Happ.GEOCODING_METHOD.NOMINATIM, _geocoding_handler_nominatim]
+		[Happ.GEOCODING_METHOD.NOMINATIM, Happ._geocoding_handler_nominatim]
 	]);
 
 	static BOOTSTRAP_NODES = [
