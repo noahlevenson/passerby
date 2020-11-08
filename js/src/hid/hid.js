@@ -12,14 +12,14 @@
 const crypto = require("crypto");
 
 class Hid {
-	static ENCRYPTION_TYPE = "rsa";
+	static KEY_TYPE = "rsa";
 
 	constructor() {
 
 	}
 
 	static generate_key_pair() {
-		return crypto.generateKeyPairSync(ENCRYPTION_TYPE, {
+		return crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: 4096,
  			publicKeyEncoding: {
 			    type: 'spki',
