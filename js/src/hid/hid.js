@@ -19,7 +19,7 @@ class Hid {
 	}
 
 	static generate_key_pair() {
-		return generateKeyPairSync(ENCRYPTION_TYPE, {
+		return crypto.generateKeyPairSync(ENCRYPTION_TYPE, {
 			modulusLength: 4096,
  			publicKeyEncoding: {
 			    type: 'spki',
