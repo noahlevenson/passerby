@@ -16,8 +16,8 @@ const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browse
 class Hid_prv {
 	_pk;
 
-	constructor({private_key = null} = {}) {
-		this._pk = private_key;
+	constructor({privkey = null} = {}) {
+		this._pk = privkey
 	}
 
 	get_private_key() {
