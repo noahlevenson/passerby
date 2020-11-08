@@ -106,14 +106,14 @@ class Happ {
 		return new Hbigint(Hutil._sha1(data));
 	}
 
-	// Derive a lat/long pair from an address using the defined geocoding method
-	static async geocode({street, city, state, postalcode} = {}) {
-		const hosts = Happ.GEOCODING_HOSTS.get(this.geocoding);
+	// Derive a lat/long pair from an address using the specified geocoding method
+	static async geocode({street, city, state, postalcode, method} = {}) {
+		const hosts = Happ.GEOCODING_HOSTS.get(method);
 		let i = 0;
 
 		while (i < hosts.length) {
 			try {
-				return await Happ.GEOCODING_HANDLER.get(this.geocoding)({
+				return await Happ.GEOCODING_HANDLER.get(method)({
 					hostname: hosts[i], 
 					street: street, 
 					city: city, 
@@ -125,7 +125,7 @@ class Happ {
 			}
 		}
 
-		throw new Error(`All hosts for geocoding method ${Object.keys(Happ.GEOCODING_METHOD)[this.geocoding]} failed!`);
+		throw new Error(`All hosts for geocoding method ${Object.keys(Happ.GEOCODING_METHOD)[method]} failed!`);
 	}
 
 	static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
@@ -146,15 +146,16 @@ class Happ {
 		const opt = {
 			hostname: hostname,
 			headers: {"User-Agent": Happ.USER_AGENT},
-			path: `/search?${query.toString()}`
+			path: `/search?${query.toString()}`,
+			timeout: 3000
 		};
 
 		return new Promise((resolve, reject) => {
 			const req = https.request(opt, (res) => {
 				res.on("data", (d) => {
 					try {
-						const parsed = JSON.parse(d);
-						return new Hgeo_coord({lat: parsed.lat, long: parsed.lon});
+						const parsed = JSON.parse(d)[0];
+						resolve(new Hgeo_coord({lat: parseFloat(parsed.lat), long: parseFloat(parsed.lon)}));
 					} catch (err) {
 						reject(err);
 					}
