@@ -33,7 +33,7 @@ class Hid_pub {
 		this.phone = phone;
 		this.lat = lat;
 		this.long = long;
-		this.peer_id = Hutil._sha1(this.public_key);
+		this.peer_id = Hutil._sha1(this.pubkey);
 	}
 }
 
