@@ -14,7 +14,7 @@ const { Hkad_eng } = require("./hkad_eng.js");
 const { Hkad_msg } = require("../hkad_msg.js");
 
 class Hkad_eng_alpha extends Hkad_eng {
-	static TIMEOUT = 5000;
+	static TIMEOUT = 1000;
 	static RES_EVENT_PREFIX = "r+";
 	
 	res;
