@@ -66,12 +66,14 @@ class Hkad_kbucket {
 		}
 	}
 
-	// Check whether an Hkad_node_info with a given node ID exists in this k-bucket
-	// Return a reference to the Hkad_node_info || null 
-	exists(node_id) {
+	// Check whether an Hkad_node_info exists in this k-bucket
+	// Return a reference to the Hkad_node_info | null 
+	exists(node_info) {
 		for (let i = 0; i < this.data.length; i += 1) {
-			if (this.data[i].node_id.equals(node_id)) {
-				return this.data[i];
+			const c = this.data[i];
+
+			if (c.node_id.equals(node_info.node_id) && c.addr === node_info.addr && c.port === node_info.port) {
+				return c;
 			}
 		}
 

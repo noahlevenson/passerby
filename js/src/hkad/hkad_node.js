@@ -152,7 +152,7 @@ class Hkad_node {
 	_routing_table_insert(inbound_node_info) {
 		let leaf_node = this.find_kbucket_for_id(inbound_node_info.node_id);
 		let bucket = leaf_node.get_data();
-		const node_info = bucket.exists(inbound_node_info.node_id);
+		const node_info = bucket.exists(inbound_node_info);
 
 		if (node_info !== null) {
 			// We've already seen this node in this bucket, so just move it to the tail
