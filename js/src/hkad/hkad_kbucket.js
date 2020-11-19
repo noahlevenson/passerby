@@ -55,7 +55,7 @@ class Hkad_kbucket {
 	// Enqueue an Hkad_node_info, evicting the least recently seen
 	enqueue(node_info) {
 		// For safety, since all node_infos in our k-bucket must be unique
-		if (this.exists(node_info.node_id)) {
+		if (this.exists(node_info)) {
 			return;
 		}
 
