@@ -219,22 +219,38 @@ class Hkad_node {
 	}
 
 	async _node_lookup(key, rpc = this._req_find_node) {
-		// BST comparator function to insert by distance from the key in the closure
-		function _by_distance(node, oldnode) {
-			if (Hkad_node._get_distance(key, node.get_data().node_id).equals(Hkad_node._get_distance(key, oldnode.get_data().node_id))) {
-				return 0;
-			}	
-
-			return Hkad_node._get_distance(key, node.get_data().node_id).less(Hkad_node._get_distance(key, oldnode.get_data().node_id)) ? -1 : 1;
-		}
-
-		// BST comparator function to search by node ID in a BST ordered by distance from the key in the closure
-		function _by_node_id(k, node) {
-			if (k.node_id.equals(node.get_data().node_id)) {
-				return 0;
+		// BST comparator function for inserting a node_info object: compare both its XOR distance from the key and the lexicographical distance 
+		// of its concatenated and stringified address/port... i.e., we want to keep our node_info BST sorted by XOR distance from the key,
+		// but we also want to allow for non-unique items which share the same key but have different addr/port (because of churn or whatever)
+		function _by_distance_and_lex(node, oldnode) {
+			if (Hkad_node._get_distance(key, node.get_data().node_id).less(Hkad_node._get_distance(key, oldnode.get_data().node_id))) {
+				return -1;
+			} else if (Hkad_node._get_distance(key, node.get_data().node_id).greater(Hkad_node._get_distance(key, oldnode.get_data().node_id))) {
+				return 1;
 			}
 
-			return Hkad_node._get_distance(key, k.node_id).less(Hkad_node._get_distance(key, node.get_data().node_id)) ? -1 : 1;
+			// Here's the complex case: the new node_info has the same key as some existing data, so we gotta do 
+			// lexical comparison on the network info
+			const node_net_info = `${node.get_data().addr}${node.get_data().port}`;
+			const oldnode_net_info = `${oldnode.get_data().addr}${oldnode.get_data().port}`;
+			return node_net_info.localeCompare(oldnode_net_info);
+		}
+
+		// BST comparator function for searching: to search by node ID in a BST ordered by distance from the key in the closure
+		function _by_strict_equality(k, node) {
+			const node_info = node.get_data();
+
+			if (Hkad_node._get_distance(key, k.node_id).less(Hkad_node._get_distance(key, node_info.node_id))) {
+				return -1;
+			} else if (Hkad_node._get_distance(key, k.node_id).greater(Hkad_node._get_distance(key, node_info.node_id))) {
+				return 1;
+			}
+
+			// Complex case: the thing we're searching for has the same key as some existing data, so we gotta do
+			// lexical comparison on the network info
+			const node_net_info = `${k.addr}${k.port}`;
+			const oldnode_net_info = `${node_info.addr}${node_info.port}`;
+			return node_net_info.localeCompare(oldnode_net_info);
 		}
 
 		// Send the RPCs and maintain the node lists - if a value is returned, it returns that value, otherwise returns undefined
@@ -256,12 +272,12 @@ class Hkad_node {
 							resolve([res.data.payload, active.bst_min()]);
 						}	
 
-						active.bst_insert(new Hbintree_node({data: res.from}), _by_distance.bind(this));
+						active.bst_insert(new Hbintree_node({data: res.from}), _by_distance_and_lex.bind(this));
 						inactive.bst_delete(node);
 
 						res.data.payload.forEach((node_info) => {
-							if (active.bst_search(_by_node_id.bind(this), node_info) === null) {
-								inactive.bst_insert(new Hbintree_node({data: node_info}), _by_distance.bind(this));
+							if (active.bst_search(_by_strict_equality.bind(this), node_info) === null) {
+								inactive.bst_insert(new Hbintree_node({data: node_info}), _by_distance_and_lex.bind(this));
 							}
 						});
 
@@ -287,7 +303,7 @@ class Hkad_node {
 		const inactive = new Hbintree();
 
 		this._new_get_nodes_closest_to(key, Hkad_node.ALPHA).forEach((node_info) => {
-			inactive.bst_insert(new Hbintree_node({data: node_info}), _by_distance.bind(this));
+			inactive.bst_insert(new Hbintree_node({data: node_info}), _by_distance_and_lex.bind(this));
 		});
 
 		let lc;
