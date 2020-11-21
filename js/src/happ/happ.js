@@ -131,7 +131,6 @@ class Happ {
 	static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
 		if (Happ_env.BROWSER) {
 			// TODO: do the browser implementation using XMLHttpRequest (or, worst case scenario, use RN "Fetch" API)
-			// and 
 			throw new Error("No browser implementation for HTTPS requests yet!"); 
 		}
 
