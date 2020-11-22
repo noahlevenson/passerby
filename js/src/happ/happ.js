@@ -168,7 +168,7 @@ class Happ {
 	// Convenience method: send a transaction request to the peer named on credential 'cred' and
 	// listen once for Hbuy_status.CODE.CONFIRMED, calling status_cb if we hear it
 	// Immediately returns the transaction ID as a string without regard for the success or failure of the operation
-	send_transaction({cred, order, pment, success, timeout, status_cb} = {}) {
+	send_transaction({cred, order, pment, success = () => {}, timeout = () => {}, status_cb} = {}) {
 		// TODO: verify the credential!
 
 		const transaction = new Hbuy_tsact({
@@ -193,6 +193,7 @@ class Happ {
 	    	});
 		}).catch((err) => {
 			// TODO: Handle any error
+			timeout();
 		});
 
 		return transaction.id.toString();
@@ -200,7 +201,7 @@ class Happ {
 
 	// Convenience method to send an SMS to the peer associated with public key 'pubkey', immediately returns a 
 	// reference to the Hbuy_sms object, without regard for the success or failure of the operation
-	send_sms({pubkey, text, data, success, timeout}) {
+	send_sms({pubkey, text, data, success = () => {}, timeout = () => {}}) {
 		const sms = new Hbuy_sms({
 			text: text,
 			from: this.hid_pub,
@@ -218,6 +219,7 @@ class Happ {
 			});
 		}).catch((err) => {
 			// TODO: Handle any error
+			timeout();
 		});
 
 		return sms;
@@ -225,7 +227,7 @@ class Happ {
 
 	// Convenience method to send a status message to the peer associated with the public key 'pubkey'
 	// returns a reference to the Hbuy_status object
-	send_status({pubkey, trans_id, code, success, timeout}) {
+	send_status({pubkey, trans_id, code, success = () => {}, timeout = () => {}}) {
 		const status = new Hbuy_status({
 			id: trans_id,
 			code: code
@@ -241,6 +243,7 @@ class Happ {
 			});
 		}).catch((err) => {
 			// TODO: Handle any error
+			timeout();
 		});
 
 		return status;
