@@ -223,6 +223,29 @@ class Happ {
 		return sms;
 	}
 
+	// Convenience method to send a status message to the peer associated with the public key 'pubkey'
+	// returns a reference to the Hbuy_status object
+	send_status({pubkey, trans_id, code, success, timeout}) {
+		const status = new Hbuy_status({
+			id: trans_id,
+			code: code
+		});
+
+		this.search_node_info(Happ.get_peer_id(pubkey).then((res) => {
+			this.hbuy.status_req({
+				hbuy_status: status,
+				addr: res.addr,
+				port: res.port,
+				success: success,
+				timeout: timeout
+			});
+		}).catch((err) => {
+			// TODO: Handle any error
+		});
+
+		return status;
+	}
+
 	// Convenience method which wraps hbuy.on_status: subscribe only once to the next status event for a given transaction ID and status code
 	on_status({transact_id, status_code, cb} = {}) {
 		this.hbuy.on_status(transact_id, status_code, cb);

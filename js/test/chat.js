@@ -6,7 +6,6 @@ const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_sms } = require("../src/hbuy/hbuy_sms.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_order } = require("../src/hbuy/hbuy_order.js");
-const { Hbuy_payment } = require("../src/hbuy/hbuy_payment.js");
 const { Hbuy_item_ref } = require("../src/hbuy/hbuy_item_ref.js");
 const { Hlog } = require("../src/hlog/hlog.js");
 
@@ -19,7 +18,7 @@ const { Larosa_menu } = require("./menu.js");
     const text = process.argv.slice(4, process.argv.length).join(" ");
 
     const chat_peer = new Hid_pub({
-        public_key: `${first_name} ${last_name}`,
+        pubkey: `${first_name} ${last_name}`,
         name: `${first_name} ${last_name}`,
         address: "",
         phone: "",
@@ -35,11 +34,11 @@ const { Larosa_menu } = require("./menu.js");
     const search_res = await network.geosearch(westchester);
     
     // Assuming search_res[0] is the [key, Happ_bboard] for Pizzeria La Rosa
-    const node_info = await network.search_node_info(Happ.get_peer_id("noah_hotline_peer"));
+    // const node_info = await network.search_node_info();
 
     // Send a chat message to the restaurant
     network.send_sms({
-        pubkey: "noah_hotline_peer",
+        pubkey: "88a762205ba9361b330fdf82a03ec6321a8934b1",
         text: text,
         from: network.hid_pub
     });

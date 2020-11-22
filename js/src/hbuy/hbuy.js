@@ -147,19 +147,14 @@ class Hbuy {
 	}
 
 	// TODO: this should be refactored to work like transact_req above -- don't construct the Hbuy_status, just send it
-	status_req({id = null, code = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	status_req({hbuy_status = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
-		if (id === null || code === null || addr === null || port === null) {
+		if (hbuy_status === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		const status = new Hbuy_status({
-			id: id,
-			code: code
-		});
-
 		const msg = new Hbuy_msg({
-			data: status,
+			data: hbuy_status,
 			type: Hbuy_msg.TYPE.REQ,
 			flavor: Hbuy_msg.FLAVOR.STATUS,
 			id: Hbigint.random(Hbuy_msg.ID_LEN)
@@ -167,7 +162,6 @@ class Hbuy {
 
 		this._send(msg, addr, port, success, timeout);
 	}
-
 
 	sms_req({hbuy_sms = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
