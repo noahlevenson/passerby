@@ -231,7 +231,7 @@ class Happ {
 			code: code
 		});
 
-		this.search_node_info(Happ.get_peer_id(pubkey).then((res) => {
+		this.search_node_info(Happ.get_peer_id(pubkey)).then((res) => {
 			this.hbuy.status_req({
 				hbuy_status: status,
 				addr: res.addr,
