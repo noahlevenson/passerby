@@ -23,10 +23,6 @@ class Hbuy_sms {
 			throw new TypeError("Argument 'data' must be array");
 		}
 
-		if (!(from instanceof Hid_pub)) {
-			throw new TypeError("Argument 'from' must be a Hid_pub object");
-		}
-
 		// Enforce MAX_CHARS
 		if (text === null) {
 			this.text = text;
