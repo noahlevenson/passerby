@@ -98,7 +98,7 @@ class Hbuy {
 	_on_req(msg, rinfo) {
 		Hlog.log(`[HBUY] Inbound ${Object.keys(Hbuy_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
-		this._send(res, rinfo.address, rinfo.port); // TODO: This is a good place to implement UDP retransmission
+		this._send(res, rinfo.address, rinfo.port);
 	}
 
 	_send(msg, addr, port, success, timeout) {
@@ -208,7 +208,7 @@ class Hbuy {
 
 	// Subscribe only once to the next status event for a given transaction ID and status code
 	on_status(transact_id, status_code, cb) {
-		this.status.once(`${transact_id.toString()}#${status_code}`, cb);
+		this.status.once(`${transact_id}#${status_code}`, cb);
 	}
 }
 

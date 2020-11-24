@@ -175,7 +175,7 @@ class Happ {
 	    	order: order,
 	        pment: pment,
 	        from: this.hid_pub, // TODO: How should we handle different addresses?
-	        id: Hbigint.random(Hbuy_tsact.ID_LEN)
+	        id: Hbigint.random(Hbuy_tsact.ID_LEN).toString();
     	});
 
 		// Set up the status listener before sending the transaction to avoid a race condition 
@@ -196,7 +196,7 @@ class Happ {
 			timeout();
 		});
 
-		return transaction.id.toString();
+		return transaction.id;
 	}
 
 	// Convenience method to send an SMS to the peer associated with public key 'pubkey', immediately returns a 
