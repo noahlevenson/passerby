@@ -10,7 +10,7 @@ const { Hbuy_item_cust } = require("../src/hbuy/hbuy_item_cust.js");
 
 const ffments = {};
 ffments[Hbuy_ffment.TYPE.PICKUP] = Hbuy_ffment.DEFAULT.PICKUP;
-ffments[Hbuy_ffment.TYPE.DELIVERY] = Hbuy_ffment({type: Hbuy_ffment.TYPE.DELIVERY, min: 10.00, radius: 2.0, est: 20});
+ffments[Hbuy_ffment.TYPE.DELIVERY] = new Hbuy_ffment({type: Hbuy_ffment.TYPE.DELIVERY, min: 10.00, radius: 2.0, est: 20});
 
 const Toms_hot_dogs_menu = new Hbuy_menu({
 	name: "Tom's Hot Dogs",
