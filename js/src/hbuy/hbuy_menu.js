@@ -34,21 +34,23 @@ class Hbuy_menu {
 		"Burgers": 14
 	};
 
-	data;
 	ffments;
 	pments;
+	keywords;
 	taxes;
+	data;
 	
 	constructor({
 		name = "Untitled Menu",
 		pments = [Hbuy_pment.TYPE.CASH, Hbuy_pment.TYPE.AMEX, Hbuy_pment.TYPE.VISA, Hbuy_pment.TYPE.MC], 
 		keywords = [], 
-		taxes = []
+		taxes = [],
+		ffments = null;
 	} = {}) {
 			// Give us a default fulfullment object with sensible values for each type
-			this.ffments = Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
+			this.ffments = ffments === null ? : Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
 				return [i, ffment];
-			}));
+			})) : ffments;
 
 			this.pments = pments;
 			this.keywords = keywords;

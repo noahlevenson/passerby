@@ -1,4 +1,6 @@
 const { Hbuy_menu } = require("../src/hbuy/hbuy_menu.js");
+const { Hbuy_pment } = require("../src/hbuy/pment/hbuy_pment.js");
+const { Hbuy_ffment } = require("../src/hbuy/hbuy_ffment.js");
 const { Hbuy_tax } = require("../src/hbuy/hbuy_tax.js");
 const { Hntree_node } = require("../src/htypes/hntree/hntree_node.js");
 const { Hbuy_item } = require("../src/hbuy/hbuy_item.js");
@@ -8,7 +10,12 @@ const { Hbuy_item_cust } = require("../src/hbuy/hbuy_item_cust.js");
 
 const Toms_hot_dogs_menu = new Hbuy_menu({
 	name: "Tom's Hot Dogs",
-	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})]
+	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})],
+	pments: [Hbuy_pment.TYPE.CASH],
+	ffments: {
+		Hbuy_ffment.TYPE.PICKUP: Hbuy_ffment.DEFAULT.PICKUP,
+		Hbuy_ffment.TYPE.DELIVERY: new this({type: Hbuy_ffment.TYPE.DELIVERY, min: 10.00, radius: 2.0, est: 20})
+	}
 });
 
 const toppings = new Hbuy_item_cust_cat({
