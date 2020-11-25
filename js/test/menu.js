@@ -8,7 +8,8 @@ const { Hbuy_item_cust } = require("../src/hbuy/hbuy_item_cust.js");
 
 const Larosa_menu = new Hbuy_menu({
 	name: "Pizzeria La Rosa Lunch/Dinner Menu",
-	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})]
+	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})],
+	keywords: [Hbuy_menu.KEYWORDS.Pizza, Hbuy_menu.KEYWORDS.Italian]
 });
 
 const toppings = new Hbuy_item_cust_cat({

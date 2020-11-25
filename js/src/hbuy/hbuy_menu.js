@@ -31,7 +31,8 @@ class Hbuy_menu {
 		"Thai": 11,
 		"Indian": 12,
 		"Caribbean": 13,
-		"Burgers": 14
+		"Burgers": 14,
+		"American": 15
 	};
 
 	ffments;

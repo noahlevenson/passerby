@@ -16,7 +16,8 @@ const Toms_hot_dogs_menu = new Hbuy_menu({
 	name: "Tom's Hot Dogs",
 	taxes: [new Hbuy_tax({desc: "TAX", rate: 0.08375})],
 	pments: [Hbuy_pment.TYPE.CASH],
-	ffments: ffments
+	ffments: ffments,
+	keywords: [Hbuy_menu.KEYWORDS.American]
 });
 
 const toppings = new Hbuy_item_cust_cat({
