@@ -48,7 +48,7 @@ class Hbuy_menu {
 		ffments = null
 	} = {}) {
 			// Give us a default fulfullment object with sensible values for each type
-			this.ffments = ffments === null ? : Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
+			this.ffments = ffments === null ? Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
 				return [i, ffment];
 			})) : ffments;
 
