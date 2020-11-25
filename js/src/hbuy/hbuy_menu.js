@@ -45,7 +45,7 @@ class Hbuy_menu {
 		pments = [Hbuy_pment.TYPE.CASH, Hbuy_pment.TYPE.AMEX, Hbuy_pment.TYPE.VISA, Hbuy_pment.TYPE.MC], 
 		keywords = [], 
 		taxes = [],
-		ffments = null;
+		ffments = null
 	} = {}) {
 			// Give us a default fulfullment object with sensible values for each type
 			this.ffments = ffments === null ? : Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
