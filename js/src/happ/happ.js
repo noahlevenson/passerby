@@ -42,7 +42,7 @@ const https = Happ_env.BROWSER ? null : require("https");
 class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
-	static SEARCH_DIST_MILES = 1.0;
+	static SEARCH_DIST_MILES = 2.0;
 	static T_NAT_KEEPALIVE = 20000;
 
 	static GEOCODING_METHOD = {
