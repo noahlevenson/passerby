@@ -18,7 +18,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browse
 
 class Hpht {
 	static BIT_DEPTH = 80; // Bit depth of our input keys (our Hgeo linearizations are 80 bits)
-	static B = 4; // Block size, or max keys per leaf
+	static B = 1000; // Block size, or max keys per leaf
 
 	dht_node; // reference to the DHT node associated with this PHT interface
 	dht_lookup_func; // reference to the above node's lookup function
