@@ -12,6 +12,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_br
 const { Larosa_menu } = require("./menu.js");
 const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
 const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
+const { Alvin_friends_dinner_menu } = require("./alvin_friends_dinner_menu.js");
 
 (async function run() {
     const larosa = new Hid_pub({
@@ -52,6 +53,9 @@ const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
 
     const toms_hot_dogs = new Hgeo_coord({lat: 40.9072767, long: -73.806507});
     await network.hpht.insert(toms_hot_dogs.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "toms_hot_dogs", name: "Tom's Hot Dogs", address: "722 Main Street New Rochelle NY 10801", phone: "(914) 777-6677"}), form: Toms_hot_dogs_menu.freeze()}));
+
+    const alvin = new Hgeo_coord({lat: 40.9088532, long: -73.7848351});
+    await network.hpht.insert(alvin.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "alvinandfriends", name: "Alvin & Friends", address: "14 Memorial Highway New Rochelle NY 10801", phone: "(914) 654-6549"}), form: Alvin_friends_dinner_menu.freeze()}));
 
     console.log("Done!")
 })();
