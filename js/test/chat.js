@@ -20,6 +20,8 @@ const { Larosa_menu } = require("./menu.js");
     const chat_peer = new Hid_pub({
         pubkey: `${first_name} ${last_name}`,
         name: `${first_name} ${last_name}`,
+        first: first_name,
+        last: last_name,
         address: "",
         phone: "",
         lat: 0,
@@ -38,7 +40,7 @@ const { Larosa_menu } = require("./menu.js");
 
     // Send a chat message to the restaurant
     network.send_sms({
-        pubkey: "88a762205ba9361b330fdf82a03ec6321a8934b1",
+        pubkey: "debug_pizzeria_la_rosa_public_key",
         text: text,
         from: network.hid_pub
     });
