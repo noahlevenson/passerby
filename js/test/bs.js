@@ -2,6 +2,10 @@ const { Happ } = require("../heaven/js/src/happ/happ.js");
 const { Happ_bboard } = require("../heaven/js/src/happ/happ_bboard.js");
 const { Hid_pub } = require("../heaven/js/src/hid/hid_pub.js");
 const { Hgeo_coord } = require("../heaven/js/src/hgeo/hgeo_coord.js");
+const { Cantina_dinner_menu } = require("../heaven/js/test/cantina_dinner_menu.js");
+const { Toms_hot_dogs_menu } = require("../heaven/js/test/toms_hot_dogs_menu.js");
+const { Alvin_friends_dinner_menu } = require("../heaven/js/test/alvin_friends_dinner_menu.js");
+const { Rocnramen_menu } = require("../heaven/js/test/rocnramen_menu.js");
 
 (async function run() {
     const newark_bootstrap_node = new Hid_pub({
