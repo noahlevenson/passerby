@@ -30,5 +30,4 @@ const { Hbuy_status } = require("../heaven/js/src/hbuy/hbuy_status.js");
     await network.hpht.insert(rocnramen.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "rocnramen", name: "Roc N Ramen", address: "19 Anderson St. New Rochelle NY 10801", phone: "(914) 365-2267"}), form: Rocnramen_menu.freeze()}));
 
     console.log("Done!")
-}
 })();
