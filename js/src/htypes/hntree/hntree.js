@@ -23,11 +23,42 @@ class Hntree {
 		this.root = root;
 	}
 
+	// Factory function, construct an Hntree from its serialized representation
+	static from_json(json) {
+		const arr = JSON.parse(json);
+		const tree = new this(new Hntree_node({data: arr[0]}));
+		let node = tree.get_root();
+		
+		arr.slice(1).forEach((elem) => {
+			if (elem === null) {
+				node = node.parent;
+				return;
+			}
+
+			node = node.add_child(new Hntree_node({data: elem, parent: node}));
+		});
+
+		return tree;
+	}
+
+	// Simple serializer: serialize as a flat array of node data with null sentinels
+	toJSON() {
+		const arr = [];
+
+		this.dfs((node, data) => {
+			arr.push(node.data);
+		}, (node, data) => {
+			arr.push(null);
+		});
+
+		return JSON.stringify(arr);
+	}
+
 	get_root() {
 		return this.root;
 	}
 
-	// Depth first search, returns array data, you can put whatever you want in there
+	// Depth first search, returns array 'data' - you can put whatever you want in there
 	// Calls visitation callback pre(node, data) where you'd want it for a preorder traversal, calls post(node, data) postorder
 	dfs(pre = () => {}, post = () => {}, node = this.get_root(), data = []) {
 		pre(node, data)
