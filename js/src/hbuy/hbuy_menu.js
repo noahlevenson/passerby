@@ -59,7 +59,7 @@ class Hbuy_menu {
 
 			this.ffments = ffments === null ? Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
 				return [i, ffment];
-			})) : Object.fromEntries(Object.entries(ffments).map(ffment => return [ffment[0], new Hbuy_ffment(ffment[1])]));
+			})) : Object.fromEntries(Object.entries(ffments).map(ffment => [ffment[0], new Hbuy_ffment(ffment[1])]));
 
 			this.pments = pments;
 			this.keywords = keywords;
