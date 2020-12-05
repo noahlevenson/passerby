@@ -20,6 +20,11 @@ class Hbuy_ffment {
 		PICKUP: new this({type: Hbuy_ffment.TYPE.PICKUP, min: 0.00, radius: Number.POSITIVE_INFINITY, est: 20})
 	};
 
+	type;
+	min;
+	radius;
+	est;
+
 	constructor({type = null, min = 0.00, radius = 1.0, est = 45} = {}) {
 		this.type = type;
 		this.min = min;

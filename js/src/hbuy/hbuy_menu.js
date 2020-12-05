@@ -46,23 +46,29 @@ class Hbuy_menu {
 		pments = [Hbuy_pment.TYPE.CASH, Hbuy_pment.TYPE.AMEX, Hbuy_pment.TYPE.VISA, Hbuy_pment.TYPE.MC], 
 		keywords = [], 
 		taxes = [],
-		ffments = null
+		ffments = null,
+		data = null
 	} = {}) {
-			// Give us a default fulfullment object with sensible values for each type
+			if (data === null) {
+				this.data = new Hntree(new Hntree_node({data: name}));
+			} else if (data instanceof Hntree) {
+				this.data = data;
+			} else {
+				this.data = Hntree.from_json(data);
+			}
+
 			this.ffments = ffments === null ? Object.fromEntries(Object.values(Hbuy_ffment.DEFAULT).map((ffment, i) => {
 				return [i, ffment];
-			})) : ffments;
+			})) : Object.fromEntries(Object.entries(ffments).map(ffment => return [ffment[0], new Hbuy_ffment(ffment[1])]));
 
 			this.pments = pments;
 			this.keywords = keywords;
 			this.taxes = taxes;
-			this.data = new Hntree(new Hntree_node({data: name}));
 	}
 
 	// Factory function for constructing from on-disk serialized format
-	// TODO: write me! This should be the simple linearization method using null sentinels
-	static from_json() {
-
+	static from_json(json) {
+		return new this(JSON.parse(json));
 	}
 
 	// Determine whether an hbuy_menu object is in a frozen or unfrozen state
