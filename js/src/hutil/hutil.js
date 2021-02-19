@@ -41,6 +41,13 @@ class Hutil {
 		hash.update(data);
 		return hash.digest("hex");
 	}
+
+	// Returns a hex string
+	static _sha256(data) {
+		const hash = crypto.createHash("SHA256");
+		hash.update(data);
+		return hash.digest("hex");
+	}
     
     static _is_power2(n) {
         return (n & (n - 1)) === 0;

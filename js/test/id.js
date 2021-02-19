@@ -13,7 +13,7 @@ const plr = new Hid_pub({
 console.log(Hid.hash_cert(plr));
 
 const t1 = Date.now();
-console.log(Hid.partial_hash_inversion(plr, (x) => x.counter += 1, 20));
+console.log(Hid.find_partial_preimage(plr, (x) => x.counter += 1, 20));
 const t2 = Date.now();
 
 console.log(Hid.hash_cert(plr, true));

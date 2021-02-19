@@ -24,8 +24,8 @@ class Hid {
     static SYM_ADJ_A_BW = Hutil._is_power2(dict_adj_a.length) ? Math.log2(dict_adj_a.length) : Hid.dict_err();
     static SYM_ADJ_B_BW = Hutil._is_power2(dict_adj_b.length) ? Math.log2(dict_adj_b.length) : Hid.dict_err();
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
-    static HASH_BIT_WIDTH = 160;
-	static POW_SOLUTION_LEAD_BITS = 20; // TODO: what's the optimal setting for ~10 min compute time on an average tablet?
+    static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
+	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
 	static KEY_TYPE = "rsa";
 	static MODULUS_LEN = 1024;
 
@@ -54,22 +54,23 @@ class Hid {
 		});
 	}
 
-	// TODO: We might need 256 bits or more to get the time complexity we need
 	static hash_cert(cert, str = false) {
-        const h = Hutil._sha1(JSON.stringify(cert));
+        const h = Hutil._sha256(JSON.stringify(cert));
 		return str ? h : new Hbigint(h);
 	}
 
-	static is_valid_pow(hash, n_lead_bits) {
-        const offset = new Hbigint(Hid.HASH_BIT_WIDTH - n_lead_bits);
-		const mask = new Hbigint(Math.pow(2, n_lead_bits) - 1).shift_left(offset);
+	static is_valid_pow(hash, n_lead_zero_bits) {
+        const offset = new Hbigint(Hid.HASH_SZ - n_lead_zero_bits);
+		const mask = new Hbigint(Math.pow(2, n_lead_zero_bits) - 1).shift_left(offset);
 		return hash.and(mask).shift_right(offset).equals(new Hbigint(0));
 	}
 
-	static partial_hash_inversion(obj, f, n_lead_bits) {
+    // Find a partial preimage (by brute force) for hash_cert(obj) which has n_lead_zero_bits
+    // function 'mod' modifies obj after each attempt
+	static find_partial_preimage(obj, mod, n_lead_zero_bits) {
 		return new Promise((resolve, reject) => {
-            while (!Hid.is_valid_pow(Hid.hash_cert(obj), n_lead_bits)) {
-	            f(obj);
+            while (!Hid.is_valid_pow(Hid.hash_cert(obj), n_lead_zero_bits)) {
+	            mod(obj);
 		    }
 
 		    resolve(obj);
@@ -78,20 +79,19 @@ class Hid {
 
     static get_symbol_indices(cert) {
         const hash = Hid.hash_cert(cert);
-
-        if (!Hid.is_valid_pow(hash, Hid.POW_SOLUTION_LEAD_BITS)) {
+        
+        if (!Hid.is_valid_pow(hash, Hid.POW_LEAD_ZERO_BITS)) {
             return null; 
         }
+
+        const mask_a = new Hbigint(Math.pow(2, Hid.SYM_ADJ_A_BW) - 1);
+        const mask_b = new Hbigint(Math.pow(2, Hid.SYM_ADJ_B_BW) - 1).shift_left(new Hbigint(Hid.SYM_ADJ_A_BW));
+        const mask_c = new Hbigint(Math.pow(2, Hid.SYM_NOUN_BW) - 1).shift_left(new Hbigint(Hid.SYM_ADJ_A_BW + Hid.SYM_ADJ_B_BW));
         
         // TODO: test this
-        const a = hash.and(new Hbigint(Math.pow(2, Hid.SYM_ADJ_A_BW) - 1));
-        
-        const b = hash.and(new Hbigint(Math.pow(2, Hid.SYM_ADJ_B_BW) - 1).shift_left(new Hbigint(Hid.SYM_ADJ_A_BW)))
-            .shift_right(new Hbigint(Hid.SYM_ADJ_A_BW));
-
-        const c = hash.and(new Hbigint(Math.pow(2, Hid.SYM_NOUN_BW) - 1).shift_left(new Hbigint(Hid.SYM_ADJ_A_BW + 
-            Hid.SYM_ADJ_B_BW))).shift_right(new Hbigint(Hid.SYM_ADJ_A_BW + Hid.SYM_ADJ_B_BW));
-        
+        const a = hash.and(mask_a);
+        const b = hash.and(mask_b).shift_right(new Hbigint(Hid.SYM_ADJ_A_BW));
+        const c = hash.and(mask_c).shift_right(new Hbigint(Hid.SYM_ADJ_A_BW + Hid.SYM_ADJ_B_BW));  
         return [parseInt(a.toString(10)), parseInt(b.toString(10)), parseInt(c.toString(10))];
     }
 }
