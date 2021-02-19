@@ -41,6 +41,10 @@ class Hutil {
 		hash.update(data);
 		return hash.digest("hex");
 	}
+    
+    static _is_power2(n) {
+        return (n & (n - 1)) === 0;
+    }
 
 	// Get the integral part of the log2 of a Hbigint
 	// Works on Number types too, but pointlessly slow

@@ -21,6 +21,7 @@ class Hid_pub {
 	lat;
 	long;
 	peer_id;
+	counter;
 
 	constructor({pubkey = null, name = null, first = null, last = null, address = null, phone = null, lat = null, long = null}  = {}) {
 		// TODO: validation, enforce primitive types
@@ -34,6 +35,7 @@ class Hid_pub {
 		this.lat = lat;
 		this.long = long;
 		this.peer_id = Hutil._sha1(this.pubkey);
+		this.counter = 0;
 	}
 }
 
