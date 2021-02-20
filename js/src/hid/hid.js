@@ -66,7 +66,7 @@ class Hid {
 	}
 
     // Find a partial preimage (by brute force) for hash_cert(obj) which has n_lead_zero_bits
-    // function 'mod' modifies obj after each attempt
+    // function 'mod' modifies obj (e.g., to increment a nonce) after each attempt
 	static find_partial_preimage(obj, mod, n_lead_zero_bits) {
 		return new Promise((resolve, reject) => {
             while (!Hid.is_valid_pow(Hid.hash_cert(obj), n_lead_zero_bits)) {
