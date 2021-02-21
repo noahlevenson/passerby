@@ -9,7 +9,6 @@
 
 "use strict";
 
-
 const { Happ_env } = require("./happ_env.js");
 const { Happ_bboard } = require("./happ_bboard.js");
 const { Htrans_udp } = require("../htrans/trans/htrans_udp.js");

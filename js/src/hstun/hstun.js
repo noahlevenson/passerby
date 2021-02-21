@@ -1,7 +1,7 @@
 /** 
 * HSTUN
-* STUN protocol interface, providing all client and server functionality
-* 
+* STUN protocol (RFCs 5389 + 3489) implementation, 
+* providing all client and server functionality
 * 
 * 
 * 

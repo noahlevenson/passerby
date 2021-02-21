@@ -1,8 +1,8 @@
 /** 
 * HBUY
-* HBUY provides an interface for sending and receiving HBUY messages
-* 
-* 
+* HBUY provides services for e-commerce layer
+* functionality, including payments, order 
+* forms, and messaging
 * 
 * 
 */ 
