@@ -4,8 +4,8 @@ const { Hdlt_vm } = require("../src/hdlt/hdlt_vm.js");
 
 const key_pair = Happ.generate_key_pair();
 
-
-
+const sig = Happ.sign(Buffer.from("foo"), key_pair.privateKey);
+console.log(Happ.verify(Buffer.from("foo"), key_pair.publicKey, sig));
 
 // To create the lock script, which should just be the signature, we:
 // create a transaction where the lock script is the unlock script of the utxo transaction

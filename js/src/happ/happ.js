@@ -98,6 +98,16 @@ class Happ {
 	static generate_key_pair() {
 		return Hid.generate_key_pair();
 	}
+
+	// Convenience method to cryptographically sign some data
+	static sign(data, key) {
+		return Hid.sign(data, key);
+	}
+
+	// Convenience method to verify a cryptographic signature
+	static verify(data, key, sig) {
+		return Hid.verify(data, key, sig);
+	}
     
 	// Compute the peer ID derived from input 'data'
 	// Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion

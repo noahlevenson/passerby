@@ -26,8 +26,10 @@ class Hid {
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
 	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
-	static KEY_TYPE = "rsa";
-	static MODULUS_LEN = 1024;
+	
+    static KEY_TYPE = "ec";
+    static CURVE = "secp256k1" // Only applies if KEY_TYPE is "ec"
+	static MODULUS_LEN = 1024; // Only applies if KEY_TYPE is "rsa"
 
 	constructor() {
 
@@ -40,19 +42,29 @@ class Hid {
 	static generate_key_pair() {
 		return crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: Hid.MODULUS_LEN,
+            namedCurve: Hid.CURVE,
  			publicKeyEncoding: {
 			    type: 'spki',
-			    format: 'pem'
+			    format: 'der'
   			},
   			privateKeyEncoding: {
 			    type: 'pkcs8',
 			    format: 'pem',
-			    cipher: 'aes-256-cbc',
-
-			    passphrase: "test"  // TODO: set passphrase!
+			    // cipher: 'aes-256-cbc'  // TODO: set cipher and passphrase!
+			    // passphrase: "test"
   			}
 		});
 	}
+
+    // Assumes key as PEM string
+    static sign(data, key) {
+        return crypto.sign(null, data, key);
+    }
+
+    // Assumes key as DER buffer
+    static verify(data, key, sig) {
+        return crypto.verify(null, data, crypto.createPublicKey({key: key, format: "der", type: "spki"}), sig);
+    }
 
 	static hash_cert(cert, str = false) {
         const h = Hutil._sha256(JSON.stringify(cert));
