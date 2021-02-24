@@ -9,6 +9,8 @@
 
 "use strict";
 
+const { Hdlt_tsact } = require("./hdlt_tsact.js");
+const { Happ } = require("../happ/happ.js");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
@@ -36,6 +38,8 @@ class Hdlt_vm {
 	program;
 	code_sep;
 
+	// The VM accepts as inputs the previous tx and the new tx
+	// its preprocessor constructs a program from the appropriate lock and unlock scripts
 	constructor ({tx_prev, tx_new} = {}) {
 		this.STACK = new Array(Hdlt_vm.STACK_SZ);
 		this.SP = 0;
@@ -47,7 +51,7 @@ class Hdlt_vm {
 	}
 
 	preproc() {
-		return this.tx_new.lock.concat(this.tx_prev.unlock);
+		return Buffer.from(this.tx_new.lock.concat(this.tx_prev.unlock));
 	}
 
 	// Execute the stored program until the end of instructions
@@ -65,10 +69,10 @@ class Hdlt_vm {
 			return this.exec();
 		}
 
-		return !this.STACK[this.SP - 1].equals(new Hbigint(0)) ? true : false;
+		return this.SP - 1 >= 0 && !this.STACK[this.SP - 1].equals(new Hbigint(0)) ? true : false;
 	}
 
-	// The next byte contains the number of bytes to push onto the stack
+	// The next byte contains the number of following bytes to push onto the stack
 	_op_push1() {
 		const n = this.program[this.PC + 1];
 		const start = this.PC + 2;
@@ -83,9 +87,24 @@ class Hdlt_vm {
 		this.PC += 1;
 	}
 
-	// Verify that the signature at SP - 1 is valid for the pubkey at SP
+	// Verify that the signature at (SP - 1) is valid for the pubkey at (SP - 2) - returns 1 if valid, 0 otherwise
+	// Like Bitcoin's OP_CHECKSIG instruction, it compares the sig against a copy of tx_new with its lock script replaced by tx_prev's unlock script
 	_op_checksig() {
-		
+		const pubkey = this.STACK[this.SP - 1];
+		this.SP -= 2;
+		const sig = this.STACK[this.SP];
+
+		const copy = new Hdlt_tsact({
+			utxo: this.tx_new.utxo.slice(),
+			lock: [...this.tx_prev.unlock.slice(this.code_sep).filter(inst => inst !== Hdlt_vm.OPCODE.OP_CODE_SEP)],
+			unlock: [...this.tx_new.unlock]
+		});
+
+		const res = Happ.verify(Hdlt_tsact.serialize(copy), Buffer.from(pubkey.toString(16), "hex"), Buffer.from(sig.toString(16), "hex")) ? 1 : 0;
+
+		this.STACK[this.SP] = new Hbigint(res);
+		this.SP += 1;
+		this.PC += 1;
 	}
 }
 
