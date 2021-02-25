@@ -35,7 +35,12 @@ class Hid_pub {
 		this.lat = lat;
 		this.long = long;
 		this.peer_id = Hutil._sha1(this.pubkey);
-		this.nonce = 0;
+		this.nonce = "00"; // Need two digits for Buffer to parse correctly
+	}
+
+	static inc_nonce(hid_pub) {
+		const unpad = (parseInt(hid_pub.nonce, 16) + 1).toString(16);
+		hid_pub.nonce = unpad.padStart(unpad.length + (unpad.length % 2), "0");
 	}
 }
 

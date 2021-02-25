@@ -66,8 +66,9 @@ class Hid {
         return crypto.verify(null, data, crypto.createPublicKey({key: key, format: "der", type: "spki"}), sig);
     }
 
-	static hash_cert(cert, str = false) {
-        const h = Hutil._sha256(JSON.stringify(cert));
+    // Hashing a cert means hashing the concatenation of its pubkey and its nonce
+	static hash_cert(pubkey, nonce, str = false) {
+        const h = Hutil._sha256(`${pubkey}${nonce}`);
 		return str ? h : new Hbigint(h);
 	}
 
@@ -81,7 +82,7 @@ class Hid {
     // function 'mod' modifies obj (e.g., to increment a nonce) after each attempt
 	static find_partial_preimage(obj, mod, n_lead_zero_bits) {
 		return new Promise((resolve, reject) => {
-            while (!Hid.is_valid_pow(Hid.hash_cert(obj), n_lead_zero_bits)) {
+            while (!Hid.is_valid_pow(Hid.hash_cert(obj.pubkey, obj.nonce), n_lead_zero_bits)) {
 	            mod(obj);
 		    }
 

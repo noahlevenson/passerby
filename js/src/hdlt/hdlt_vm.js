@@ -10,6 +10,7 @@
 "use strict";
 
 const { Hdlt_tsact } = require("./hdlt_tsact.js");
+const { Hid } = require("../hid/hid.js");
 const { Happ } = require("../happ/happ.js");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
@@ -21,13 +22,15 @@ class Hdlt_vm {
 	static OPCODE = {
 		OP_PUSH1: 0x64,
 		OP_CODE_SEP: 0xAB,
-		OP_CHECKSIG: 0xAC
+		OP_CHECKSIG: 0xAC,
+		OP_CHECKPOW: 0xFF
 	};
 
 	GRAMMAR = new Map([
 		[Hdlt_vm.OPCODE.OP_PUSH1, this._op_push1],
 		[Hdlt_vm.OPCODE.OP_CODE_SEP, this._op_code_sep],
-		[Hdlt_vm.OPCODE.OP_CHECKSIG, this._op_checksig]
+		[Hdlt_vm.OPCODE.OP_CHECKSIG, this._op_checksig],
+		[Hdlt_vm.OPCODE.OP_CHECKPOW, this._op_checkpow]
 	]);
 
 	STACK;
@@ -72,7 +75,7 @@ class Hdlt_vm {
 		return this.SP - 1 >= 0 && !this.STACK[this.SP - 1].equals(new Hbigint(0)) ? true : false;
 	}
 
-	// The next byte contains the number of following bytes to push onto the stack
+	// The next byte represents the number of following bytes to push onto the stack
 	_op_push1() {
 		const n = this.program[this.PC + 1];
 		const start = this.PC + 2;
@@ -100,11 +103,31 @@ class Hdlt_vm {
 			unlock: [...this.tx_new.unlock]
 		});
 
-		const res = Happ.verify(Hdlt_tsact.serialize(copy), Buffer.from(pubkey.toString(16), "hex"), Buffer.from(sig.toString(16), "hex")) ? 1 : 0;
+		const res = Happ.verify(Hdlt_tsact.serialize(copy), Buffer.from(pk, "hex"), Buffer.from(s, "hex")) ? 1 : 0;
 
 		this.STACK[this.SP] = new Hbigint(res);
 		this.SP += 1;
 		this.PC += 1;
+	}
+
+	// Verify that the proof of work for the nonce at (SP - 1) is valid for the pubkey at (SP - 2)
+	// OP_CHECKPOW assumes the next byte represents the number of leading zero bits required
+	// returns 1 if valid, 0 otherwise
+	_op_checkpow() {
+		const n = this.program[this.PC + 1];
+		const pubkey = this.STACK[this.SP - 1];
+		this.SP -= 2;
+		
+		// TODO: this is pure noob but necessary to match the leading zero established in Hid_pub
+		let nonce = this.STACK[this.SP].toString(16);
+		nonce = nonce.padStart(nonce.length + (nonce.length % 2), "0");
+
+		const h = Hid.hash_cert(pubkey.toString(16), nonce);
+		const res = Hid.is_valid_pow(h, n) ? 1 : 0;
+
+		this.STACK[this.SP] = new Hbigint(res);
+		this.SP += 1;
+		this.PC += 2;
 	}
 }
 
