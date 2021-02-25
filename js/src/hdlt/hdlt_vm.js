@@ -97,13 +97,19 @@ class Hdlt_vm {
 		this.SP -= 2;
 		const sig = this.STACK[this.SP];
 
+		// TODO: the filter in the lock script assumes that any code separators in tx_prev.unlock were deployed in smart places -- 
+		// if someone made a boo boo, then you might be filtering out bytes from your public key or whatever
 		const copy = new Hdlt_tsact({
 			utxo: this.tx_new.utxo.slice(),
-			lock: [...this.tx_prev.unlock.slice(this.code_sep).filter(inst => inst !== Hdlt_vm.OPCODE.OP_CODE_SEP)],
+			lock: [...this.tx_prev.unlock.slice(this.code_sep).filter(b => !(this.code_sep !== 0 && b === Hdlt_vm.OPCODE.OP_CODE_SEP))],
 			unlock: [...this.tx_new.unlock]
 		});
 
-		const res = Happ.verify(Hdlt_tsact.serialize(copy), Buffer.from(pk, "hex"), Buffer.from(s, "hex")) ? 1 : 0;
+		const res = Happ.verify(
+			Hdlt_tsact.serialize(copy), 
+			Buffer.from(pubkey.toString(16), "hex"), 
+			Buffer.from(sig.toString(16), "hex")
+		) ? 1 : 0;
 
 		this.STACK[this.SP] = new Hbigint(res);
 		this.SP += 1;

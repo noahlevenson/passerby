@@ -13,7 +13,7 @@ const utxo_db = new Map();
 // The application layer will make sure there is a persistent unspent output in the database with the txid of 0xdead
 // which maps to a transaction that will be used as tx_prev when a node creates a new transaction to spend 0xdead
 // note that the application layer is responsible for ensuring that a node is allowed to spend 0xdead, so verifiers need to be vigilant here
-// The unlock script is just OP_CHECKPOW 20, which allows anyone with a valid 2-bit proof of work to spend it
+// The unlock script is just OP_CHECKPOW 0x02, which allows anyone with a valid 2-bit proof of work to spend it
 utxo_db.set("dead", new Hdlt_tsact({utxo: "beef", lock: [null], unlock: [0xFF, 0x02]}))
 
 // Generate an identity 

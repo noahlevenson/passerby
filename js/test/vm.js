@@ -27,7 +27,7 @@ const prev_unlock = [0x64].concat(my_pubkey.length, my_pubkey, 0xAC);
 // Temp is just used so we can create an image of our new transaction but with the previous unlock script in place of what will become the lock script
 const temp = new Hdlt_tsact({
 	utxo: "dead",
-	lock: prev_unlock,
+	lock: [...prev_unlock],
 	unlock: [0x64].concat(payee_pubkey.length, payee_pubkey, 0xAC)
 });
 
@@ -44,8 +44,9 @@ const tx_new = new Hdlt_tsact({
 const tx_prev = new Hdlt_tsact({
 	utxo: "beef",
 	lock: [], // We just use a null lock script since this is the genesis of the token?
-	unlock: prev_unlock
+	unlock: [...prev_unlock]
 });
+
 
 const vm = new Hdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
 
