@@ -47,7 +47,6 @@ const tx_prev = new Hdlt_tsact({
 	unlock: [...prev_unlock]
 });
 
-
 const vm = new Hdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
 
 // console.log(vm);

@@ -20,15 +20,15 @@ class Hdlt_vm {
 	static STACK_SZ = 1024;
 
 	static OPCODE = {
+		OP_NOOP: 0x61,
 		OP_PUSH1: 0x64,
-		OP_CODE_SEP: 0xAB,
 		OP_CHECKSIG: 0xAC,
 		OP_CHECKPOW: 0xFF
 	};
 
 	GRAMMAR = new Map([
+		[Hdlt_vm.OPCODE.OP_NOOP, this._op_noop],
 		[Hdlt_vm.OPCODE.OP_PUSH1, this._op_push1],
-		[Hdlt_vm.OPCODE.OP_CODE_SEP, this._op_code_sep],
 		[Hdlt_vm.OPCODE.OP_CHECKSIG, this._op_checksig],
 		[Hdlt_vm.OPCODE.OP_CHECKPOW, this._op_checkpow]
 	]);
@@ -39,7 +39,6 @@ class Hdlt_vm {
 	tx_prev;
 	tx_new;
 	program;
-	code_sep;
 
 	// The VM accepts as inputs the previous tx and the new tx
 	// its preprocessor constructs a program from the appropriate lock and unlock scripts
@@ -50,7 +49,18 @@ class Hdlt_vm {
 		this.tx_prev = tx_prev;
 		this.tx_new = tx_new;
 		this.program = this.preproc();
-		this.code_sep = 0;
+	}
+
+	// Create a the preimage for a signature for tx_new as prescribed by the OP_CHECKSIG instruction
+	// tx_prev is the transaction corresponding to tx_new's utxo
+	static make_sig_preimage(tx_prev, tx_new) {
+		const tsact = new Hdlt_tsact({
+			utxo: tx_new.utxo.slice(),
+			lock: [...tx_prev.unlock],
+			unlock: [...tx_new.unlock]
+		});
+
+		return Hdlt_tsact.serialize(tsact);
 	}
 
 	preproc() {
@@ -75,6 +85,11 @@ class Hdlt_vm {
 		return this.SP - 1 >= 0 && !this.STACK[this.SP - 1].equals(new Hbigint(0)) ? true : false;
 	}
 
+	// No op
+	_op_noop() {
+		return;
+	}
+
 	// The next byte represents the number of following bytes to push onto the stack
 	_op_push1() {
 		const n = this.program[this.PC + 1];
@@ -84,12 +99,6 @@ class Hdlt_vm {
 		this.PC += 2 + n;
 	}
 
-	// OP_CODE_SEP marks a code segment; during execution, we maintain a ref to the most recently encountered
-	_op_code_sep() {
-		this.code_sep = this.PC;
-		this.PC += 1;
-	}
-
 	// Verify that the signature at (SP - 1) is valid for the pubkey at (SP - 2) - returns 1 if valid, 0 otherwise
 	// Like Bitcoin's OP_CHECKSIG instruction, it compares the sig against a copy of tx_new with its lock script replaced by tx_prev's unlock script
 	_op_checksig() {
@@ -97,11 +106,9 @@ class Hdlt_vm {
 		this.SP -= 2;
 		const sig = this.STACK[this.SP];
 
-		// TODO: the filter in the lock script assumes that any code separators in tx_prev.unlock were deployed in smart places -- 
-		// if someone made a boo boo, then you might be filtering out bytes from your public key or whatever
 		const copy = new Hdlt_tsact({
 			utxo: this.tx_new.utxo.slice(),
-			lock: [...this.tx_prev.unlock.slice(this.code_sep).filter(b => !(this.code_sep !== 0 && b === Hdlt_vm.OPCODE.OP_CODE_SEP))],
+			lock: [...this.tx_prev.unlock],
 			unlock: [...this.tx_new.unlock]
 		});
 
