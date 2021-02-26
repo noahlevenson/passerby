@@ -91,7 +91,7 @@ class Hid {
     }
 
     static get_symbol_indices(cert) {
-        const hash = Hid.hash_cert(cert);
+        const hash = Hid.hash_cert(cert.pubkey, cert.nonce);
         
         if (!Hid.is_valid_pow(hash, Hid.POW_LEAD_ZERO_BITS)) {
             return null; 
