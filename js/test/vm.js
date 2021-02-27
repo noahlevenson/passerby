@@ -4,11 +4,11 @@ const { Hdlt_vm } = require("../src/hdlt/hdlt_vm.js");
 
 const my_key_pair = Happ.generate_key_pair();
 
-const my_pubkey = Array.from(my_key_pair.publicKey)
+const my_pubkey = Array.from(Buffer.from(my_key_pair.publicKey, "hex"));
 
 const payee_key_pair = Happ.generate_key_pair();
 
-const payee_pubkey = Array.from(payee_key_pair.publicKey);
+const payee_pubkey = Array.from(Buffer.from(payee_key_pair.publicKey, "hex"));
 
 // Let's just run through the first transaction for a given signature -- you'd have a peer submitting a tx_new trying to spend the "dead" token
 // and the application layer would make up a tx_prev and submit it to the VM

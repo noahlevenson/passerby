@@ -40,7 +40,7 @@ class Hid {
     }
 
 	static generate_key_pair() {
-		return crypto.generateKeyPairSync(Hid.KEY_TYPE, {
+		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: Hid.MODULUS_LEN,
             namedCurve: Hid.CURVE,
  			publicKeyEncoding: {
@@ -54,6 +54,9 @@ class Hid {
 			    // passphrase: "test"
   			}
 		});
+
+        pair.publicKey = Buffer.isBuffer(pair.publicKey) ? pair.publicKey.toString("hex") : pair.publicKey;
+        return pair;
 	}
 
     // Assumes key as PEM string

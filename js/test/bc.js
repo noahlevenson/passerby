@@ -70,11 +70,16 @@ function dosign(peer_a, peer_b, check_db = true) {
 	// lock script: push1, len, recip pubkey, push1, len, nonce, push1, len, my pubkey
 	// (we ineffectually push the recipient's pubkey to the stack before our nonce and pubkey just so the recipient's pubkey is in the script for us to hash over)
 
-	// unlock script: push1, len, payee (me) pubkey, checksig
+	// If peer_a is not signing himself, then unlock script: push1, len, payee (me) pubkey, checksig
+	// else if peer_a IS signing himself, then unlock script: push1, len, 0x00 - ie, this transaction cannot be unlocked
+	// NOTE that the application layer and verifiers are responsible for enforcing this contract!
+	
+	const unlock = peer_a === peer_b ? [0x64, 0x01, 0x00] : [0x64].concat([my_pubkey_arr.length, ...my_pubkey_arr, 0xAC]);
+	
 	const tsact = new Hdlt_tsact({
 		utxo: "dead",
 		lock: [0x64].concat([recip_pubkey_arr.length, ...recip_pubkey_arr, 0x64, nonce_arr.length, ...nonce_arr, 0x64, my_pubkey_arr.length, ...my_pubkey_arr]),
-		unlock: [0x64].concat([my_pubkey_arr.length, ...my_pubkey_arr, 0xAC]) 
+		unlock: unlock
 	});	
 
 	// If this tsact already exists in the utxo db, it means that peer_a has already spent 0xdead on peer_b, and it's illegal
@@ -133,6 +138,7 @@ compute_db(utxo_db);
 console.log(utxo_db);
 
 // peer 0 tries to sign peer 1 again
+// (the API layer rejects it)
 const tx_new_new = dosign(peer_0, peer_1);
 console.log(tx_new_new);
 
@@ -156,6 +162,7 @@ compute_db(utxo_db);
 console.log(utxo_db);
 
 // peer 0 tries to sign peer 2 again
+// (the API layer rejects it)
 const tx_new_new_new = dosign(peer_0, peer_2);
 console.log(tx_new_new_new);
 
@@ -192,10 +199,11 @@ compute_db(utxo_db);
 console.log(utxo_db);
 
 // peer 2 tries to revoke peer 0 again
+// (the API layer rejects it)
 const rev_new = revoke(peer_2, peer_0);
 console.log(rev_new);
 
-// **
+// ***
 
 // peer 2 changes its mind and signs peer 0 again, after the revocation
 const tx_again = dosign(peer_2, peer_0);
@@ -210,3 +218,29 @@ if (vm5.exec()) {
 
 compute_db(utxo_db);
 console.log(utxo_db);
+
+// ***
+
+// peer 2 signs peer 2
+const tx_self = dosign(peer_2, peer_2);
+
+// This is what a validator would do: Spin up a VM, load the new transaction and the persistent 0xdead previous transaction
+const vm6 = new Hdlt_vm({tx_prev: utxo_db.get("dead"), tx_new: tx_self});
+
+if (vm6.exec()) {
+	bc.push(tx_self);
+}
+
+compute_db(utxo_db);
+console.log(utxo_db);
+
+// ***
+
+// peer 2 tries to revoke his self-signature
+const tx_self_rev = revoke(peer_2, peer_2);
+
+// This is what a validator would do: Spin up a VM, load the new transaction and the persistent 0xdead previous transaction
+const vm7 = new Hdlt_vm({tx_prev: tx_self_rev.utxo, tx_new: tx_self_rev});
+
+// (the VM rejects it)
+console.log(vm7.exec())

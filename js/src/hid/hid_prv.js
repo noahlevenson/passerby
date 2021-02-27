@@ -9,19 +9,15 @@
 
 "use strict";
 
-const { Happ_env } = require("../happ/happ_env.js");
-const { Hutil } = require("../hutil/hutil.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
-
 class Hid_prv {
-	_pk;
+	pk;
 
 	constructor({privkey = null} = {}) {
-		this._pk = privkey
+		this.pk = privkey
 	}
 
-	get_private_key() {
-		return this._pk;
+	get_privkey() {
+		return this.pk;
 	}
 }
 

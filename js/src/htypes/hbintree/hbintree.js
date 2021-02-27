@@ -1,7 +1,7 @@
 /** 
 * HBINTREE
-* Class for a binary tree
-*
+* Generalized binary tree, with operations
+* to support BSTs and Merkle trees
 * 
 *
 *
@@ -10,12 +10,38 @@
 "use strict";
 
 const { Hbintree_node } = require("./hbintree_node.js");
+const { Hutil } = require("../../hutil/hutil.js");
 
 class Hbintree {
 	root;
 
 	constructor(root = null) {
 		this.root = root;
+	}
+
+	// Build a Merkle tree from an array of hashes (as strings)
+	static build_merkle(hashes) {
+		const q = hashes.map(hash => new Hbintree_node({data: hash})); // Leaf nodes
+
+		while (q.length > 0) {
+			const node = q.shift();
+			const sibling = q.length > 0 ? q.shift() : node;
+
+			const parent = new Hbintree_node({
+				data: Hutil._sha256(`${node.data}${sibling.data}`), 
+				left: node, 
+				right: sibling !== node ? sibling : null
+			});
+
+			node.parent = parent;
+			sibling.parent = parent;
+
+			if (q.length > 0) {
+				q.push(parent);
+			} else {
+				return new this(parent);
+			}
+		}
 	}
 
 	get_root() {
