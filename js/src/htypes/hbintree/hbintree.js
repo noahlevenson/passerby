@@ -19,27 +19,29 @@ class Hbintree {
 		this.root = root;
 	}
 
-	// Build a Merkle tree from an array of hashes (as strings)
+	// Factory function to build a Merkle tree from an array of hashes (as strings)
 	static build_merkle(hashes) {
 		const q = hashes.map(hash => new Hbintree_node({data: hash})); // Leaf nodes
 
 		while (q.length > 0) {
 			const node = q.shift();
-			const sibling = q.length > 0 ? q.shift() : node;
-
-			const parent = new Hbintree_node({
-				data: Hutil._sha256(`${node.data}${sibling.data}`), 
-				left: node, 
-				right: sibling !== node ? sibling : null
-			});
-
-			node.parent = parent;
-			sibling.parent = parent;
-
+			let sibling = node;
+			node.set_parent(new Hbintree_node());
+			
+			// TODO: can Merkles be non-perfect? if false here, present node will only have a left child
 			if (q.length > 0) {
-				q.push(parent);
+				sibling = q.shift();
+				sibling.set_parent(node.parent);
+				node.parent.set_right(sibling); 
+			}
+
+			node.get_parent().set_data(Hutil._sha256(`${node.data}${sibling.data}`));
+			node.get_parent().set_left(node);
+	
+			if (q.length > 0) {
+				q.push(node.parent);
 			} else {
-				return new this(parent);
+				return new this(node.parent);
 			}
 		}
 	}
