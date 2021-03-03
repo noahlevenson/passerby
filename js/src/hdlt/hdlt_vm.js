@@ -51,7 +51,7 @@ class Hdlt_vm {
 		this.program = this.preproc();
 	}
 
-	// Create a the preimage for a signature for tx_new as prescribed by the OP_CHECKSIG instruction
+	// Create the preimage for a signature for tx_new as prescribed by the OP_CHECKSIG instruction
 	// tx_prev is the transaction corresponding to tx_new's utxo
 	static make_sig_preimage(tx_prev, tx_new) {
 		const tsact = new Hdlt_tsact({

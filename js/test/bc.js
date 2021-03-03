@@ -3,6 +3,7 @@ const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../src/hdlt/hdlt_vm.js");
+const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 // The blockchain is just a list of transactions
 const bc = [];
@@ -244,3 +245,13 @@ const vm7 = new Hdlt_vm({tx_prev: tx_self_rev.utxo, tx_new: tx_self_rev});
 
 // (the VM rejects it)
 console.log(vm7.exec())
+
+// ***
+
+// Just for fun, put the transactions in the db into a block
+
+const genesis = {hash_prev: 0x0, hash_merkle_root: 0x0, nonce: 0x0, tsacts: []};
+
+const block1 = new Hdlt_block({prev_block: genesis, tsacts: Array.from(utxo_db.values())});
+
+console.log(block1);

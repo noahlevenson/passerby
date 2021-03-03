@@ -10,10 +10,13 @@
 "use strict";
 
 const { Happ } = require("../happ/happ.js");
+const { Hdlt } = require("../hdlt/hdlt.js");
 const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../hdlt/hdlt_vm.js");
+const { Hdlt_block } = require("../hdlt/hdlt_block.js");
 
-// The keyserver is an application layer built atop HDLT which provides some simple functionality:
+// The keyserver is an application layer built atop HDLT which provides a distributed database 
+// of public keys and a record of relationships between keys in the form of signatures:
 // A peer signs another peer's key by spending a persistent token, SIG_TOK; all peers may spend
 // SIG_TOK exactly once for every other peer known to the keyserver. A peer registers his new
 // key with the keyserver by signing his own key. Peers may revoke their signatures, except
@@ -26,10 +29,20 @@ class Hksrv {
 	static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
-	static UTXO_DB = new Map();
+	static AUTHORITIES = [];
+	
+	utxo_db;
+	dlt;
 	
 	constructor () {
+		const tok = new Hdlt_tsact({
+			utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
+			lock: [Hdlt_vm.OPCODE.OP_NOOP], 
+			unlock: [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS]
+		})
 
+		this.utxo_db = new Map([[Hksrv.SIG_TOK, tok]]);
+		this.dlt = new Hdlt({consensus: Hdlt.CONSENSUS_METHOD.AUTH, args: [...Hksrv.AUTHORITIES]});
 	}
 
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
@@ -91,6 +104,37 @@ class Hksrv {
 		const sig = Happ.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.get_privkey());
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH1, sig.length, ...Array.from(sig)] // push1, len, sig
 		return tsact;
+	}
+
+	// Compute the state of the utxo db from an array of blocks
+	// start = 1 will compute state transitions starting from the genesis block
+	// Returns null on success, or a ref to the first block that failed integrity check
+	compute_db(blocks, start = 1) {
+		for (let i = start; i < blocks.length; i += 1) {
+			if (!this.dlt.is_valid_block(blocks[i])) {
+				this.utxo_db.clear();
+				return blocks[i];
+			}
+
+			blocks[i].tsacts.forEach((tsact) => {
+				const vm = new Hdlt_vm({tx_prev: utxo_db.get(tsact.utxo), tx_new: tsact});
+
+				// For this application, no transaction should have an exit value of 0
+				if (!vm.exec()) {
+					return blocks[i];
+				}
+				
+				if (tsact.utxo === Hksrv.SIG_TOK) {
+					// We add the new transaction to the db unless it's a revocation - any spend of a non-SIG_TOK utxo is a revocation
+					this.utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)), tsact);
+				} else {
+					// Only delete the utxo from the db if it's not SIG_TOK!
+					this.utxo_db.delete(tsact.utxo);
+				}			
+			});
+		}
+
+		return null;
 	}
 }
 

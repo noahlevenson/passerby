@@ -19,9 +19,9 @@ class Hbintree {
 		this.root = root;
 	}
 
-	// Factory function to build a Merkle tree from an array of hashes (as strings)
-	static build_merkle(hashes) {
-		const q = hashes.map(hash => new Hbintree_node({data: hash})); // Leaf nodes
+	// Factory function to build a Merkle tree from an array of data as strings
+	static build_merkle(data) {
+		const q = data.map(d => new Hbintree_node({data: Hutil._sha256(d)})); // Leaf nodes
 
 		while (q.length > 0) {
 			const node = q.shift();
