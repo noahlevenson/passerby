@@ -29,12 +29,11 @@ class Hksrv {
 	static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
-	static AUTHORITIES = [];
 	
 	utxo_db;
 	dlt;
 	
-	constructor () {
+	constructor ({app_id, authorities = []} = {}) {
 		const tok = new Hdlt_tsact({
 			utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
 			lock: [Hdlt_vm.OPCODE.OP_NOOP], 
@@ -42,11 +41,16 @@ class Hksrv {
 		})
 
 		this.utxo_db = new Map([[Hksrv.SIG_TOK, tok]]);
-		this.dlt = new Hdlt({consensus: Hdlt.CONSENSUS_METHOD.AUTH, args: [...Hksrv.AUTHORITIES]});
+		
+		this.dlt = new Hdlt({
+			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
+			args: [...authorities], 
+			app_id: app_id
+		});
 	}
 
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
-	static sign(peer_a, peer_b, check_db = true) {
+	sign(peer_a, peer_b, check_db = true) {
 		const nonce = Array.from(Buffer.from(peer_a.nonce, "hex"));
 		const peer_a_pubkey = Array.from(Buffer.from(peer_a.pubkey, "hex"));
 		const peer_b_pubkey = Array.from(Buffer.from(peer_b.pubkey, "hex"));
@@ -78,7 +82,7 @@ class Hksrv {
 		});	
 
 		// If this tsact already exists in the db, it means that peer_a has already spent SIG_TOK on peer_b
-		if (check_db && Hksrv.UTXO_DB.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)))) {
+		if (check_db && this.utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)))) {
 			return null;
 		}
 
@@ -86,12 +90,12 @@ class Hksrv {
 	}
 
 	// Create a revocation transaction: peer_a revokes SIG_TOK from peer_b
-	static revoke(peer_a, peer_a_prv, peer_b) {
+	revoke(peer_a, peer_a_prv, peer_b) {
 		const prev_tsact = Hksrv.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
 		// If the original tsact doesn't exist in the db, then peer_a hasn't signed peer_b
-		if (!Hksrv.UTXO_DB.has(utxo)) {
+		if (!this.utxo_db.has(utxo)) {
 			return null;
 		}
 
@@ -106,18 +110,18 @@ class Hksrv {
 		return tsact;
 	}
 
-	// Compute the state of the utxo db from an array of blocks
+	// Compute the state of the utxo db from our DLT's array of blocks
 	// start = 1 will compute state transitions starting from the genesis block
 	// Returns null on success, or a ref to the first block that failed integrity check
-	compute_db(blocks, start = 1) {
-		for (let i = start; i < blocks.length; i += 1) {
-			if (!this.dlt.is_valid_block(blocks[i])) {
+	compute_db(start = 1) {
+		for (let i = start; i < this.dlt.blocks.length; i += 1) {
+			if (!this.dlt.is_valid_block(i)) {
 				this.utxo_db.clear();
 				return blocks[i];
 			}
 
-			blocks[i].tsacts.forEach((tsact) => {
-				const vm = new Hdlt_vm({tx_prev: utxo_db.get(tsact.utxo), tx_new: tsact});
+			this.dlt.blocks[i].tsacts.forEach((tsact) => {
+				const vm = new Hdlt_vm({tx_prev: this.utxo_db.get(tsact.utxo), tx_new: tsact});
 
 				// For this application, no transaction should have an exit value of 0
 				if (!vm.exec()) {
