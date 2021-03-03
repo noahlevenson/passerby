@@ -24,7 +24,7 @@ class Hdlt {
 	};
 
 	NONCE_INTEGRITY = new Map([
-		[Hdlt.CONSENSUS_METHOD.AUTH, _nonce_auth]
+		[Hdlt.CONSENSUS_METHOD.AUTH, _verify_nonce_auth]
 	]);
 
 	consensus;
@@ -40,7 +40,7 @@ class Hdlt {
 	// Determine the integrity of a block in our array
 	// Integrity is two checks: the block's hash_prev must match the hash
 	// of the previous block, and its nonce must pass the integrity check
-	// prescribed by this HDLT instance's consensus method
+	// prescribed by the consensus method associated with this instance of HDLT
 	is_valid_block(idx = 1) {
 		const hash_check = Hdlt_block.sha256(this.blocks[idx - 1]) === this.blocks[idx].hash_prev;
 		const nonce_check = this.NONCE_INTEGRITY.get(this.consensus).bind(this)(block);
@@ -52,11 +52,15 @@ class Hdlt {
 		return false;
 	}
 
-	// For proof of authority, the nonce must be a signature over the hash of the block
-	// provided by one of the authorities listed in args
-	_nonce_auth(block) {
-		// TODO: this is linear search through the pubkeys in args :(
-		return this.args.some(arg => Happ.verify(Hdlt_block.sha256(block), Buffer.from(arg, "hex"), block.nonce));
+	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
+	// where block.nonce is replaced with the signer's public key
+	_make_nonce_auth(block, pubkey, privkey) {
+		return Happ.sign(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), privkey);
+	}
+
+	// TODO: this is linear search through the pubkeys in args :(
+	_verify_nonce_auth(block) {
+		return this.args.some(arg => Happ.verify(Hdlt_block.sha256(Object.assign(block, {nonce: arg})), Buffer.from(arg, "hex"), block.nonce));
 	}
 }
 
