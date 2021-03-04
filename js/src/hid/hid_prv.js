@@ -21,4 +21,4 @@ class Hid_prv {
 	}
 }
 
-module.exports.Hid_prv = Hid_priv;
+module.exports.Hid_prv = Hid_prv;

@@ -91,7 +91,7 @@ class Hksrv {
 
 	// Create a revocation transaction: peer_a revokes SIG_TOK from peer_b
 	revoke(peer_a, peer_a_prv, peer_b) {
-		const prev_tsact = Hksrv.sign(peer_a, peer_b, false);
+		const prev_tsact = this.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
 		// If the original tsact doesn't exist in the db, then peer_a hasn't signed peer_b

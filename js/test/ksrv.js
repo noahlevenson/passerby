@@ -1,6 +1,7 @@
 const { Happ } = require("../src/happ/happ.js");
 const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
+const { Hid_prv } = require("../src/hid/hid_prv.js");
 const { Hdlt } = require("../src/hdlt/hdlt.js");
 const { Hksrv } = require("../src/hksrv/hksrv.js");
 const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
@@ -23,7 +24,7 @@ function makepeer(i = 0) {
 
 	return {
 		hid_pub: hid,
-		private_key: kp.privateKey
+		hid_prv: new Hid_prv({privkey: kp.privateKey})
 	}
 }
 
@@ -46,10 +47,10 @@ const peer_3 = makepeer(3);
 // Peer 2 signs peer 3
 const tx_new_1 = ks.sign(peer_2.hid_pub, peer_3.hid_pub);
 
-// Here's where peer 2 would broadcast their new transaction to the network
+// Here's where peer 2 would broadcast their new signature transaction to the network
 // authority peer 0 receives it, verifies it, puts it in a block, signs it
 const new_block_1 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_1]});
-new_block_1.nonce = Hdlt.make_nonce_auth(new_block_1, peer_0.hid_pub.pubkey, peer_0.private_key);
+new_block_1.nonce = Hdlt.make_nonce_auth(new_block_1, peer_0.hid_pub.pubkey, peer_0.hid_prv.get_privkey());
 
 // Here's where peer 0 would broadcast their new block back to the network
 // peer 2 receives it, confirms that it's the block which follows
@@ -63,7 +64,7 @@ ks.dlt.blocks.push(new_block_1);
 
 // Adversary test: peer 3 tries to pretend he's an authority and creates a signed block
 const bad_block_1 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_1]});
-bad_block_1.nonce = Hdlt.make_nonce_auth(bad_block_1, peer_3.hid_pub.pubkey, peer_3.private_key);
+bad_block_1.nonce = Hdlt.make_nonce_auth(bad_block_1, peer_3.hid_pub.pubkey, peer_3.hid_prv.get_privkey());
 
 // It doesn't pass nonce integrity check
 console.log(ks.dlt.verify_nonce(bad_block_1));
@@ -77,13 +78,40 @@ console.log(ks.utxo_db);
 const tx_new_2 = ks.sign(peer_2.hid_pub, peer_3.hid_pub);
 console.log(tx_new_2);
 
+// Peer 2 signs peer 0
+const tx_new_3 = ks.sign(peer_2.hid_pub, peer_0.hid_pub);
+console.log(tx_new_3);
 
+// Peer 2 revokes his signature from peer 3
+const tx_rev_1 = ks.revoke(peer_2.hid_pub, peer_2.hid_prv, peer_3.hid_pub);
+console.log(tx_rev_1);
+
+// Here's where peer 2 would broadcast their two new transactions to the network
+// authority peer 1 receives them, verifies them, puts em in a block and signs it
+const new_block_2 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_3, tx_rev_1]});
+new_block_2.nonce = Hdlt.make_nonce_auth(new_block_2, peer_1.hid_pub.pubkey, peer_1.hid_prv.get_privkey());
+
+if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_2.hash_prev) {
+	throw new Error("The new block ain't it bro");
+}
+
+console.log(ks.dlt.verify_nonce(new_block_2));
+ks.dlt.blocks.push(new_block_2);
+
+// Again peer 2 computes the state of the utxo db (null indicates success)
+console.log(ks.compute_db());
+console.log(ks.utxo_db);
+
+// Peer 2 tries to revoke his signature from peer 3 again
+// (His client rejects it)
+const tx_rev_2 = ks.revoke(peer_2.hid_pub, peer_2.hid_prv, peer_3.hid_pub);
+console.log(tx_rev_2);
 
 // Tests:
-// 1. spend SIG_TOK on a peer --DONE
-// 2. try to double spend SIG_TOK on a peer (should fail)
-// 3. spend SIG_TOK on a different peer
-// 4. revoke SIG_TOK from a peer
-// 5. double-revoke SIG_TOK from a peer (should fail)
+// 1. spend SIG_TOK on a peer -- DONE
+// 2. try to double spend SIG_TOK on a peer (should fail) -- DONE
+// 3. spend SIG_TOK on a different peer -- DONE
+// 4. revoke SIG_TOK from a peer -- DONE
+// 5. double-revoke SIG_TOK from a peer (should fail) -- DONE
 // 6. after revocation, re-spend SIG_TOK on the peer
 // 7. revoke self-signature (should fail)
