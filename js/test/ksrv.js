@@ -107,11 +107,53 @@ console.log(ks.utxo_db);
 const tx_rev_2 = ks.revoke(peer_2.hid_pub, peer_2.hid_prv, peer_3.hid_pub);
 console.log(tx_rev_2);
 
+// Peer 2 changes his mind and signs peer 3 again
+const tx_new_4 = ks.sign(peer_2.hid_pub, peer_3.hid_pub);
+console.log(tx_new_4);
+
+// Here's where peer 2 would broadcast his new transaction to the network
+// authority peer 1 receives it, verifies it, puts it in a block and signs it
+const new_block_3 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_4]});
+new_block_3.nonce = Hdlt.make_nonce_auth(new_block_3, peer_1.hid_pub.pubkey, peer_1.hid_prv.get_privkey());
+
+if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_3.hash_prev) {
+	throw new Error("The new block ain't it bro");
+}
+
+console.log(ks.dlt.verify_nonce(new_block_3));
+ks.dlt.blocks.push(new_block_3)
+
+// Again peer 2 computes the state of the utxo db (null indicates success)
+console.log(ks.compute_db());
+console.log(ks.utxo_db);
+
+// Peer 2 signs his own key
+const tx_new_5 = ks.sign(peer_2.hid_pub, peer_2.hid_pub);
+console.log(tx_new_5);
+
+// Here's where peer 2 would broadcast his new transaction to the network
+// authority peer 0 receives it, verifies it, puts it in a block and signs it
+const new_block_4 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_5]});
+new_block_4.nonce = Hdlt.make_nonce_auth(new_block_4, peer_0.hid_pub.pubkey, peer_0.hid_prv.get_privkey());
+
+if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_4.hash_prev) {
+	throw new Error("The new block ain't it bro");
+}
+
+console.log(ks.dlt.verify_nonce(new_block_4));
+ks.dlt.blocks.push(new_block_4);
+
+// Peer 2 tries to revoke his own signature
+// (His client rejects it)
+const tx_rev_3 = ks.revoke(peer_2.hid_pub, peer_2.hid_prv, peer_2.hid_pub);
+console.log(tx_rev_3);
+
+
 // Tests:
 // 1. spend SIG_TOK on a peer -- DONE
 // 2. try to double spend SIG_TOK on a peer (should fail) -- DONE
 // 3. spend SIG_TOK on a different peer -- DONE
 // 4. revoke SIG_TOK from a peer -- DONE
 // 5. double-revoke SIG_TOK from a peer (should fail) -- DONE
-// 6. after revocation, re-spend SIG_TOK on the peer
-// 7. revoke self-signature (should fail)
+// 6. after revocation, re-spend SIG_TOK on the peer -- DONE
+// 7. revoke self-signature (should fail) -- DONE
