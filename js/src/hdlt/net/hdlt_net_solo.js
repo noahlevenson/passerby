@@ -43,7 +43,7 @@ class Hdlt_net_solo extends Hdlt_net {
 	// in the same way as HTRANS_UDP, and we lose all the generality...
 	_on_message(htrans_msg, rinfo) {
 		try {
-			if (htrans_msg.type === Htrans_msg.TYPE.HDLT && htrans_msg.msg.app_id = this.app_id) {
+			if (htrans_msg.type === Htrans_msg.TYPE.HDLT && htrans_msg.msg.app_id === this.app_id) {
 				const msg = new Hdlt_msg(htrans_msg.msg);
 				this._in(msg, rinfo);
 			}
