@@ -48,12 +48,12 @@ class Hksrv {
 
 	start() {
 		this.dlt.start();
-		Hlog.log(`[HKSRV] (${this.dlt.app_id}) Online`);
+		Hlog.log(`[HKSRV] (${this.dlt.net.app_id}) Online`);
 	}
 
 	stop() {
 		this.dlt.stop();
-		Hlog.log(`[HKSRV] (${this.dlt.app_id}) Offline`);
+		Hlog.log(`[HKSRV] (${this.dlt.net.app_id}) Offline`);
 	}
 
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
