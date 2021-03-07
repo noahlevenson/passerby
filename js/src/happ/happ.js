@@ -25,6 +25,7 @@ const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
 const { Hdlt } = require("../hdlt/hdlt.js");
 const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
+const { Hksrv } = require("../hksrv/hksrv.js"); 
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_ffment } = require("../hbuy/hbuy_ffment.js");
 const { Hbuy_status } = require("../hbuy/hbuy_status.js");
