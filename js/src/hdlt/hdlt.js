@@ -16,6 +16,7 @@ const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hdlt_net } = require("./net/hdlt_net.js");
 const { Hdlt_msg } = require("./hdlt_msg.js");
 const { Hdlt_block } = require("./hdlt_block.js");
+const { Hlog } = require("../hlog/hlog.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
 // blocks, transactions, validation, the VM, messaging, and consensus
