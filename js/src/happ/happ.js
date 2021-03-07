@@ -23,6 +23,8 @@ const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
 const { Hpht } = require("../hpht/hpht.js");
 const { Hstun } = require("../hstun/hstun.js");
 const { Hstun_net_solo } = require("../hstun/net/hstun_net_solo.js");
+const { Hdlt } = require("../hdlt/hdlt.js");
+const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
 const { Hbuy } = require("../hbuy/hbuy.js");
 const { Hbuy_ffment } = require("../hbuy/hbuy_ffment.js");
 const { Hbuy_status } = require("../hbuy/hbuy_status.js");
@@ -64,6 +66,7 @@ class Happ {
 	hid;
 	hpht;
 	hbuy;
+	hksrv;
 	node;
     trans;
 	keepalive;
@@ -425,6 +428,18 @@ class Happ {
 
 		// Idempotently initialize the PHT
 		await this.hpht.init();
+
+		// Create and start the default HKSRV interface
+		const ksrv_dlt = new Hdlt({
+			net: new Hdlt_net_solo(happ_udp_trans),
+			hkad: peer_node,
+			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
+			args: [], // TODO: add the authorities!
+			app_id: "keyserver1"
+		});
+
+		this.hksrv = new Hksrv({dlt: ksrv_dlt});
+		this.hksrv.start();
 
 		// Create and start an HBUY interface
 		const happ_hbuy_net = new Hbuy_net_solo(happ_udp_trans);

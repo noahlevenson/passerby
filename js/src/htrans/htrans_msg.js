@@ -16,7 +16,8 @@ class Htrans_msg {
 		HKAD: 0,
 		HSTUN: 1,
 		HBUY: 2,
-		ACK: 3
+		HDLT: 3,
+		ACK: 4,
 	};
 
 	msg;

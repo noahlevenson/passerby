@@ -57,10 +57,10 @@ const { Larosa_menu } = require("./menu.js");
     // console.log(search_res);
 
 
-    const res = await network.get_local_resources();
+    // const res = await network.get_local_resources();
 
-    console.log("FINAL FINAL")
-    console.log(res);
+    // console.log("FINAL FINAL")
+    // console.log(res);
 
 
     // const rehydrated = new Hbuy_menu(search_res[0][1].form);

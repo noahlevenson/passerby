@@ -2,16 +2,19 @@
 * HDLT
 * A generalized distributed ledger, built atop a
 * stack-based virtual machine, for managing arbitrary
-* contracts
+* contracts. HDLT uses HKAD for peer discovery
 *
 *
 */ 
 
 "use strict";
 
+const EventEmitter = require("events");
 const { Happ } = require("../happ/happ.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
+const { Hdlt_net } = require("./net/hdlt_net.js");
+const { Hdlt_msg } = require("./hdlt_msg.js");
 const { Hdlt_block } = require("./hdlt_block.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
@@ -21,6 +24,8 @@ const { Hdlt_block } = require("./hdlt_block.js");
 // responsibility of the application layer
 
 class Hdlt {
+	static MSG_TIMEOUT = 5000;
+
 	static GENESIS = {
 		hash_prev: 0x00,
 		hash_merkle_root: 0x00,
@@ -36,20 +41,34 @@ class Hdlt {
 		[Hdlt.CONSENSUS_METHOD.AUTH, this._verify_nonce_auth]
 	]);
 
+	FLAVOR_RES_EXEC = new Map([
+		
+	]);
+
+	net;
+	hkad;
 	consensus;
 	args;
 	blocks;
 	app_id;
+	res;
 
-	constructor ({consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = new Hntree(new Hntree_node({data: Hdlt.GENESIS})), app_id} = {}) {
+	constructor ({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = new Hntree(new Hntree_node({data: Hdlt.GENESIS})), app_id} = {}) {
 		if (!app_id) {
 			throw new Error("app_id must be a string");
 		}
 
+		if (!(net instanceof Hdlt_net)) {
+			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
+		}
+
+		this.net = net;
+		this.hkad = hkad;
 		this.consensus = consensus;
 		this.args = args;
 		this.blocks = blocks;
 		this.app_id = app_id;
+		this.res = new EventEmitter();
 	}
 
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
@@ -95,6 +114,59 @@ class Hdlt {
 			const data = Buffer.from(Hdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
 			return Happ.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
 		});
+	}
+
+	start() {
+		this.net.network.on("message", this._on_message.bind(this));
+		Hlog.log(`[HDLT] (${this.app_id}) Online`);
+	}
+
+	stop() {
+		this.net.network.removeListener("message", this._on_message.bind(this));
+		Hlog.log(`[HDLT] (${this.app_id}) Offline`);
+	}
+
+	_on_message(msg, rinfo) {
+		if (msg.type === Hdlt_msg.TYPE.RES) {
+			Hlog.log(`[HDLT] (${this.app_id}) ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} OK`);
+			this.res.emit(msg.id.toString(), msg);
+		} else {
+			this._on_req(msg, rinfo);
+		}
+	}
+
+	_on_req(msg, rinfo) {
+		Hlog.log(`[HDLT] (${this.app_id}) Inbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
+		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
+		this._send(res, rinfo.address, rinfo.port);
+	}
+
+	_send(msg, addr, port, success, timeout) {
+		if (msg.type === Hdlt_msg.TYPE.REQ) {
+			const outgoing = new Promise((resolve, reject) => {
+				const timeout_id = setTimeout(() => {
+					this.res.removeAllListeners(msg.id.toString());
+					reject();
+				}, Hdlt.MSG_TIMEOUT);
+
+				this.res.once(msg.id.toString(), (res_msg) => {
+					clearTimeout(timeout_id);
+
+					if (typeof success === "function") {
+						success(res_msg, this);
+					}
+
+					resolve();
+				});
+			}).catch((reason) => {
+				if (typeof timeout === "function") {
+					timeout(msg);
+				}
+			});
+		}	
+
+		Hlog.log(`[HDLT] (${this.app_id}) Outbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hdlt_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} to ${addr}:${port}`);
+		this.net._out(msg, {address: addr, port: port});	
 	}
 }
 

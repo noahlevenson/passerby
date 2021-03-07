@@ -11,6 +11,7 @@
 
 const { Happ } = require("../happ/happ.js");
 const { Hdlt } = require("../hdlt/hdlt.js");
+const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
 const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../hdlt/hdlt_vm.js");
 const { Hdlt_block } = require("../hdlt/hdlt_block.js");
@@ -33,7 +34,7 @@ class Hksrv {
 	utxo_db;
 	dlt;
 	
-	constructor ({app_id, authorities = []} = {}) {
+	constructor ({dlt} = {}) {
 		const tok = new Hdlt_tsact({
 			utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
 			lock: [Hdlt_vm.OPCODE.OP_NOOP], 
@@ -41,12 +42,17 @@ class Hksrv {
 		})
 
 		this.utxo_db = new Map([[Hksrv.SIG_TOK, tok]]);
-		
-		this.dlt = new Hdlt({
-			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
-			args: [...authorities], 
-			app_id: app_id
-		});
+		this.dlt = dlt;
+	}
+
+	start() {
+		this.dlt.start();
+		Hlog.log(`[HKSRV] (${this.dlt.app_id}) Online`);
+	}
+
+	stop() {
+		this.dlt.stop();
+		Hlog.log(`[HKSRV] (${this.dlt.app_id}) Offline`);
 	}
 
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
