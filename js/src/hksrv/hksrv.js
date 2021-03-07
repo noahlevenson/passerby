@@ -110,22 +110,32 @@ class Hksrv {
 		return tsact;
 	}
 
-	// Compute the state of the utxo db from our DLT's array of blocks
-	// start = 1 will compute state transitions starting from the genesis block
-	// Returns null on success, or a ref to the first block that failed integrity check
-	compute_db(start = 1) {
-		for (let i = start; i < this.dlt.blocks.length; i += 1) {
-			if (!this.dlt.is_valid_block(i)) {
+	// Compute the state of the utxo db over the branch of blocks
+	// ending at last_node; returns null on success, or a ref to 
+	// the node containing the first block that failed integrity check
+	// TODO: it's O(n) to collect the branch and we don't yet
+	// have a way to compute only a portion of the branch...
+	compute_db(last_node) {
+		const branch = [];
+
+		while (last_node !== null) {
+			branch.unshift(last_node);
+			last_node = last_node.parent;
+		}
+
+		// Start at genesis block + 1
+		for (let i = 1; i < branch.length; i += 1) {
+			if (!this.dlt.is_valid_block(branch[i])) {
 				this.utxo_db.clear();
-				return blocks[i];
+				return branch[i];
 			}
 
-			this.dlt.blocks[i].tsacts.forEach((tsact) => {
+			branch[i].data.tsacts.forEach((tsact) => {
 				const vm = new Hdlt_vm({tx_prev: this.utxo_db.get(tsact.utxo), tx_new: tsact});
 
-				// For this application, no transaction should have an exit value of 0
+				// For the HKSRV application, no transaction should have an exit value of 0
 				if (!vm.exec()) {
-					return blocks[i];
+					return branch[i];
 				}
 				
 				if (tsact.utxo === Hksrv.SIG_TOK) {

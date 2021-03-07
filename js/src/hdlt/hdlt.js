@@ -10,6 +10,8 @@
 "use strict";
 
 const { Happ } = require("../happ/happ.js");
+const { Hntree } = require("../htypes/hntree/hntree.js");
+const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hdlt_block } = require("./hdlt_block.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
@@ -39,7 +41,7 @@ class Hdlt {
 	blocks;
 	app_id;
 
-	constructor ({consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = [Hdlt.GENESIS], app_id} = {}) {
+	constructor ({consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = new Hntree(new Hntree_node({data: Hdlt.GENESIS})), app_id} = {}) {
 		if (!app_id) {
 			throw new Error("app_id must be a string");
 		}
@@ -57,13 +59,24 @@ class Hdlt {
 		return Happ.sign(data, privkey).toString("hex");
 	}
 
-	// Determine the integrity of a block in our array
+	// Get the tree nodes corresponding to the deepest blocks in the tree
+	// in a tree where there is one longest branch, this will return one node
+	get_deepest_blocks() {
+		const pg = this.blocks.bfs((node, d, data) => {
+			data.push([node, d]);
+		});
+
+		const max_d = Math.max(...pg.map(pair => pair[1]));
+		return pg.filter(pair => pair[1] === max_d).map(pair => pair[0]);
+	}
+
+	// Determine the integrity of a block in a node in our tree
 	// Integrity is two checks: the block's hash_prev must match the hash
 	// of the previous block, and its nonce must pass the integrity check
 	// prescribed by the consensus method associated with this instance of HDLT
-	is_valid_block(idx = 1) {
-		const hash_check = Hdlt_block.sha256(this.blocks[idx - 1]) === this.blocks[idx].hash_prev;
-		const nonce_check = this.verify_nonce(this.blocks[idx]);
+	is_valid_block(node) {
+		const hash_check = Hdlt_block.sha256(node.parent.data) === node.data.hash_prev;
+		const nonce_check = this.verify_nonce(node.data);
 
 		if (hash_check && nonce_check) {
 			return true;

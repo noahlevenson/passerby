@@ -38,6 +38,10 @@ class Hdlt_block {
 
 	// Compute the SHA256 hash of a block
 	static sha256(block) {
+		if (block.hash_prev === undefined || block.hash_merkle_root === undefined || block.nonce === undefined) {
+			throw new Error("Debug warning - do not hash over undefined values!");
+		}
+
 		return Hutil._sha256(`${block.hash_prev}${block.hash_merkle_root}${block.nonce}`);
 	}
 }

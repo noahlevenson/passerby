@@ -1,4 +1,5 @@
 const { Happ } = require("../src/happ/happ.js");
+const { Hntree_node } = require("../src/htypes/hntree/hntree_node.js");
 const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Hid_prv } = require("../src/hid/hid_prv.js");
@@ -49,28 +50,29 @@ const tx_new_1 = ks.sign(peer_2.hid_pub, peer_3.hid_pub);
 
 // Here's where peer 2 would broadcast their new signature transaction to the network
 // authority peer 0 receives it, verifies it, puts it in a block, signs it
-const new_block_1 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_1]});
+const new_block_1 = new Hdlt_block({prev_block: ks.dlt.get_deepest_blocks()[0].data, tsacts: [tx_new_1]});
 new_block_1.nonce = Hdlt.make_nonce_auth(new_block_1, peer_0.hid_pub.pubkey, peer_0.hid_prv.get_privkey());
 
 // Here's where peer 0 would broadcast their new block back to the network
 // peer 2 receives it, confirms that it's the block which follows
 // our last block, verifies its nonce, and adds it to his chain
-if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_1.hash_prev) {
+if (Hdlt_block.sha256(ks.dlt.get_deepest_blocks()[0].data) !== new_block_1.hash_prev) {
 	throw new Error("The new block ain't it bro");
 }
 
 console.log(ks.dlt.verify_nonce(new_block_1));
-ks.dlt.blocks.push(new_block_1);
+const p1 = ks.dlt.get_deepest_blocks()[0];
+p1.add_child(new Hntree_node({data: new_block_1, parent: p1}));
 
 // Adversary test: peer 3 tries to pretend he's an authority and creates a signed block
-const bad_block_1 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_1]});
+const bad_block_1 = new Hdlt_block({prev_block: ks.dlt.get_deepest_blocks()[0].data, tsacts: [tx_new_1]});
 bad_block_1.nonce = Hdlt.make_nonce_auth(bad_block_1, peer_3.hid_pub.pubkey, peer_3.hid_prv.get_privkey());
 
 // It doesn't pass nonce integrity check
 console.log(ks.dlt.verify_nonce(bad_block_1));
 
 // Now peer 2 computes the state of the utxo db (null indicates success)
-console.log(ks.compute_db());
+console.log(ks.compute_db(ks.dlt.get_deepest_blocks()[0]));
 console.log(ks.utxo_db);
 
 // Peer 2 tries to sign peer 3 again
@@ -88,18 +90,19 @@ console.log(tx_rev_1);
 
 // Here's where peer 2 would broadcast their two new transactions to the network
 // authority peer 1 receives them, verifies them, puts em in a block and signs it
-const new_block_2 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_3, tx_rev_1]});
+const new_block_2 = new Hdlt_block({prev_block: ks.dlt.get_deepest_blocks()[0].data, tsacts: [tx_new_3, tx_rev_1]});
 new_block_2.nonce = Hdlt.make_nonce_auth(new_block_2, peer_1.hid_pub.pubkey, peer_1.hid_prv.get_privkey());
 
-if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_2.hash_prev) {
+if (Hdlt_block.sha256(ks.dlt.get_deepest_blocks()[0].data) !== new_block_2.hash_prev) {
 	throw new Error("The new block ain't it bro");
 }
 
 console.log(ks.dlt.verify_nonce(new_block_2));
-ks.dlt.blocks.push(new_block_2);
+const p2 = ks.dlt.get_deepest_blocks()[0];
+p2.add_child(new Hntree_node({data: new_block_2, parent: p2}));
 
 // Again peer 2 computes the state of the utxo db (null indicates success)
-console.log(ks.compute_db());
+console.log(ks.compute_db(ks.dlt.get_deepest_blocks()[0]));
 console.log(ks.utxo_db);
 
 // Peer 2 tries to revoke his signature from peer 3 again
@@ -113,18 +116,19 @@ console.log(tx_new_4);
 
 // Here's where peer 2 would broadcast his new transaction to the network
 // authority peer 1 receives it, verifies it, puts it in a block and signs it
-const new_block_3 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_4]});
+const new_block_3 = new Hdlt_block({prev_block: ks.dlt.get_deepest_blocks()[0].data, tsacts: [tx_new_4]});
 new_block_3.nonce = Hdlt.make_nonce_auth(new_block_3, peer_1.hid_pub.pubkey, peer_1.hid_prv.get_privkey());
 
-if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_3.hash_prev) {
+if (Hdlt_block.sha256(ks.dlt.get_deepest_blocks()[0].data) !== new_block_3.hash_prev) {
 	throw new Error("The new block ain't it bro");
 }
 
 console.log(ks.dlt.verify_nonce(new_block_3));
-ks.dlt.blocks.push(new_block_3)
+const p3 = ks.dlt.get_deepest_blocks()[0];
+p3.add_child(new Hntree_node({data: new_block_3, parent: p3}));
 
 // Again peer 2 computes the state of the utxo db (null indicates success)
-console.log(ks.compute_db());
+console.log(ks.compute_db(ks.dlt.get_deepest_blocks()[0]));
 console.log(ks.utxo_db);
 
 // Peer 2 signs his own key
@@ -133,21 +137,21 @@ console.log(tx_new_5);
 
 // Here's where peer 2 would broadcast his new transaction to the network
 // authority peer 0 receives it, verifies it, puts it in a block and signs it
-const new_block_4 = new Hdlt_block({prev_block: ks.dlt.blocks[ks.dlt.blocks.length - 1], tsacts: [tx_new_5]});
+const new_block_4 = new Hdlt_block({prev_block: ks.dlt.get_deepest_blocks()[0].data, tsacts: [tx_new_5]});
 new_block_4.nonce = Hdlt.make_nonce_auth(new_block_4, peer_0.hid_pub.pubkey, peer_0.hid_prv.get_privkey());
 
-if (Hdlt_block.sha256(ks.dlt.blocks[ks.dlt.blocks.length - 1]) !== new_block_4.hash_prev) {
+if (Hdlt_block.sha256(ks.dlt.get_deepest_blocks()[0].data) !== new_block_4.hash_prev) {
 	throw new Error("The new block ain't it bro");
 }
 
 console.log(ks.dlt.verify_nonce(new_block_4));
-ks.dlt.blocks.push(new_block_4);
+const p4 = ks.dlt.get_deepest_blocks()[0];
+p4.add_child(new Hntree_node({data: new_block_4, parent: p4}));
 
 // Peer 2 tries to revoke his own signature
 // (His client rejects it)
 const tx_rev_3 = ks.revoke(peer_2.hid_pub, peer_2.hid_prv, peer_2.hid_pub);
 console.log(tx_rev_3);
-
 
 // Tests:
 // 1. spend SIG_TOK on a peer -- DONE
