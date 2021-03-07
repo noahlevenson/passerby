@@ -17,18 +17,27 @@ class Hdlt_msg {
 		RES: 1
 	};
 
+	// Our messages are similar to Bitcoin, but we currently use them in a mostly unsolicited
+	// fashion - nodes just broadcast blocks as TX and BLOCK messages without first sending
+	// an INV. INV is only used in response to a GETBLOCKS so that block requesters can 
+	// iteratively request blocks, throttling their requests
 	static FLAVOR = {
-		// TODO: what do we need? inv, getblocks, tx...?
+		TX: 0,
+		BLOCK: 1,
+		GETBLOCKS: 2,
+		GETDATA: 3,
+		INV: 4
 	};
 
+	data;
 	type;
 	flavor;
 	app_id;
 	id;
 
-	constructor({type = null, flavor = null, app_id = null, id = null} = {}) {
+	constructor({data = null, type = null, flavor = null, app_id = null, id = null} = {}) {
 		// Mostly for sanity during development: explicitly require values 
-		if (type === null || flavor === null || app_id === null || id === null) {
+		if (data === null || type === null || flavor === null || app_id === null || id === null) {
 			throw new Error("Arguments cannot be null");
 		}
 
