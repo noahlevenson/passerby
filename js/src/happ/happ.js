@@ -44,6 +44,7 @@ const https = Happ_env.BROWSER ? null : require("https");
 class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
+	static KEYSERVER_APP_ID = "ks1";
 	static SEARCH_DIST_MILES = 2.0;
 	static T_NAT_KEEPALIVE = 20000;
 
@@ -431,10 +432,8 @@ class Happ {
 		await this.hpht.init();
 
 		// Create and start the default HKSRV interface
-		const app_id = "keyserver1";
-
 		const ksrv_dlt = new Hdlt({
-			net: new Hdlt_net_solo(happ_udp_trans, app_id),
+			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			args: [], // TODO: add the authorities!

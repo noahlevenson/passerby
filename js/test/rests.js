@@ -31,7 +31,8 @@ const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js");
 
     network.hksrv.dlt._send(new Hdlt_msg({
         type: Hdlt_msg.TYPE.REQ, 
-        flavor: 1, 
+        flavor: 1,
+        app_id: Happ.KEYSERVER_APP_ID,
         id: Hbigint.random(Hdlt_msg.ID_LEN)
     }), "66.228.34.29", 27500);
     
