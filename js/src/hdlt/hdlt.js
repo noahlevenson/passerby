@@ -51,14 +51,9 @@ class Hdlt {
 	consensus;
 	args;
 	blocks;
-	app_id;
 	res;
 
-	constructor ({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = new Hntree(new Hntree_node({data: Hdlt.GENESIS})), app_id} = {}) {
-		if (!app_id) {
-			throw new Error("app_id must be a string");
-		}
-
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = new Hntree(new Hntree_node({data: Hdlt.GENESIS}))} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -68,7 +63,6 @@ class Hdlt {
 		this.consensus = consensus;
 		this.args = args;
 		this.blocks = blocks;
-		this.app_id = app_id;
 		this.res = new EventEmitter();
 	}
 
@@ -119,17 +113,17 @@ class Hdlt {
 
 	start() {
 		this.net.network.on("message", this._on_message.bind(this));
-		Hlog.log(`[HDLT] (${this.app_id}) Online`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Online`);
 	}
 
 	stop() {
 		this.net.network.removeListener("message", this._on_message.bind(this));
-		Hlog.log(`[HDLT] (${this.app_id}) Offline`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Offline`);
 	}
 
 	_on_message(msg, rinfo) {
 		if (msg.type === Hdlt_msg.TYPE.RES) {
-			Hlog.log(`[HDLT] (${this.app_id}) ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} OK`);
+			Hlog.log(`[HDLT] (${this.net.app_id}) ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} OK`);
 			this.res.emit(msg.id.toString(), msg);
 		} else {
 			this._on_req(msg, rinfo);
@@ -137,7 +131,7 @@ class Hdlt {
 	}
 
 	_on_req(msg, rinfo) {
-		Hlog.log(`[HDLT] (${this.app_id}) Inbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
+		Hlog.log(`[HDLT] (${this.net.app_id}) Inbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
 		this._send(res, rinfo.address, rinfo.port);
 	}
@@ -166,7 +160,7 @@ class Hdlt {
 			});
 		}	
 
-		Hlog.log(`[HDLT] (${this.app_id}) Outbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hdlt_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} to ${addr}:${port}`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Outbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hdlt_msg.TYPE)[msg.type]} # ${msg.id.toString()} to ${addr}:${port}`);
 		this.net._out(msg, {address: addr, port: port});	
 	}
 }

@@ -23,16 +23,18 @@ class Hdlt_msg {
 
 	type;
 	flavor;
+	app_id;
 	id;
 
-	constructor({type = null, flavor = null, id = null} = {}) {
+	constructor({type = null, flavor = null, app_id = null, id = null} = {}) {
 		// Mostly for sanity during development: explicitly require values 
-		if (type === null || flavor === null || id === null) {
+		if (type === null || flavor === null || app_id === null || id === null) {
 			throw new Error("Arguments cannot be null");
 		}
 
 		this.type = type;
 		this.flavor = flavor;
+		this.app_id = app_id;
 		this.id = id;
 	}
 };

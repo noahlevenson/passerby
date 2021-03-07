@@ -431,12 +431,13 @@ class Happ {
 		await this.hpht.init();
 
 		// Create and start the default HKSRV interface
+		const app_id = "keyserver1";
+
 		const ksrv_dlt = new Hdlt({
-			net: new Hdlt_net_solo(happ_udp_trans),
+			net: new Hdlt_net_solo(happ_udp_trans, app_id),
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			args: [], // TODO: add the authorities!
-			app_id: "keyserver1"
 		});
 
 		this.hksrv = new Hksrv({dlt: ksrv_dlt});

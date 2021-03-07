@@ -14,7 +14,7 @@ const EventEmitter = require("events");
 class Hdlt_net {
 	network;
 
-	constructor() {
+	constructor(app_id) {
 		this.network = new EventEmitter();
 	}
 

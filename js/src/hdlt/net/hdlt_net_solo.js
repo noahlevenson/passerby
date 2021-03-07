@@ -16,16 +16,25 @@ const { Htrans_msg } = require("../../htrans/htrans_msg.js");
 
 class Hdlt_net_solo extends Hdlt_net {
 	trans;
+	app_id;
 
-	constructor(trans) {
+	// TODO: HDLT net modules require an app_id because we support multiple instances
+	// of HDLTs to provide mutliple services for HAPP - but we should prob make app_id
+	// part of the Hdlt_net base class, not subclasses?
+	constructor(trans, app_id) {
 		super();
 
 		if (!(trans instanceof Htrans)) {
 			throw new TypeError("Argument 'trans' must be instance of Htrans");
 		}
 
+		if (typeof app_id !== "string") {
+			throw new Error("You must provide an app_id");
+		}
+
 		this.trans = trans;
 		this.trans.network.on("message", this._on_message.bind(this));
+		this.app_id = app_id;
 	}
 
 	// Currently, HTRANS_UDP emits the rinfo object as a second argument. HKAD ignores it, and HSTUN and HBUY and HDLT listen for it...
@@ -34,7 +43,7 @@ class Hdlt_net_solo extends Hdlt_net {
 	// in the same way as HTRANS_UDP, and we lose all the generality...
 	_on_message(htrans_msg, rinfo) {
 		try {
-			if (htrans_msg.type === Htrans_msg.TYPE.HDLT) {
+			if (htrans_msg.type === Htrans_msg.TYPE.HDLT && htrans_msg.msg.app_id = this.app_id) {
 				const msg = new Hdlt_msg(htrans_msg.msg);
 				this._in(msg, rinfo);
 			}

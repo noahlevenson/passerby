@@ -14,6 +14,7 @@ const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
 const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
 const { Alvin_friends_dinner_menu } = require("./alvin_friends_dinner_menu.js");
 const { Rocnramen_menu } = require("./rocnramen_menu.js");
+const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js");
 
 (async function run() {
     const larosa = new Hid_pub({
@@ -27,6 +28,12 @@ const { Rocnramen_menu } = require("./rocnramen_menu.js");
 
     const network = new Happ({hid_pub: larosa});
     await network.start();
+
+    network.hksrv.dlt._send(new Hdlt_msg({
+        type: Hdlt_msg.TYPE.REQ, 
+        flavor: 1, 
+        id: Hbigint.random(Hdlt_msg.ID_LEN)
+    }), "66.228.34.29", 27500);
     
     // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu.freeze()}));
     
