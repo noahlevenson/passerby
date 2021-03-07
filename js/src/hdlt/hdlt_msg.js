@@ -41,6 +41,7 @@ class Hdlt_msg {
 			throw new Error("Arguments cannot be null");
 		}
 
+		this.data = data;
 		this.type = type;
 		this.flavor = flavor;
 		this.app_id = app_id;
