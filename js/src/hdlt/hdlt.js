@@ -154,6 +154,8 @@ class Hdlt {
 			data.push(Hdlt_block.sha256(node.data));
 		}, (node, data) => {}, this.store.get_node(req.data));
 
+		console.log(succ);
+
 		return new Hdlt_msg({
 			data: succ,
 			type: Hdlt_msg.TYPE.RES,
