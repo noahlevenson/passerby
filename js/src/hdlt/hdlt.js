@@ -10,12 +10,14 @@
 "use strict";
 
 const EventEmitter = require("events");
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hid } = require("../hid/hid.js");
 const { Hdlt_net } = require("./net/hdlt_net.js");
 const { Hdlt_msg } = require("./hdlt_msg.js");
 const { Hdlt_block } = require("./hdlt_block.js");
 const { Hdlt_store } = require("./hdlt_store.js");
 const { Hlog } = require("../hlog/hlog.js");
+const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
 // blocks, transactions, validation, the VM, messaging, and consensus
