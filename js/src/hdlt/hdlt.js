@@ -34,8 +34,9 @@ class Hdlt {
 		tsacts: []
 	};
 
+	// TODO: When using AUTH, pass a list of authorities' pubkeys as args
 	static CONSENSUS_METHOD = {
-		AUTH: 1 // When using AUTH, pass a list of pubkeys for authorities as args
+		AUTH: 1
 	};
 
 	NONCE_INTEGRITY = new Map([

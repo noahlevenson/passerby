@@ -4,6 +4,8 @@ const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Hid_prv } = require("../src/hid/hid_prv.js");
 const { Hdlt } = require("../src/hdlt/hdlt.js");
+const { Hdlt_net_solo } = require("../src/hdlt/net/hdlt_net_solo.js");
+const { Htrans_udp } = require("../src/htrans/trans/htrans_udp.js");
 const { Hksrv } = require("../src/hksrv/hksrv.js");
 const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
@@ -34,9 +36,13 @@ const peer_0 = makepeer();
 const peer_1 = makepeer(1);
 
 // Stand up a keyserver where peers 0 and 1 are the designated consensus authorities
+const dlt = new Hdlt({
+	net: new Hdlt_net_solo(new Htrans_udp(), "keyserver1"),
+	args: [peer_0.hid_pub.pubkey, peer_1.hid_pub.pubkey]
+});
+
 const ks = new Hksrv({
-	app_id: "keyserver1", 
-	authorities: [peer_0.hid_pub.pubkey, peer_1.hid_pub.pubkey]
+	dlt: dlt 
 });
 
 console.log(ks);
