@@ -44,7 +44,11 @@ class Hdlt {
 	]);
 
 	FLAVOR_RES_EXEC = new Map([
-		
+		[Hdlt_msg.FLAVOR.TX, this._res_tx],
+		[Hdlt_msg.FLAVOR.BLOCK, this._res_block],
+		[Hdlt_msg.FLAVOR.GETBLOCKS, this._res_getblocks],
+		[Hdlt_msg.FLAVOR.GETDATA, this._res_getdata],
+		[Hdlt_msg.FLAVOR.INV, this._res_inv]
 	]);
 
 	net;
@@ -129,6 +133,30 @@ class Hdlt {
 		} else {
 			this._on_req(msg, rinfo);
 		}
+	}
+
+	_res_tx(req, rinfo) {
+		// TODO: Handle the incoming transaction
+
+		return new Hdlt_msg({
+			data: "OK",
+			type: Hdlt_msg.TYPE.RES,
+			flavor: Hdlt_msg.FLAVOR.TX,
+			app_id: req.app_id,
+			id: req.id
+		});
+	}
+
+	_res_block(req, rinfo) {
+		// TODO: Handle the incoming block
+
+		return new Hdlt_msg({
+			data: "OK",
+			type: Hdlt_msg.TYPE.RES,
+			flavor: Hdlt_msg.FLAVOR.BLOCK,
+			app_id: req.app_id,
+			id: req.id
+		});
 	}
 
 	_on_req(msg, rinfo) {
