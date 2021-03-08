@@ -32,11 +32,12 @@ const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js");
     network.hksrv.dlt._send(new Hdlt_msg({
         data: "DEBUG",
         type: Hdlt_msg.TYPE.REQ, 
-        flavor: Hdlt_msg.FLAVOR.BLOCK,
+        flavor: Hdlt_msg.FLAVOR.TX,
         app_id: Happ.KEYSERVER_APP_ID,
         id: Hbigint.random(Hdlt_msg.ID_LEN)
     }), "66.228.34.29", 27500);
     
+    // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 
     // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu.freeze()}));
     

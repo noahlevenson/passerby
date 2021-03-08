@@ -11,11 +11,10 @@
 
 const EventEmitter = require("events");
 const { Hid } = require("../hid/hid.js");
-const { Hntree } = require("../htypes/hntree/hntree.js");
-const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hdlt_net } = require("./net/hdlt_net.js");
 const { Hdlt_msg } = require("./hdlt_msg.js");
 const { Hdlt_block } = require("./hdlt_block.js");
+const { Hdlt_store } = require("./hdlt_store.js");
 const { Hlog } = require("../hlog/hlog.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
@@ -26,13 +25,6 @@ const { Hlog } = require("../hlog/hlog.js");
 
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
-
-	static GENESIS = {
-		hash_prev: 0x00,
-		hash_merkle_root: 0x00,
-		nonce: "00",
-		tsacts: []
-	};
 
 	// TODO: When using AUTH, pass a list of authorities' pubkeys as args
 	static CONSENSUS_METHOD = {
@@ -55,10 +47,10 @@ class Hdlt {
 	hkad;
 	consensus;
 	args;
-	blocks;
+	store;
 	res;
 
-	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], blocks = new Hntree(new Hntree_node({data: Hdlt.GENESIS}))} = {}) {
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store()} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -67,7 +59,7 @@ class Hdlt {
 		this.hkad = hkad;
 		this.consensus = consensus;
 		this.args = args;
-		this.blocks = blocks;
+		this.store = store;
 		this.res = new EventEmitter();
 	}
 
@@ -76,17 +68,6 @@ class Hdlt {
 	static make_nonce_auth(block, pubkey, privkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
 		return Hid.sign(data, privkey).toString("hex");
-	}
-
-	// Get the tree nodes corresponding to the deepest blocks in the tree
-	// in a tree where there is one longest branch, this will return one node
-	get_deepest_blocks() {
-		const pg = this.blocks.bfs((node, d, data) => {
-			data.push([node, d]);
-		});
-
-		const max_d = Math.max(...pg.map(pair => pair[1]));
-		return pg.filter(pair => pair[1] === max_d).map(pair => pair[0]);
 	}
 
 	// Determine the integrity of a block in a node in our tree
@@ -136,7 +117,8 @@ class Hdlt {
 	}
 
 	_res_tx(req, rinfo) {
-		// TODO: Handle the incoming transaction
+		// TODO: Handle the incoming transaction 
+		// (if we're a validator, add it to our tx cache for the next block)
 
 		return new Hdlt_msg({
 			data: "OK",
@@ -149,11 +131,33 @@ class Hdlt {
 
 	_res_block(req, rinfo) {
 		// TODO: Handle the incoming block
+		// (One of 3 cases: its the successor to one of our ultimate blocks,
+		// its the successor to one of our penultimate blocks, it's neither
+		// and we should discard it and broadcast a GETBLOCKS to try to sync)
 
 		return new Hdlt_msg({
 			data: "OK",
 			type: Hdlt_msg.TYPE.RES,
 			flavor: Hdlt_msg.FLAVOR.BLOCK,
+			app_id: req.app_id,
+			id: req.id
+		});
+	}
+
+	_res_getblocks(req, rinfo) {
+		// Handle the getblocks request
+		// (Find out what blocks we know about after the hash in req.data
+		// and reply to the peer with a list of them in an INV msg)
+
+		// DFS inorder traversal starting at the node corresponding to the req hash
+		const succ = this.store.tree.dfs((node, data) => {
+			data.push(Hdlt_block.sha256(node.data));
+		}, (node, data) => {}, this.store.get_node(req.data));
+
+		return Hdlt_msg({
+			data: succ,
+			type: Hdlt_msg.TYPE.RES,
+			flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
 			app_id: req.app_id,
 			id: req.id
 		});
