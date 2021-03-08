@@ -15,6 +15,7 @@ const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
 const { Alvin_friends_dinner_menu } = require("./alvin_friends_dinner_menu.js");
 const { Rocnramen_menu } = require("./rocnramen_menu.js");
 const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js");
+const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
@@ -29,10 +30,12 @@ const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js");
     const network = new Happ({hid_pub: larosa});
     await network.start();
 
+    const last_known_block = network.hksrv.dlt.store.tree.get_root().data;
+
     network.hksrv.dlt._send(new Hdlt_msg({
-        data: "DEBUG",
+        data: Hdlt_block.sha256(last_known_block),
         type: Hdlt_msg.TYPE.REQ, 
-        flavor: Hdlt_msg.FLAVOR.TX,
+        flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
         app_id: Happ.KEYSERVER_APP_ID,
         id: Hbigint.random(Hdlt_msg.ID_LEN)
     }), "66.228.34.29", 27500);

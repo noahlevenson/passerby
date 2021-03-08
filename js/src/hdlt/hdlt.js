@@ -154,7 +154,7 @@ class Hdlt {
 			data.push(Hdlt_block.sha256(node.data));
 		}, (node, data) => {}, this.store.get_node(req.data));
 
-		return Hdlt_msg({
+		return new Hdlt_msg({
 			data: succ,
 			type: Hdlt_msg.TYPE.RES,
 			flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
