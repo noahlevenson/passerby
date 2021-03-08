@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Happ } = require("../happ/happ.js");
+const { Hid } = require("../hid/hid.js");
 const { Hdlt } = require("../hdlt/hdlt.js");
 const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
 const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
@@ -112,7 +112,7 @@ class Hksrv {
 			unlock: Hksrv.SCRIPT_NO_UNLOCK
 		});
 
-		const sig = Happ.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.get_privkey());
+		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.get_privkey());
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH1, sig.length, ...Array.from(sig)] // push1, len, sig
 		return tsact;
 	}

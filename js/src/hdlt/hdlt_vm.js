@@ -11,7 +11,6 @@
 
 const { Hdlt_tsact } = require("./hdlt_tsact.js");
 const { Hid } = require("../hid/hid.js");
-const { Happ } = require("../happ/happ.js");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
@@ -112,7 +111,7 @@ class Hdlt_vm {
 			unlock: [...this.tx_new.unlock]
 		});
 
-		const res = Happ.verify(
+		const res = Hid.verify(
 			Hdlt_tsact.serialize(copy), 
 			Buffer.from(pubkey.toString(16), "hex"), 
 			Buffer.from(sig.toString(16), "hex")

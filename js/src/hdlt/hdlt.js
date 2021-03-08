@@ -10,7 +10,7 @@
 "use strict";
 
 const EventEmitter = require("events");
-const { Happ } = require("../happ/happ.js");
+const { Hid } = require("../hid/hid.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hdlt_net } = require("./net/hdlt_net.js");
@@ -70,7 +70,7 @@ class Hdlt {
 	// where block.nonce is replaced with the signer's public key
 	static make_nonce_auth(block, pubkey, privkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
-		return Happ.sign(data, privkey).toString("hex");
+		return Hid.sign(data, privkey).toString("hex");
 	}
 
 	// Get the tree nodes corresponding to the deepest blocks in the tree
@@ -107,7 +107,7 @@ class Hdlt {
 	_verify_nonce_auth(block) {
 		return this.args.some((arg) => {
 			const data = Buffer.from(Hdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
-			return Happ.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
+			return Hid.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
 		});
 	}
 
