@@ -40,7 +40,6 @@ class Hdlt {
 		[Hdlt_msg.FLAVOR.BLOCK, this._res_block],
 		[Hdlt_msg.FLAVOR.GETBLOCKS, this._res_getblocks],
 		[Hdlt_msg.FLAVOR.GETDATA, this._res_getdata],
-		[Hdlt_msg.FLAVOR.INV, this._res_inv]
 	]);
 
 	net;
@@ -147,19 +146,42 @@ class Hdlt {
 	_res_getblocks(req, rinfo) {
 		// Handle the getblocks request
 		// (Find out what blocks we know about after the hash in req.data
-		// and reply to the peer with a list of them in an INV msg)
+		// and reply to the peer with a list of them)
 
-		// DFS inorder traversal starting at the node corresponding to the req hash
-		const succ = this.store.tree.dfs((node, data) => {
-			data.push(Hdlt_block.sha256(node.data));
-		}, (node, data) => {}, this.store.get_node(req.data));
+		// DFS inorder traversal starting at the node corresponding to the req hash;
+		// we grab every successive block regardless of what branch its in
+		let succ = [];
+		const start_node = this.store.get_node(req.data);
 
-		console.log(succ);
+		if (start_node) {
+			succ = this.store.tree.dfs((node, data) => {
+				data.push(Hdlt_block.sha256(node.data));
+			}, (node, data) => {}, start_node);
+		}
 
 		return new Hdlt_msg({
 			data: succ,
 			type: Hdlt_msg.TYPE.RES,
 			flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
+			app_id: req.app_id,
+			id: req.id
+		});
+	}
+
+	_res_getdata(req, rinfo) {
+		// Handle the getdata request
+		// (If we have the requested block, send it)
+		let block = null;
+		const block_node = this.store.get_node(req.data);
+
+		if (block_node) {
+			block = block_node.data;
+		}
+
+		return new Hdlt_msg({
+			data: block,
+			type: Hdlt_msg.TYPE.RES,
+			flavor: Hdlt_msg.FLAVOR.GETDATA,
 			app_id: req.app_id,
 			id: req.id
 		});
@@ -197,6 +219,74 @@ class Hdlt {
 
 		Hlog.log(`[HDLT] (${this.net.app_id}) Outbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hdlt_msg.TYPE)[msg.type]} # ${msg.id.toString()} to ${addr}:${port}`);
 		this.net._out(msg, {address: addr, port: port});	
+	}
+
+	tx_req({hdlt_tsact = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (hdlt_tsact === null || addr === null || port === null) {
+			throw new Error("Arguments cannot be null");
+		}
+
+		const msg = new Hdlt_msg({
+			data: hdlt_tsact,
+			type: Hdlt_msg.TYPE.REQ,
+			flavor: Hdlt_msg.FLAVOR.TX,
+			app_id: this.net.app_id,
+			id: Hbigint.random(Hdlt_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
+	}
+
+	block_req({hdlt_block = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (hdlt_block === null || addr === null || port === null) {
+			throw new Error("Arguments cannot be null");
+		}
+
+		const msg = new Hdlt_msg({
+			data: hdlt_block,
+			type: Hdlt_msg.TYPE.REQ,
+			flavor: Hdlt_msg.FLAVOR.BLOCK,
+			app_id: this.net.app_id,
+			id: Hbigint.random(Hdlt_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
+	}
+
+	getblocks_req({block_hash = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (block_hash === null || addr === null || port === null) {
+			throw new Error("Arguments cannot be null");
+		}
+
+		const msg = new Hdlt_msg({
+			data: block_hash,
+			type: Hdlt_msg.TYPE.REQ,
+			flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
+			app_id: this.net.app_id,
+			id: Hbigint.random(Hdlt_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
+	}
+
+	getdata_req({block_hash = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+		// For sanity during development, explicitly require arguments
+		if (block_hash === null || addr === null || port === null) {
+			throw new Error("Arguments cannot be null");
+		}
+
+		const msg = new Hdlt_msg({
+			data: block_hash,
+			type: Hdlt_msg.TYPE.REQ,
+			flavor: Hdlt_msg.FLAVOR.GETDATA,
+			app_id: this.net.app_id,
+			id: Hbigint.random(Hdlt_msg.ID_LEN)
+		});
+
+		this._send(msg, addr, port, success, timeout);
 	}
 }
 

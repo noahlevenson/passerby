@@ -32,14 +32,15 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     const last_known_block = network.hksrv.dlt.store.tree.get_root().data;
 
-    network.hksrv.dlt._send(new Hdlt_msg({
-        data: Hdlt_block.sha256(last_known_block),
-        type: Hdlt_msg.TYPE.REQ, 
-        flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
-        app_id: Happ.KEYSERVER_APP_ID,
-        id: Hbigint.random(Hdlt_msg.ID_LEN)
-    }), "66.228.34.29", 27500);
-    
+    network.hksrv.dlt.getblocks_req({
+        block_hash: Hdlt_block.sha256(this.hksrv.dlt.store.get_deepest_blocks()[0].data),
+        addr: "66.228.34.29",
+        port: 27500,
+        success: (res, ctx) => {
+            console.log(res);
+        }
+    });
+ 
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 
     // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu.freeze()}));

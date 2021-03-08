@@ -17,16 +17,15 @@ class Hdlt_msg {
 		RES: 1
 	};
 
-	// Our messages are similar to Bitcoin, but we currently use them in a mostly unsolicited
+	// Our messages are similar to Bitcoin, but we currently use them in an unsolicited
 	// fashion - nodes just broadcast blocks as TX and BLOCK messages without first sending
-	// an INV. INV is only used in response to a GETBLOCKS so that block requesters can 
-	// iteratively request blocks, throttling their requests
+	// an INV; GETBLOCKS advertises a last known hash and the list of blocks is sent in the RES; 
+	// GETDATA requests one block by hash and the response is sent in the RES
 	static FLAVOR = {
 		TX: 0,
 		BLOCK: 1,
 		GETBLOCKS: 2,
 		GETDATA: 3,
-		INV: 4
 	};
 
 	data;
