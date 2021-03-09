@@ -146,12 +146,8 @@ class Hdlt {
 	}
 
 	_res_getblocks(req, rinfo) {
-		// Handle the getblocks request
-		// (Find out what blocks we know about after the hash in req.data
-		// and reply to the peer with a list of them)
-
 		// DFS inorder traversal starting at the node corresponding to the req hash;
-		// we grab every successive block regardless of what branch its in
+		// we grab every successive block regardless of what branch it's in
 		let succ = [];
 		const start_node = this.store.get_node(req.data);
 
@@ -171,8 +167,6 @@ class Hdlt {
 	}
 
 	_res_getdata(req, rinfo) {
-		// Handle the getdata request
-		// (If we have the requested block, send it)
 		let block = null;
 		const block_node = this.store.get_node(req.data);
 
@@ -221,6 +215,14 @@ class Hdlt {
 
 		Hlog.log(`[HDLT] (${this.net.app_id}) Outbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Hdlt_msg.TYPE)[msg.type]} # ${msg.id.toString()} to ${addr}:${port}`);
 		this.net._out(msg, {address: addr, port: port});	
+	}
+
+	// TODO: for neighbors, we currently use HKAD to select the K_SIZE peers closest 
+	// to our peer ID
+	broadcast(msg_handler) {
+		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id);
+
+		console.log(neighbors);
 	}
 
 	tx_req({hdlt_tsact = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {

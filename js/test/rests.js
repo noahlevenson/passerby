@@ -40,6 +40,17 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
             console.log(res);
         }
     });
+
+    network.hksrv.dlt.getdata_req({
+        block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
+        addr: "66.228.34.29",
+        port: 27500,
+        success: (res, ctx) => {
+            console.log(res);
+        }
+    });
+
+    network.hksrv.dlt.broadcast();
  
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 

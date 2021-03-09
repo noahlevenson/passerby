@@ -19,8 +19,8 @@ class Hdlt_msg {
 
 	// Our messages are similar to Bitcoin, but we currently use them in an unsolicited
 	// fashion - nodes just broadcast blocks as TX and BLOCK messages without first sending
-	// an INV; GETBLOCKS advertises a last known hash and the list of blocks is sent in the RES; 
-	// GETDATA requests one block by hash and the response is sent in the RES
+	// an INV; a GETBLOCKS REQ advertises a last known hash and a list of avail blocks is 
+	// sent in the RES; GETDATA requests one block by hash and the response is sent in the RES
 	static FLAVOR = {
 		TX: 0,
 		BLOCK: 1,
