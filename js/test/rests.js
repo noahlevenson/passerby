@@ -51,7 +51,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     // });
 
     network.hksrv.dlt.broadcast(
-        this.network.hksrv.dlt.getblocks_req.bind(this, {
+        network.hksrv.dlt.getblocks_req.bind(network.hksrv.dlt, {
             block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
             addr: "66.228.34.29",
             port: 27500,
