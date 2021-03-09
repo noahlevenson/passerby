@@ -32,25 +32,34 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     const last_known_block = network.hksrv.dlt.store.tree.get_root().data;
 
-    network.hksrv.dlt.getblocks_req({
-        block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
-        addr: "66.228.34.29",
-        port: 27500,
-        success: (res, ctx) => {
-            console.log(res);
-        }
-    });
+    // network.hksrv.dlt.getblocks_req({
+    //     block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
+    //     addr: "66.228.34.29",
+    //     port: 27500,
+    //     success: (res, ctx) => {
+    //         console.log(res);
+    //     }
+    // });
 
-    network.hksrv.dlt.getdata_req({
-        block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
-        addr: "66.228.34.29",
-        port: 27500,
-        success: (res, ctx) => {
-            console.log(res);
-        }
-    });
+    // network.hksrv.dlt.getdata_req({
+    //     block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
+    //     addr: "66.228.34.29",
+    //     port: 27500,
+    //     success: (res, ctx) => {
+    //         console.log(res);
+    //     }
+    // });
 
-    network.hksrv.dlt.broadcast();
+    network.hksrv.dlt.broadcast(
+        this.network.hksrv.dlt.getblocks_req.bind(this, {
+            block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
+            addr: "66.228.34.29",
+            port: 27500,
+            success: (res, ctx) => {
+                console.log(res);
+            }
+        })
+    );
  
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 

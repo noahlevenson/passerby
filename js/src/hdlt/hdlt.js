@@ -218,11 +218,10 @@ class Hdlt {
 	}
 
 	// TODO: for neighbors, we currently use HKAD to select the K_SIZE peers closest 
-	// to our peer ID
+	// to our peer ID (not including us!) Bind the config object for the below msg handlers
 	broadcast(msg_handler) {
-		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id);
-
-		console.log(neighbors);
+		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id).filter(n => n.node_id !== this.hkad.node_id);
+		neighbors.forEach(n => msg_handler());
 	}
 
 	tx_req({hdlt_tsact = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
