@@ -53,6 +53,7 @@ class Hdlt {
 	args;
 	store;
 	res;
+	tx_cache;
 
 	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store()} = {}) {
 		if (!(net instanceof Hdlt_net)) {
@@ -65,6 +66,7 @@ class Hdlt {
 		this.args = args;
 		this.store = store;
 		this.res = new EventEmitter();
+		this.tx_cache = new Map();
 	}
 
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
@@ -87,25 +89,6 @@ class Hdlt {
 		}
 
 		return false;
-	}
-
-	// Determine the validity of a transaction
-	// The validation function is defined by the application layer
-	// and must be set using on_validate prior to use
-	is_valid_tx(args) {
-		return this._valid_hook(args);
-	}
-
-	_valid_hook(args) {
-		throw new Error("_valid_hook must be set using on_validate");
-	}
-
-	on_validate(f) {
-		if (typeof f !== "function") {
-			throw new TypeError("Argument 'f' must be a function");
-		}
-
-		this._valid_hook = f;
 	}
 
 	verify_nonce(block) {
@@ -139,11 +122,17 @@ class Hdlt {
 		}
 	}
 
+	// TODO: when we hear about a new transaction, we don't
+	// bother spot validating it - we just cache it and
+	// re-broadcast it - if we want to implement spot
+	// validation, this should be handled with a function
+	// provided by the application layer
 	_res_tx(req, rinfo) {
-		// TODO: Handle the incoming transaction 
-		// (if we're a validator, add it to our tx cache for the next block)
+		console.log(req);
+		
+		// if (this.tx_cache.has(Hdlt_tsact.sha256(req.data))) {
 
-		console.log(this.is_valid_tx({tx_new: req.data}));
+		// }
 
 		return new Hdlt_msg({
 			data: "OK",

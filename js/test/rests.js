@@ -1,5 +1,6 @@
 const { Happ } = require("../src/happ/happ.js");
 const { Happ_bboard } = require("../src/happ/happ_bboard.js");
+const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo } = require("../src/hgeo/hgeo.js");
@@ -52,7 +53,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     //     }
     // });
 
-    const tx_new = network.hksrv.sign(larosa, larosa);
+    const tx_new = network.hksrv.sign(larosa, larosa).serialize();
 
     network.hksrv.dlt.broadcast(
         network.hksrv.dlt.tx_req.bind(network.hksrv.dlt, {
