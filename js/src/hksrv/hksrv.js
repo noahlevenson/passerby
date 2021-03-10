@@ -57,7 +57,7 @@ class Hksrv {
 
 		this.utxo_db = new Map([[Hksrv.SIG_TOK, tok]]);
 		this.dlt = dlt;
-		this.dlt.on_validate(this.VALIDATE);
+		this.dlt.on_validate(this.VALIDATE.bind(this));
 	}
 
 	start() {
