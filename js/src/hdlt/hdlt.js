@@ -128,12 +128,7 @@ class Hdlt {
 
 		if (!this.tx_cache.has(tx_hash)) {
 			this.tx_cache.set(tx_hash, req.data);
-			
-			this.broadcast(
-				this.tx_req.bind(this, {
-					hdlt_tsact: req.data
-				})
-			);
+			this.broadcast(this.tx_req, {hdlt_tsact: req.data});
 		}
 
 		return new Hdlt_msg({
@@ -234,17 +229,21 @@ class Hdlt {
 
 	// TODO: for neighbors, we currently use HKAD to select the K_SIZE peers closest 
 	// to our peer ID (not including us!) Bind the config object for the below msg handlers
+	// Also, this is too brittle - it requires the the structure of the config object 
+	// for all of our req functions below to be the same
 	broadcast(msg_func, config_obj) {
 		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id).filter(n => !n.node_id.equals(this.hkad.node_id));
 		
 		neighbors.forEach((n) => {
-			msg_func(Object.assign({}, config_obj, {
-				address: n.address, 
+			const arg = Object.assign({}, config_obj, {
+				addr: n.addr, 
 				port: n.port, 
 				success: (res, ctx) => {
 					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_handler.name} to ${n.address}:${n.port}`);
 				}
-			}));
+			});
+
+			msg_func.bind(this, arg)();
 		});
 	}
 
