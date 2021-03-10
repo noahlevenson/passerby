@@ -31,39 +31,32 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 
+    // Lil hack to make us one of the AUTH nodes
+    Happ.AUTHORITIES = [larosa.pubkey];
+
     const network = new Happ({hid_pub: larosa});
     await network.start();
 
     const last_known_block = network.hksrv.dlt.store.tree.get_root().data;
 
-    // network.hksrv.dlt.getblocks_req({
-    //     block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
-    //     addr: "66.228.34.29",
-    //     port: 27500,
-    //     success: (res, ctx) => {
-    //         console.log(res);
-    //     }
-    // });
-
-    // network.hksrv.dlt.getdata_req({
-    //     block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
-    //     addr: "66.228.34.29",
-    //     port: 27500,
-    //     success: (res, ctx) => {
-    //         console.log(res);
-    //     }
-    // });
-
     const tx_new = network.hksrv.sign(larosa, larosa);
     network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
 
-    network.hksrv.dlt.broadcast(
-        network.hksrv.dlt.tx_req,
-        {hdlt_tsact: tx_new}
-    );
+    // network.hksrv.dlt.broadcast(
+    //     network.hksrv.dlt.tx_req,
+    //     {hdlt_tsact: tx_new}
+    // );
 
 
+    const block = new Hdlt_block({
+        prev_block: network.hksrv.dlt.store.get_deepest_blocks()[0].data,
+        tsacts: [tx_new]
+    });
     
+    network.hksrv.dlt.broadcast(
+        network.hksrv.dlt.block_req,
+        {hdlt_block: block}
+    );
  
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 

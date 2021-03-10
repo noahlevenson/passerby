@@ -123,8 +123,12 @@ class Hdlt {
 		}
 	}
 
+	// TODO: make sure req.data is a structurally valid Hdlt_tsact
+	// we don't bother ivnestigating whether req.data is valid
+	// in the sense that it's spending a valid utxo and its scripts
+	// are legal etc - we leave that to the network validators
+	// and tbd at block validation time
 	_res_tx(req, rinfo) {
-		// TODO: make sure req.data is a structurally valid Hdlt_tsact
 		const tx_hash = Hdlt_tsact.sha256(Hdlt_tsact.serialize(req.data));
 
 		if (!this.tx_cache.has(tx_hash)) {
@@ -141,19 +145,44 @@ class Hdlt {
 		});
 	}
 
+	// TODO: make sure req.data is a structurally valid Hdlt_block
+	// Also, we're doing all block validation in here, we should break this out elsewhere
 	_res_block(req, rinfo) {
-		// TODO: Handle the incoming block
-		// (One of 3 cases: its the successor to one of our ultimate blocks,
-		// its the successor to one of our penultimate blocks, it's neither
-		// and we should discard it and broadcast a GETBLOCKS to try to sync)
-
-		return new Hdlt_msg({
+		const res = new Hdlt_msg({
 			data: "OK",
 			type: Hdlt_msg.TYPE.RES,
 			flavor: Hdlt_msg.FLAVOR.BLOCK,
 			app_id: req.app_id,
 			id: req.id
 		});
+
+		const block_hash = Hdlt_block.sha256(req.data);
+		const block_node = this.store.get_node(block_hash);
+
+		// Case 1: we already have the new block
+		if (block_node) {
+			return res;
+		}
+
+		const parent = this.store.get_node(req.data.hash_prev);
+
+		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
+		// block, and the new block's nonce passes verification
+		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
+			console.log("Hello????");
+			// Perform deep validation of all transactions, 
+			// add the new block where it belongs, 
+			// clear the appropriate transactions from the tx_cache,
+			// and rebroadcast it
+
+		} else if (!parent) {
+			// Case 3: we don't know the new block's parent
+			// perform init function, broadcast our last known block hash with GETBLOCKS
+			// and try to rebuild our db
+
+		}
+
+		return res;
 	}
 
 	_res_getblocks(req, rinfo) {
@@ -229,7 +258,8 @@ class Hdlt {
 	}
 
 	// TODO: for neighbors, we currently use HKAD to select the K_SIZE peers closest 
-	// to our peer ID (not including us!) Bind the config object for the below msg handlers
+	// to our peer ID (not including us!) This is probably even less efficient than choosing
+	// a random subset of peers from the HKAD routing table
 	// Also, this is too brittle - it requires the the structure of the config object 
 	// for all of our req functions below to be the same
 	broadcast(msg_func, config_obj) {

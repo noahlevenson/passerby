@@ -64,6 +64,10 @@ class Happ {
 		["66.228.34.29", 27500]
 	];
 
+	static AUTHORITIES = [
+
+	];
+
 	port;
 	hid;
 	hpht;
@@ -439,7 +443,7 @@ class Happ {
 			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
-			args: [], // TODO: add the authorities!
+			args: Happ.AUTHORITIES,
 		});
 
 		this.hksrv = new Hksrv({dlt: ksrv_dlt});
