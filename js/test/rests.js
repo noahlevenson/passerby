@@ -53,7 +53,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     //     }
     // });
 
-    const tx_new = network.hksrv.sign(larosa, larosa).serialize();
+    const tx_new = network.hksrv.sign(larosa, larosa);
 
     network.hksrv.dlt.broadcast(
         network.hksrv.dlt.tx_req.bind(network.hksrv.dlt, {

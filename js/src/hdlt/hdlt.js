@@ -12,6 +12,7 @@
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hid } = require("../hid/hid.js");
+const { Hlog } = require("../src/hlog/hlog.js");
 const { Hdlt_net } = require("./net/hdlt_net.js");
 const { Hdlt_msg } = require("./hdlt_msg.js");
 const { Hdlt_block } = require("./hdlt_block.js");
@@ -122,17 +123,19 @@ class Hdlt {
 		}
 	}
 
-	// TODO: when we hear about a new transaction, we don't
-	// bother spot validating it - we just cache it and
-	// re-broadcast it - if we want to implement spot
-	// validation, this should be handled with a function
-	// provided by the application layer
 	_res_tx(req, rinfo) {
-		console.log(req);
-		
-		// if (this.tx_cache.has(Hdlt_tsact.sha256(req.data))) {
+		// TODO: make sure req.data is a structurally valid Hdlt_tsact
+		const tx_hash = Hdlt_tsact.sha256(Hdlt_tsact.serialize(req.data));
 
-		// }
+		if (!this.tx_cache.has(tx_hash)) {
+			this.tx_cache.set(tx_hash, req.data);
+			
+			this.broadcast(
+				this.tx_req.bind(this, {
+					hdlt_tsact: req.data
+				})
+			);
+		}
 
 		return new Hdlt_msg({
 			data: "OK",
@@ -234,7 +237,16 @@ class Hdlt {
 	// to our peer ID (not including us!) Bind the config object for the below msg handlers
 	broadcast(msg_handler) {
 		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id).filter(n => !n.node_id.equals(this.hkad.node_id));
-		neighbors.forEach(n => msg_handler());
+		
+		neighbors.forEach((n) => {
+			msg_handler.bind(this, {
+				address: n.address, 
+				port: n.port, 
+				success: (res, ctx) => {
+					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_handler.name} to ${n.address}:${n.port}`);
+				}
+			})();
+		});
 	}
 
 	tx_req({hdlt_tsact = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
