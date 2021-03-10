@@ -27,6 +27,8 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
+    Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
+
     const network = new Happ({hid_pub: larosa});
     await network.start();
 
