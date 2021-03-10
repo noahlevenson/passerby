@@ -15,7 +15,8 @@ const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
 const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
 const { Alvin_friends_dinner_menu } = require("./alvin_friends_dinner_menu.js");
 const { Rocnramen_menu } = require("./rocnramen_menu.js");
-const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js");
+const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js")
+const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
 const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
@@ -54,6 +55,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     // });
 
     const tx_new = network.hksrv.sign(larosa, larosa);
+    network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
 
     network.hksrv.dlt.broadcast(
         network.hksrv.dlt.tx_req,

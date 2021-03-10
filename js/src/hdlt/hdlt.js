@@ -240,7 +240,7 @@ class Hdlt {
 				addr: n.addr, 
 				port: n.port, 
 				success: (res, ctx) => {
-					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_handler.name} to ${n.address}:${n.port}`);
+					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_func.name} to ${n.addr}:${n.port}`);
 				}
 			});
 
