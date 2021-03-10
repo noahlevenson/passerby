@@ -20,10 +20,13 @@ const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
-// blocks, transactions, validation, the VM, messaging, and consensus
+// blocks, transactions, the VM, messaging/propagation, and consensus
 // It doesn't concern itself with interpreting a blockchain or any notion
 // of state (e.g. unspent outputs or a utxo db) - that stuff is the
-// responsibility of the application layer
+// responsibility of the application layer. The application layer also
+// supplies the DLT's tx validation function, such that applications can
+// make specific demands of transactions (e.g., allow or disallow
+// certain kinds of scripts in certain situations)
 
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
@@ -86,6 +89,25 @@ class Hdlt {
 		return false;
 	}
 
+	// Determine the validity of a transaction
+	// The validation function is defined by the application layer
+	// and must be set using on_validate prior to use
+	is_valid_tx(args) {
+		return _valid_hook(tx);
+	}
+
+	_valid_hook(args) {
+		throw new Error("_valid_hook must be set using on_validate");
+	}
+
+	on_validate(f) {
+		if (typeof f !== "function") {
+			throw new TypeError("Argument 'f' must be a function");
+		}
+
+		this._valid_hook = f;
+	}
+
 	verify_nonce(block) {
 		return this.NONCE_INTEGRITY.get(this.consensus).bind(this)(block);
 	}
@@ -120,6 +142,8 @@ class Hdlt {
 	_res_tx(req, rinfo) {
 		// TODO: Handle the incoming transaction 
 		// (if we're a validator, add it to our tx cache for the next block)
+
+		console.log(this.is_valid_tx({tx_new: req.data}));
 
 		return new Hdlt_msg({
 			data: "OK",

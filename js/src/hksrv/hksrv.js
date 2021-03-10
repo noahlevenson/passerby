@@ -32,6 +32,19 @@ class Hksrv {
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
 	
+	VALIDATE({tx_new} = {}) {
+		const tx_prev = this.utxo_db.get(tx_new.utxo);
+
+		if (!tx_prev) {
+			return false;
+		}
+
+		// TODO: verify that tx_new only has the kind of scripts that it's allowed to have
+
+		const vm = new Hdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
+		return vm.exec();
+	}
+
 	utxo_db;
 	dlt;
 	
@@ -44,6 +57,7 @@ class Hksrv {
 
 		this.utxo_db = new Map([[Hksrv.SIG_TOK, tok]]);
 		this.dlt = dlt;
+		this.dlt.on_validate(this.VALIDATE);
 	}
 
 	start() {

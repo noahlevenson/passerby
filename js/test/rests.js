@@ -19,7 +19,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: "debug_la_rosa_public_key",
+        pubkey: Happ.generate_key_pair().publicKey,
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
@@ -50,9 +50,11 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     //     }
     // });
 
+    const tx_new = network.hksrv.sign(larosa, larosa);
+
     network.hksrv.dlt.broadcast(
-        network.hksrv.dlt.getblocks_req.bind(network.hksrv.dlt, {
-            block_hash: Hdlt_block.sha256(network.hksrv.dlt.store.get_deepest_blocks()[0].data),
+        network.hksrv.dlt.tx_req.bind(network.hksrv.dlt, {
+            hdlt_tsact: tx_new,
             addr: "66.228.34.29",
             port: 27500,
             success: (res, ctx) => {
@@ -60,6 +62,8 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
             }
         })
     );
+
+    
  
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 

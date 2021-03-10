@@ -432,6 +432,9 @@ class Happ {
 		await this.hpht.init();
 
 		// Create and start the default HKSRV interface
+		// TODO: we shouldn't need to know how to instantiate a compatible
+		// Hdlt instance - we should move Hdlt construction to the Hksrv
+		// constructor, just passing consensus mechanism and app ID
 		const ksrv_dlt = new Hdlt({
 			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
