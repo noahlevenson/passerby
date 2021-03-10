@@ -234,17 +234,17 @@ class Hdlt {
 
 	// TODO: for neighbors, we currently use HKAD to select the K_SIZE peers closest 
 	// to our peer ID (not including us!) Bind the config object for the below msg handlers
-	broadcast(msg_handler) {
+	broadcast(msg_func, config_obj) {
 		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id).filter(n => !n.node_id.equals(this.hkad.node_id));
 		
 		neighbors.forEach((n) => {
-			msg_handler.bind(this, {
+			msg_func(Object.assign({}, config_obj, {
 				address: n.address, 
 				port: n.port, 
 				success: (res, ctx) => {
 					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_handler.name} to ${n.address}:${n.port}`);
 				}
-			})();
+			}));
 		});
 	}
 

@@ -56,15 +56,10 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     const tx_new = network.hksrv.sign(larosa, larosa);
 
     network.hksrv.dlt.broadcast(
-        network.hksrv.dlt.tx_req.bind(network.hksrv.dlt, {
-            hdlt_tsact: tx_new,
-            addr: "66.228.34.29",
-            port: 27500,
-            success: (res, ctx) => {
-                console.log(res);
-            }
-        })
+        network.hksrv.dlt.tx_req,
+        {hdlt_tsact: tx_new}
     );
+
 
     
  
