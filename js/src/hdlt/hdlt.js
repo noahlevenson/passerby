@@ -93,7 +93,7 @@ class Hdlt {
 	// The validation function is defined by the application layer
 	// and must be set using on_validate prior to use
 	is_valid_tx(args) {
-		return _valid_hook(tx);
+		return this._valid_hook(args);
 	}
 
 	_valid_hook(args) {

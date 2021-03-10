@@ -27,7 +27,7 @@ const { Hlog } = require("../hlog/hlog.js");
 // which is enforced with SCRIPT_IS_VALID_POW.
 
 class Hksrv {
-	static REQ_POW_BITS = 0x02; // TODO: set to nontrivial value
+	static REQ_POW_BITS = 0x04; // TODO: set to nontrivial value
 	static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
