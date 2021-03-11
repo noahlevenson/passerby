@@ -32,16 +32,26 @@ class Hksrv {
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
 
-	static TX_VALID_HOOK(tx_prev, tx_new, utxo_db) {
+	// Application layer validation hooks are expected to modify the running
+	// utxo_db as necessary - the default behavior would be just to add tx_new
+	// they should return true if valid, false if not
+	// TODO: there should prob be a base class w/abstract methods for HDLT application layers
+	static TX_VALID_HOOK(tx_new, utxo_db) {
 		// TODO: make sure that tx_new only has the scripts it's allowed to have
 
-		// Application layer validation hooks are expected to modify the running
-		// utxo_db as necessary - the default behavior would be just to add tx_new
-		if (tx_prev === Hksrv.SIG_TOK) {
-			// We add the new transaction to the db unless it's a revocation
+		// If tx_new is spending SIG_TOK and it already exists in the db, that's a double signature spend
+		if (tx_new.utxo === Hksrv.SIG_TOK && utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)))) {
+			return false;
+		}
+
+		// TODO: the specific case where a peer tries to revoke a signature that it never issued should be covered
+		// by the general case where we validate the unspent output in Hdlt._res_block - but test this!
+
+		// Only add the new transaction to the db if it's a signature
+		// Only delete the unspent output from the db if it's not SIG_TOK
+		if (tx_new.utxo === Hksrv.SIG_TOK) {
 			utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)), tx_new);
 		} else {
-			// Only delete the utxo from the db if it's not SIG_TOK!
 			utxo_db.delete(tx_new.utxo);
 		}
 
@@ -112,6 +122,7 @@ class Hksrv {
 	}
 
 	// Create a revocation transaction: peer_a revokes SIG_TOK from peer_b
+	// a revocation basically spends a spent SIG_TOK, but then directs the new utxo to /dev/null
 	revoke(peer_a, peer_a_prv, peer_b) {
 		const prev_tsact = this.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));

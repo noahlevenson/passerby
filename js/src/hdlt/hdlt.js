@@ -65,7 +65,7 @@ class Hdlt {
 		this.store = store;
 		this.res = new EventEmitter();
 		this.tx_cache = new Map();
-		this.utxo_db = new Map(); // TODO: Build this from the store!
+		this.utxo_db = new Map(); // TODO: Build this from the store, we may be deserializing existing state!
 		this.tx_valid_hook = tx_valid_hook;
 	}
 
@@ -184,7 +184,7 @@ class Hdlt {
 					return false;
 				}
 
-				return this.tx_valid_hook(utxo, tx_new, db_clone);
+				return this.tx_valid_hook(tx_new, db_clone);
 			});
 
 			if (valid_tsacts) {
