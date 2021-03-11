@@ -52,7 +52,7 @@ class Hdlt {
 	tx_cache;
 	tx_valid_hook;
 
-	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}} = {}) {
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
