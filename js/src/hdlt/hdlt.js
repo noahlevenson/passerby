@@ -23,7 +23,7 @@ const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
-// blocks, transactions, the VM, messaging/propagation, consensus, and the utxo db
+// blocks, transactions, the VM, messaging/propagation, consensus, and processing state of the chain
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
 
@@ -50,7 +50,6 @@ class Hdlt {
 	store;
 	res;
 	tx_cache;
-	utxo_db;
 	tx_valid_hook;
 
 	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}} = {}) {
@@ -65,16 +64,22 @@ class Hdlt {
 		this.store = store;
 		this.res = new EventEmitter();
 		this.tx_cache = new Map();
-		this.utxo_db = new Map(); // TODO: Build this from the store, we may be deserializing existing state!
 		this.tx_valid_hook = tx_valid_hook;
 		this.db_hook = db_hook;
+		this.db_init_hook = db_init_hook;
 	}
 
-	// Compute the state of the utxo db over the branch of blocks
+	// Compute the state of a utxo_db over the branch of blocks
 	// ending at last_node - assumes you've validated integrity of your blocks beforehand!
 	// TODO: it's O(n) to collect the branch and we don't yet
-	// have a way to compute only a portion of the branch...
-	compute_db(last_node) {
+	// have a way to compute only a portion of the branch, so we're recomputing
+	// the entire longest branch every time we get a new block... bad vibes bro
+	build_db(last_node, utxo_db) {
+		if (!utxo_db) {
+			utxo_db = new Map();
+			this.db_init_hook(utxo_db);
+		}
+
 		const branch = [];
 
 		while (last_node !== null) {
@@ -85,9 +90,11 @@ class Hdlt {
 		// Start at genesis block + 1
 		for (let i = 1; i < branch.length; i += 1) {
 			branch[i].data.tsacts.forEach((tsact) => {	
-				this.db_hook(tsact, this.utxo_db);		
+				this.db_hook(tsact, utxo_db);		
 			});
 		}
+
+		return utxo_db;
 	}
 
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
@@ -190,7 +197,9 @@ class Hdlt {
 		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
 		// block, and the new block's nonce passes verification
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
-			const db_clone = new Map(this.utxo_db);
+			// We'll validate transactions in this new block against the 
+			// state of the utxo db as computed from genesis through its parent block
+			const db_clone = this.build_db(parent);
 
 			const valid_tsacts = req.data.tsacts.every((tx_new) => {
 				const utxo = db_clone.get(tx_new.utxo);
@@ -211,11 +220,10 @@ class Hdlt {
 			});
 
 			if (valid_tsacts) {
+				// Add the new block, rebuild the store, clear the tx cache, and rebroadcast it
 				const new_node = new Hntree_node({data: req.data, parent: parent})
 				parent.add_child(new_node);
 				this.store.build_dict();
-				this.compute_db(new_node);
-
 				req.data.tsacts.forEach(tx_new => this.tx_cache.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new))));
 				this.broadcast(this.block_req, {hdlt_block: req.data});
 			}
@@ -224,6 +232,7 @@ class Hdlt {
 			// perform init function, broadcast our last known block hash with GETBLOCKS
 			// and try to rebuild our db
 
+			// TODO: write me after we have our init logic in place
 		}
 
 		return res;

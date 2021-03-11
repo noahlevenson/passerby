@@ -445,7 +445,8 @@ class Happ {
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			args: Happ.AUTHORITIES,
 			tx_valid_hook: Hksrv.TX_VALID_HOOK,
-			db_hook: Hksrv.UTXO_DB_HOOK
+			db_hook: Hksrv.UTXO_DB_HOOK,
+			db_init_hook: Hksrv.UTXO_DB_INIT_HOOK
 		});
 
 		this.hksrv = new Hksrv({dlt: ksrv_dlt});

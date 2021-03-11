@@ -48,7 +48,7 @@ class Hksrv {
 		return true;
 	};
 
-	// The application layer DB hook is is expected to modify the utxo db as necessary, 
+	// The application layer UTXO DB hook is is expected to modify the utxo db as necessary, 
 	// including any special logic that's unique to this application (the default 
 	// behavior would be just to add tx_new)
 	static UTXO_DB_HOOK(tx_new, utxo_db) {
@@ -61,20 +61,26 @@ class Hksrv {
 		}
 	}
 
-	// TODO: We should implement an Hdlt "application layer" base class to accommodate the above hooks
-	// and other contracts and Hksrv should subclass it
-	
-	dlt;
-	
-	constructor ({dlt} = {}) {
+	// The application layer UTXO DB init hook is for anything special you want to do to
+	// a utxo db at initialization time, before computing the state of the db
+	static UTXO_DB_INIT_HOOK(utxo_db) {
+		// Here we just set our persistent signature token
 		const tok = new Hdlt_tsact({
 			utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
 			lock: [Hdlt_vm.OPCODE.OP_NOOP], 
 			unlock: [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS]
 		})
 
+		utxo_db.set(Hksrv.SIG_TOK, tok);
+	}
+
+	// TODO: We should implement an Hdlt "application layer" base class to accommodate the above hooks
+	// and other contracts and Hksrv should subclass it
+	
+	dlt;
+	
+	constructor ({dlt} = {}) {
 		this.dlt = dlt;
-		this.dlt.utxo_db.set(Hksrv.SIG_TOK, tok);
 	}
 
 	start() {
@@ -119,10 +125,12 @@ class Hksrv {
 			unlock: unlock_script
 		});	
 
+		/* 
 		// If this tsact already exists in the db, it means that peer_a has already spent SIG_TOK on peer_b
 		if (check_db && this.dlt.utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)))) {
 			return null;
 		}
+		*/
 
 		return tsact;
 	}
@@ -133,10 +141,12 @@ class Hksrv {
 		const prev_tsact = this.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
+		/*
 		// If the original tsact doesn't exist in the db, then peer_a hasn't signed peer_b
 		if (!this.dlt.utxo_db.has(utxo)) {
 			return null;
 		}
+		*/
 
 		const tsact = new Hdlt_tsact({
 			utxo: utxo,
