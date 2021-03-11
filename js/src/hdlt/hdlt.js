@@ -22,8 +22,8 @@ const { Hlog } = require("../hlog/hlog.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
-// HDLT only concerns itself with the technical functionality of a DLT:
-// blocks, transactions, the VM, messaging/propagation, consensus, and processing state of the chain
+// HDLT only concerns itself with the technical functionality of a DLT: blocks, transactions, 
+// the VM, messaging/propagation, consensus, and processing state of the chain
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
 
@@ -69,17 +69,11 @@ class Hdlt {
 		this.db_init_hook = db_init_hook;
 	}
 
-	// Compute the state of a utxo_db over the branch of blocks
-	// ending at last_node - assumes you've validated integrity of your blocks beforehand!
-	// TODO: it's O(n) to collect the branch and we don't yet
-	// have a way to compute only a portion of the branch, so we're recomputing
-	// the entire longest branch every time we get a new block... bad vibes bro
-	build_db(last_node, utxo_db) {
-		if (!utxo_db) {
-			utxo_db = new Map();
-			this.db_init_hook(utxo_db);
-		}
-
+	// Compute the state of of a branch of blocks ending with last_node
+	// returns a Map of unspent outputs as [tx_hash: tx]
+	build_db(last_node) {
+		const utxo_db = new Map();
+		this.db_init_hook(utxo_db);
 		const branch = [];
 
 		while (last_node !== null) {
@@ -102,22 +96,6 @@ class Hdlt {
 	static make_nonce_auth(block, pubkey, privkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
 		return Hid.sign(data, privkey).toString("hex");
-	}
-
-	// Determine the integrity of a block in a node in our tree
-	// Integrity is two checks: the block's hash_prev must match the hash
-	// of the previous block, and its nonce must pass the integrity check
-	// prescribed by the consensus method associated with this instance of HDLT
-	// TODO: we only use this once up above, delete and replace with the two functions
-	is_valid_block(node) {
-		const hash_check = Hdlt_block.sha256(node.parent.data) === node.data.hash_prev;
-		const nonce_check = this.verify_nonce(node.data);
-
-		if (hash_check && nonce_check) {
-			return true;
-		}
-
-		return false;
 	}
 
 	verify_nonce(block) {
@@ -198,11 +176,11 @@ class Hdlt {
 		// block, and the new block's nonce passes verification
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
 			// We'll validate transactions in this new block against the 
-			// state of the utxo db as computed from genesis through its parent block
-			const db_clone = this.build_db(parent);
+			// state of the utxo db as computed from the genesis block through its parent block
+			const utxo_db = this.build_db(parent);
 
 			const valid_tsacts = req.data.tsacts.every((tx_new) => {
-				const utxo = db_clone.get(tx_new.utxo);
+				const utxo = utxo_db.get(tx_new.utxo);
 
 				if (!utxo) {
 					return false;
@@ -214,8 +192,8 @@ class Hdlt {
 					return false;
 				}
 
-				const valid = this.tx_valid_hook(tx_new, db_clone);
-				this.db_hook(tx_new, db_clone);
+				const valid = this.tx_valid_hook(tx_new, utxo_db);
+				this.db_hook(tx_new, utxo_db);
 				return valid; 
 			});
 

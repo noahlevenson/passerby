@@ -48,9 +48,9 @@ class Hksrv {
 		return true;
 	};
 
-	// The application layer UTXO DB hook is is expected to modify the utxo db as necessary, 
-	// including any special logic that's unique to this application (the default 
-	// behavior would be just to add tx_new)
+	// The application layer UTXO DB hook is is expected to modify a utxo db Map as necessary when
+	// accepting a new valid transaction, including any special logic that's unique to this 
+	// application (the default behavior would be just to set tx_new)
 	static UTXO_DB_HOOK(tx_new, utxo_db) {
 		// Only add the new transaction to the db if it's a signature
 		// Only delete the unspent output from the db if it's not SIG_TOK
@@ -62,7 +62,8 @@ class Hksrv {
 	}
 
 	// The application layer UTXO DB init hook is for anything special you want to do to
-	// a utxo db at initialization time, before computing the state of the db
+	// a utxo db Map at initialization time, before computing the state of the db
+	// this is called in Hdlt.build_db
 	static UTXO_DB_INIT_HOOK(utxo_db) {
 		// Here we just set our persistent signature token
 		const tok = new Hdlt_tsact({

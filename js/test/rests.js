@@ -66,17 +66,19 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         {hdlt_block: block}
     );
     
+    // next block:
+
     const new_block = new Hdlt_block({
-        prev_block: network.hksrv.dlt.store.get_deepest_blocks()[0].data,
+        prev_block: block,
         tsacts: [tx_new]
     });
 
     new_block.nonce = Hdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
 
-    network.hksrv.dlt.broadcast(
-        network.hksrv.dlt.block_req,
-        {hdlt_block: new_block}
-    );
+    // network.hksrv.dlt.broadcast(
+    //     network.hksrv.dlt.block_req,
+    //     {hdlt_block: new_block}
+    // );
 
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 
