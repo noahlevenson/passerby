@@ -19,6 +19,7 @@ const { Hdlt_block } = require("./hdlt_block.js");
 const { Hdlt_store } = require("./hdlt_store.js");
 const { Hdlt_vm } = require("./hdlt_vm.js");
 const { Hlog } = require("../hlog/hlog.js");
+const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
