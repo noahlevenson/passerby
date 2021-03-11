@@ -205,8 +205,9 @@ class Hdlt {
 					return false;
 				}
 
+				const valid = this.tx_valid_hook(tx_new, db_clone);
 				this.db_hook(tx_new, db_clone);
-				return this.tx_valid_hook(tx_new, db_clone);
+				return valid; 
 			});
 
 			if (valid_tsacts) {
