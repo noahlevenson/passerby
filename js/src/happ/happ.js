@@ -444,7 +444,8 @@ class Happ {
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			args: Happ.AUTHORITIES,
-			tx_valid_hook: Hksrv.TX_VALID_HOOK
+			tx_valid_hook: Hksrv.TX_VALID_HOOK,
+			db_hook: Hksrv.UTXO_DB_HOOK
 		});
 
 		this.hksrv = new Hksrv({dlt: ksrv_dlt});

@@ -56,7 +56,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     const block = new Hdlt_block({
         prev_block: network.hksrv.dlt.store.get_deepest_blocks()[0].data,
-        tsacts: [tx_new]
+        tsacts: [tx_new, tx_new]
     });
 
     block.nonce = Hdlt.make_nonce_auth(block, larosa.pubkey, privkey);
@@ -65,7 +65,19 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         network.hksrv.dlt.block_req,
         {hdlt_block: block}
     );
- 
+    
+    // const new_block = new Hdlt_block({
+    //     prev_block: network.hksrv.dlt.store.get_deepest_blocks()[0].data,
+    //     tsacts: [tx_new]
+    // });
+
+    // new_block.nonce = Hdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
+
+    // network.hksrv.dlt.broadcast(
+    //     network.hksrv.dlt.block_req,
+    //     {hdlt_block: new_block}
+    // );
+
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 
     // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu.freeze()}));

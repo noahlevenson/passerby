@@ -32,10 +32,8 @@ class Hksrv {
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
 
-	// Application layer validation hooks are expected to modify the running
-	// utxo_db as necessary - the default behavior would be just to add tx_new
-	// they should return true if valid, false if not
-	// TODO: there should prob be a base class w/abstract methods for HDLT application layers
+	// The application layer validation hook is where you specify any special validation
+	// logic beyond what's applied by the Hdlt layer - should return true if valid, false if not
 	static TX_VALID_HOOK(tx_new, utxo_db) {
 		// TODO: make sure that tx_new only has the scripts it's allowed to have
 
@@ -46,7 +44,14 @@ class Hksrv {
 
 		// TODO: the specific case where a peer tries to revoke a signature that it never issued should be covered
 		// by the general case where we validate the unspent output in Hdlt._res_block - but test this!
+		
+		return true;
+	};
 
+	// The application layer DB hook is is expected to modify the utxo db as necessary, 
+	// including any special logic that's unique to this application (the default 
+	// behavior would be just to add tx_new)
+	static UTXO_DB_HOOK(tx_new, utxo_db) {
 		// Only add the new transaction to the db if it's a signature
 		// Only delete the unspent output from the db if it's not SIG_TOK
 		if (tx_new.utxo === Hksrv.SIG_TOK) {
@@ -54,9 +59,10 @@ class Hksrv {
 		} else {
 			utxo_db.delete(tx_new.utxo);
 		}
+	}
 
-		return true;
-	};
+	// TODO: We should implement an Hdlt "application layer" base class to accommodate the above hooks
+	// and other contracts and Hksrv should subclass it
 	
 	dlt;
 	
@@ -141,47 +147,6 @@ class Hksrv {
 		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.get_privkey());
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH1, sig.length, ...Array.from(sig)] // push1, len, sig
 		return tsact;
-	}
-
-	// Compute the state of the utxo db over the branch of blocks
-	// ending at last_node; returns null on success, or a ref to 
-	// the node containing the first block that failed integrity check
-	// TODO: it's O(n) to collect the branch and we don't yet
-	// have a way to compute only a portion of the branch...
-	compute_db(last_node) {
-		const branch = [];
-
-		while (last_node !== null) {
-			branch.unshift(last_node);
-			last_node = last_node.parent;
-		}
-
-		// Start at genesis block + 1
-		for (let i = 1; i < branch.length; i += 1) {
-			if (!this.dlt.is_valid_block(branch[i])) {
-				this.dlt.utxo_db.clear();
-				return branch[i];
-			}
-
-			branch[i].data.tsacts.forEach((tsact) => {
-				const vm = new Hdlt_vm({tx_prev: this.dlt.utxo_db.get(tsact.utxo), tx_new: tsact});
-
-				// For the HKSRV application, no transaction should have an exit value of 0
-				if (!vm.exec()) {
-					return branch[i];
-				}
-				
-				if (tsact.utxo === Hksrv.SIG_TOK) {
-					// We add the new transaction to the db unless it's a revocation - any spend of a non-SIG_TOK utxo is a revocation
-					this.dlt.utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)), tsact);
-				} else {
-					// Only delete the utxo from the db if it's not SIG_TOK!
-					this.dlt.utxo_db.delete(tsact.utxo);
-				}			
-			});
-		}
-
-		return null;
 	}
 }
 

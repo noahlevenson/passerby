@@ -53,7 +53,7 @@ class Hdlt {
 	utxo_db;
 	tx_valid_hook;
 
-	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}} = {}) {
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -67,6 +67,27 @@ class Hdlt {
 		this.tx_cache = new Map();
 		this.utxo_db = new Map(); // TODO: Build this from the store, we may be deserializing existing state!
 		this.tx_valid_hook = tx_valid_hook;
+		this.db_hook = db_hook;
+	}
+
+	// Compute the state of the utxo db over the branch of blocks
+	// ending at last_node - assumes you've validated integrity of your blocks beforehand!
+	// TODO: it's O(n) to collect the branch and we don't yet
+	// have a way to compute only a portion of the branch...
+	compute_db(last_node) {
+		const branch = [];
+
+		while (last_node !== null) {
+			branch.unshift(last_node);
+			last_node = last_node.parent;
+		}
+
+		// Start at genesis block + 1
+		for (let i = 1; i < branch.length; i += 1) {
+			branch[i].data.tsacts.forEach((tsact) => {	
+				this.db_hook(tsact, this.utxo_db);		
+			});
+		}
 	}
 
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
@@ -80,7 +101,7 @@ class Hdlt {
 	// Integrity is two checks: the block's hash_prev must match the hash
 	// of the previous block, and its nonce must pass the integrity check
 	// prescribed by the consensus method associated with this instance of HDLT
-	// TODO: we only use this once in Hksrv, delete and replace with individual functions
+	// TODO: we only use this once up above, delete and replace with the two functions
 	is_valid_block(node) {
 		const hash_check = Hdlt_block.sha256(node.parent.data) === node.data.hash_prev;
 		const nonce_check = this.verify_nonce(node.data);
@@ -184,13 +205,15 @@ class Hdlt {
 					return false;
 				}
 
+				this.db_hook(tx_new, db_clone);
 				return this.tx_valid_hook(tx_new, db_clone);
 			});
 
 			if (valid_tsacts) {
-				parent.add_child(new Hntree_node({data: req.data, parent: parent}));
+				const new_node = new Hntree_node({data: req.data, parent: parent})
+				parent.add_child(new_node);
 				this.store.build_dict();
-				// TODO: recompute utxo db
+				this.compute_db(new_node);
 
 				req.data.tsacts.forEach(tx_new => this.tx_cache.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new))));
 				this.broadcast(this.block_req, {hdlt_block: req.data});
