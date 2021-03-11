@@ -72,8 +72,7 @@ class Hdlt {
 	// Compute the state of of a branch of blocks ending with last_node
 	// returns a Map of unspent outputs as [tx_hash: tx]
 	build_db(last_node) {
-		const utxo_db = new Map();
-		this.db_init_hook(utxo_db);
+		const utxo_db = this.db_init_hook(new Map());
 		const branch = [];
 
 		while (last_node !== null) {
@@ -295,7 +294,7 @@ class Hdlt {
 	// for all of our req functions below to be the same
 	broadcast(msg_func, config_obj) {
 		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id).filter(n => !n.node_id.equals(this.hkad.node_id));
-		Hlog.log(`[HDLT] (${this.net.app_id}) Broadcasting ${msg_func.name} to ${neighbors.length} neighbors...`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Broadcasting a ${msg_func.name} to ${neighbors.length} neighbors...`);
 
 		neighbors.forEach((n) => {
 			const arg = Object.assign({}, config_obj, {

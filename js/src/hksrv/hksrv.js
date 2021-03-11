@@ -32,8 +32,8 @@ class Hksrv {
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
 
-	// The application layer validation hook is where you specify any special validation
-	// logic beyond what's applied by the Hdlt layer - should return true if valid, false if not
+	// The application layer tx validation hook is where you specify any special validation logic for 
+	// transactions beyond what's applied by the Hdlt layer - should return true if valid, false if not
 	static TX_VALID_HOOK(tx_new, utxo_db) {
 		// TODO: make sure that tx_new only has the scripts it's allowed to have
 
@@ -59,6 +59,8 @@ class Hksrv {
 		} else {
 			utxo_db.delete(tx_new.utxo);
 		}
+
+		return utxo_db;
 	}
 
 	// The application layer UTXO DB init hook is for anything special you want to do to
@@ -73,6 +75,7 @@ class Hksrv {
 		})
 
 		utxo_db.set(Hksrv.SIG_TOK, tok);
+		return utxo_db;
 	}
 
 	// TODO: We should implement an Hdlt "application layer" base class to accommodate the above hooks
