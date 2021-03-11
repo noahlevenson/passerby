@@ -65,7 +65,7 @@ class Happ {
 	];
 
 	static AUTHORITIES = [
-
+		"3056301006072a8648ce3d020106052b8104000a034200046b5079733c780fd718aed4c4bea0fa08c7f143c09ee5c09247cb34f7bcea21fd69d08613a99611f4247e900f54f0ce41fac376b1705056dd7a2a31c6b37051fd"
 	];
 
 	port;
@@ -444,6 +444,7 @@ class Happ {
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			args: Happ.AUTHORITIES,
+			tx_valid_hook: Hksrv.TX_VALID_HOOK
 		});
 
 		this.hksrv = new Hksrv({dlt: ksrv_dlt});

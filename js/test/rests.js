@@ -15,19 +15,26 @@ const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
 const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
 const { Alvin_friends_dinner_menu } = require("./alvin_friends_dinner_menu.js");
 const { Rocnramen_menu } = require("./rocnramen_menu.js");
+const { Hdlt } = require("../src/hdlt/hdlt.js");
 const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js")
 const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
 const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: Happ.generate_key_pair().publicKey,
+        pubkey: '3056301006072a8648ce3d020106052b8104000a034200046b5079733c780fd718aed4c4bea0fa08c7f143c09ee5c09247cb34f7bcea21fd69d08613a99611f4247e900f54f0ce41fac376b1705056dd7a2a31c6b37051fd',
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
         lat: 40.9018663,
         long: -73.7912739
     });
+
+    const privkey = '-----BEGIN PRIVATE KEY-----\n' +
+    'MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg0TJLVlvPAom2iTy2Zdgb\n' +
+    'jFN0CcIdFZLtGwg9O8cylHGhRANCAARrUHlzPHgP1xiu1MS+oPoIx/FDwJ7lwJJH\n' +
+    'yzT3vOoh/WnQhhOplhH0JH6QD1TwzkH6w3axcFBW3XoqMcazcFH9\n' +
+    '-----END PRIVATE KEY-----\n'
 
     Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 
@@ -47,11 +54,12 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     //     {hdlt_tsact: tx_new}
     // );
 
-
     const block = new Hdlt_block({
         prev_block: network.hksrv.dlt.store.get_deepest_blocks()[0].data,
         tsacts: [tx_new]
     });
+
+    block.nonce = Hdlt.make_nonce_auth(block, larosa.pubkey, privkey);
     
     network.hksrv.dlt.broadcast(
         network.hksrv.dlt.block_req,

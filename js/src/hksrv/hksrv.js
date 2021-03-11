@@ -31,8 +31,23 @@ class Hksrv {
 	static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
+
+	static TX_VALID_HOOK(tx_prev, tx_new, utxo_db) {
+		// TODO: make sure that tx_new only has the scripts it's allowed to have
+
+		// Application layer validation hooks are expected to modify the running
+		// utxo_db as necessary - the default behavior would be just to add tx_new
+		if (tx_prev === Hksrv.SIG_TOK) {
+			// We add the new transaction to the db unless it's a revocation
+			utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)), tx_new);
+		} else {
+			// Only delete the utxo from the db if it's not SIG_TOK!
+			utxo_db.delete(tx_new.utxo);
+		}
+
+		return true;
+	};
 	
-	utxo_db;
 	dlt;
 	
 	constructor ({dlt} = {}) {
@@ -42,8 +57,8 @@ class Hksrv {
 			unlock: [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS]
 		})
 
-		this.utxo_db = new Map([[Hksrv.SIG_TOK, tok]]);
 		this.dlt = dlt;
+		this.dlt.utxo_db.set(Hksrv.SIG_TOK, tok);
 	}
 
 	start() {
@@ -89,7 +104,7 @@ class Hksrv {
 		});	
 
 		// If this tsact already exists in the db, it means that peer_a has already spent SIG_TOK on peer_b
-		if (check_db && this.utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)))) {
+		if (check_db && this.dlt.utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)))) {
 			return null;
 		}
 
@@ -102,7 +117,7 @@ class Hksrv {
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
 		// If the original tsact doesn't exist in the db, then peer_a hasn't signed peer_b
-		if (!this.utxo_db.has(utxo)) {
+		if (!this.dlt.utxo_db.has(utxo)) {
 			return null;
 		}
 
@@ -133,12 +148,12 @@ class Hksrv {
 		// Start at genesis block + 1
 		for (let i = 1; i < branch.length; i += 1) {
 			if (!this.dlt.is_valid_block(branch[i])) {
-				this.utxo_db.clear();
+				this.dlt.utxo_db.clear();
 				return branch[i];
 			}
 
 			branch[i].data.tsacts.forEach((tsact) => {
-				const vm = new Hdlt_vm({tx_prev: this.utxo_db.get(tsact.utxo), tx_new: tsact});
+				const vm = new Hdlt_vm({tx_prev: this.dlt.utxo_db.get(tsact.utxo), tx_new: tsact});
 
 				// For the HKSRV application, no transaction should have an exit value of 0
 				if (!vm.exec()) {
@@ -147,10 +162,10 @@ class Hksrv {
 				
 				if (tsact.utxo === Hksrv.SIG_TOK) {
 					// We add the new transaction to the db unless it's a revocation - any spend of a non-SIG_TOK utxo is a revocation
-					this.utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)), tsact);
+					this.dlt.utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)), tsact);
 				} else {
 					// Only delete the utxo from the db if it's not SIG_TOK!
-					this.utxo_db.delete(tsact.utxo);
+					this.dlt.utxo_db.delete(tsact.utxo);
 				}			
 			});
 		}

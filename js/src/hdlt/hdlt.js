@@ -17,18 +17,12 @@ const { Hdlt_msg } = require("./hdlt_msg.js");
 const { Hdlt_tsact } = require("./hdlt_tsact.js");
 const { Hdlt_block } = require("./hdlt_block.js");
 const { Hdlt_store } = require("./hdlt_store.js");
+const { Hdlt_vm } = require("./hdlt_vm.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT:
-// blocks, transactions, the VM, messaging/propagation, and consensus
-// It doesn't concern itself with interpreting a blockchain or any notion
-// of state (e.g. unspent outputs or a utxo db) - that stuff is the
-// responsibility of the application layer. The application layer also
-// supplies the DLT's tx validation function, such that applications can
-// make specific demands of transactions (e.g., allow or disallow
-// certain kinds of scripts in certain situations)
-
+// blocks, transactions, the VM, messaging/propagation, consensus, and the utxo db
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
 
@@ -55,8 +49,10 @@ class Hdlt {
 	store;
 	res;
 	tx_cache;
+	utxo_db;
+	tx_valid_hook;
 
-	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store()} = {}) {
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -68,6 +64,8 @@ class Hdlt {
 		this.store = store;
 		this.res = new EventEmitter();
 		this.tx_cache = new Map();
+		this.utxo_db = new Map(); // TODO: Build this from the store!
+		this.tx_valid_hook = tx_valid_hook;
 	}
 
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
@@ -81,6 +79,7 @@ class Hdlt {
 	// Integrity is two checks: the block's hash_prev must match the hash
 	// of the previous block, and its nonce must pass the integrity check
 	// prescribed by the consensus method associated with this instance of HDLT
+	// TODO: we only use this once in Hksrv, delete and replace with individual functions
 	is_valid_block(node) {
 		const hash_check = Hdlt_block.sha256(node.parent.data) === node.data.hash_prev;
 		const nonce_check = this.verify_nonce(node.data);
@@ -146,7 +145,7 @@ class Hdlt {
 	}
 
 	// TODO: make sure req.data is a structurally valid Hdlt_block
-	// Also, we're doing all block validation in here, we should break this out elsewhere
+	// Also, we're doing all block validation in here, but we should break this out elsewhere
 	_res_block(req, rinfo) {
 		const res = new Hdlt_msg({
 			data: "OK",
@@ -169,12 +168,32 @@ class Hdlt {
 		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
 		// block, and the new block's nonce passes verification
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
-			console.log("Hello????");
-			// Perform deep validation of all transactions, 
-			// add the new block where it belongs, 
-			// clear the appropriate transactions from the tx_cache,
-			// and rebroadcast it
+			const db_clone = new Map(this.utxo_db);
 
+			const valid_tsacts = req.data.tsacts.every((tx_new) => {
+				const utxo = db_clone.get(tx_new.utxo);
+
+				if (!utxo) {
+					return false;
+				}
+
+				const vm = new Hdlt_vm({tx_prev: utxo, tx_new: tx_new});
+
+				if (!vm.exec()) {
+					return false;
+				}
+
+				return this.tx_valid_hook(utxo, tx_new, db_clone);
+			});
+
+			if (valid_tsacts) {
+				parent.add_child(new Hntree_node({data: req.data, parent: parent}));
+				this.store.build_dict();
+				// TODO: recompute utxo db
+
+				req.data.tsacts.forEach(tx_new => this.tx_cache.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new))));
+				this.broadcast(this.block_req, {hdlt_block: req.data});
+			}
 		} else if (!parent) {
 			// Case 3: we don't know the new block's parent
 			// perform init function, broadcast our last known block hash with GETBLOCKS
