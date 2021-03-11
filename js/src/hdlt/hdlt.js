@@ -308,13 +308,14 @@ class Hdlt {
 	// for all of our req functions below to be the same
 	broadcast(msg_func, config_obj) {
 		const neighbors = this.hkad._new_get_nodes_closest_to(this.hkad.node_id).filter(n => !n.node_id.equals(this.hkad.node_id));
-		
+		Hlog.log(`[HDLT] (${this.net.app_id}) Broadcasting ${msg_func.name} to ${neighbors.length} neighbors...`);
+
 		neighbors.forEach((n) => {
 			const arg = Object.assign({}, config_obj, {
 				addr: n.addr, 
 				port: n.port, 
 				success: (res, ctx) => {
-					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_func.name} to ${n.addr}:${n.port}`);
+					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_func.name} to ${n.addr}:${n.port} OK`);
 				}
 			});
 
