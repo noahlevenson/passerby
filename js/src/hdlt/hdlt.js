@@ -201,6 +201,7 @@ class Hdlt {
 				const new_node = new Hntree_node({data: req.data, parent: parent})
 				parent.add_child(new_node);
 				this.store.build_dict();
+				Hlog.log(`[HDLT] (${this.net.app_id}) added new block ${block_hash}`);
 				this.broadcast(this.block_req, {hdlt_block: req.data});
 			}
 		} else if (!parent) {
