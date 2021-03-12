@@ -112,11 +112,43 @@ class Hdlt {
 	start() {
 		this.net.network.on("message", this._on_message.bind(this));
 		Hlog.log(`[HDLT] (${this.net.app_id}) Online`);
+		const last_known = this._init();
+		Hlog.log(`[HDLT] (${this.net.app_id}) Init: ${this.store.size()} blocks at startup, last known ${last_known}`);
 	}
 
 	stop() {
 		this.net.network.removeListener("message", this._on_message.bind(this));
 		Hlog.log(`[HDLT] (${this.net.app_id}) Offline`);
+	}
+
+	_init() {
+		// If we have an unresolved accidental fork, just advertise the last known hash before the fork
+		const last_known_node = this.store.get_deepest_blocks()[0];
+		
+		while (last_known_node.parent !== null && last_known_node.parent.degree() > 1) {
+			last_known_node = last_known_node.parent;
+		}
+
+		const last_known_block_hash = Hdlt_block.sha256(last_known_node.data);
+
+		// TODO: this is doing way too much extra work - a better way is to wait until we get all the lists of blocks,
+		// then find the intersection of the lists before asking nodes to send blocks
+		this.broadcast(this.getblocks_req, {
+			block_hash: last_known_block_hash, 
+			success: (res, addr, port, ctx) => {
+				res.data.forEach((block_hash) => {
+					if (!this.store.get_node(block_hash)) {
+						this.getdata_req({
+							block_hash: block_hash, 
+							addr: addr, 
+							port: port
+						});
+					}
+				});
+			}
+		});
+
+		return last_known_block_hash;
 	}
 
 	_on_message(msg, rinfo) {
@@ -201,7 +233,7 @@ class Hdlt {
 				const new_node = new Hntree_node({data: req.data, parent: parent})
 				parent.add_child(new_node);
 				this.store.build_dict();
-				Hlog.log(`[HDLT] (${this.net.app_id}) added new block ${block_hash}`);
+				Hlog.log(`[HDLT] (${this.net.app_id}) Added new block ${block_hash}, ${this.store.size()} blocks total`);
 				this.broadcast(this.block_req, {hdlt_block: req.data});
 			}
 		} else if (!parent) {
@@ -237,15 +269,20 @@ class Hdlt {
 	}
 
 	_res_getdata(req, rinfo) {
-		let block = null;
+		// If we have the block, we send a BLOCK message to the requester
+		// as well as a RES for their GETDATA message
 		const block_node = this.store.get_node(req.data);
 
 		if (block_node) {
-			block = block_node.data;
+			this.block_req({
+				hdlt_block: block_node.data, 
+				addr: rinfo.addr, 
+				port: rinfo.port,
+			});
 		}
 
 		return new Hdlt_msg({
-			data: block,
+			data: "OK",
 			type: Hdlt_msg.TYPE.RES,
 			flavor: Hdlt_msg.FLAVOR.GETDATA,
 			app_id: req.app_id,
@@ -271,7 +308,7 @@ class Hdlt {
 					clearTimeout(timeout_id);
 
 					if (typeof success === "function") {
-						success(res_msg, this);
+						success(res_msg, addr, port, this);
 					}
 
 					resolve();
@@ -299,10 +336,7 @@ class Hdlt {
 		neighbors.forEach((n) => {
 			const arg = Object.assign({}, config_obj, {
 				addr: n.addr, 
-				port: n.port, 
-				success: (res, ctx) => {
-					Hlog.log(`[HDLT] (${this.net.app_id}) Broadcast ${msg_func.name} to ${n.addr}:${n.port} OK`);
-				}
+				port: n.port
 			});
 
 			msg_func.bind(this, arg)();

@@ -43,6 +43,11 @@ class Hdlt_store {
 		return this.dict.get(hash);
 	}
 
+	// Fetch the current size of the store as number of total blocks
+	size() {
+		return this.dict.size;
+	}
+
 	// Get the tree nodes corresponding to the deepest blocks in the tree
 	// in a tree where there is one longest branch, this will return one node
 	get_deepest_blocks() {
