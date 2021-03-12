@@ -257,8 +257,8 @@ class Hdlt {
 		const succ = [];
 
 		if (start_node) {
-			succ = this.store.tree.bfs((node, d, data) => {
-				data.push([node]);
+			this.store.tree.bfs((node, d, data) => {
+				data.push([Hdlt_block.sha256(node.data)]);
 			}, start_node, succ, true);
 		}
 		
