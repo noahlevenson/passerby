@@ -279,7 +279,7 @@ class Hdlt {
 		if (block_node) {
 			this.block_req({
 				hdlt_block: block_node.data, 
-				addr: rinfo.addr, 
+				addr: rinfo.address, 
 				port: rinfo.port,
 			});
 		}
