@@ -72,8 +72,10 @@ class Hntree {
 	}
 
 	// Breadth first search, visitation callback visit(node, distance_from_root, data)
+	// setting undirected to true will treat the tree as an undirected graph by exploring each node's
+	// parent as well as its children
 	// TODO: why do we need DFS first? this seems like a particularly bad implementation
-	bfs(visit = () => {}, node = this.get_root(), data = []) {
+	bfs(visit = () => {}, node = this.get_root(), data = [], undirected = false) {
 		// Get the nodes in a list so we can refer to them by index number
 		const node_list = this.dfs((node, acc) => {
 			acc.push(node);
@@ -93,8 +95,9 @@ class Hntree {
 		while (q.length > 0) {
 			const v = q.pop();
 			visit(v, label_list[node_list.indexOf(v)].d, data);
-			
-			v.get_all_children().forEach((w) => {
+			const parent = undirected && v.parent !== null ? [v.parent] : [];
+
+			v.get_all_children().concat(parent).forEach((w) => {
 				if (label_list[node_list.indexOf(w)].label === Hntree.LABELS.WHITE) {
 					label_list[node_list.indexOf(w)] = {label: Hntree.LABELS.BLACK, d: label_list[node_list.indexOf(v)].d + 1};
 					q.push(w);

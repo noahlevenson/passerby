@@ -133,6 +133,7 @@ class Hdlt {
 
 		// TODO: this is doing way too much extra work - a better way is to wait until we get all the lists of blocks,
 		// then find the intersection of the lists before asking nodes to send blocks
+		// also: since we don't wait for blocks to arrive in order, we may get out of sync and not store any at all
 		this.broadcast(this.getblocks_req, {
 			block_hash: last_known_block_hash, 
 			success: (res, addr, port, ctx) => {
@@ -248,10 +249,33 @@ class Hdlt {
 	}
 
 	_res_getblocks(req, rinfo) {
+		
+		
+
+
 		// DFS inorder traversal starting at the node corresponding to the req hash;
 		// we grab every successive block regardless of what branch it's in
 		let succ = [];
 		const start_node = this.store.get_node(req.data);
+
+
+
+		// To handle the case where a peer is advertising a last known hash
+		// which is in a branch that is not part of our canonical branch, we use
+		// BFS in undirected mode, exploring the tree as though it were an undirected graph
+		// starting at the source node corresponding to the peer's last known hash
+		const pg = this.tree.bfs((node, d, data) => {
+			data.push([node, d]);
+		}, start_node, [], true);
+
+		console.log(pg);
+
+
+
+
+
+
+
 
 		if (start_node) {
 			succ = this.store.tree.dfs((node, data) => {
