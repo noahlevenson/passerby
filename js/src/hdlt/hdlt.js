@@ -248,41 +248,20 @@ class Hdlt {
 		return res;
 	}
 
+	// To handle the case where a peer is advertising a last known hash
+	// which is in a branch that is not part of our canonical branch, we use
+	// BFS in undirected mode, exploring the tree as though it were an undirected graph
+	// starting at the source node corresponding to the peer's last known hash
 	_res_getblocks(req, rinfo) {
-		
-		
-
-
-		// DFS inorder traversal starting at the node corresponding to the req hash;
-		// we grab every successive block regardless of what branch it's in
-		let succ = [];
 		const start_node = this.store.get_node(req.data);
-
-
-
-		// To handle the case where a peer is advertising a last known hash
-		// which is in a branch that is not part of our canonical branch, we use
-		// BFS in undirected mode, exploring the tree as though it were an undirected graph
-		// starting at the source node corresponding to the peer's last known hash
-		const pg = this.tree.bfs((node, d, data) => {
-			data.push([node, d]);
-		}, start_node, [], true);
-
-		console.log(pg);
-
-
-
-
-
-
-
+		const succ = [];
 
 		if (start_node) {
-			succ = this.store.tree.dfs((node, data) => {
-				data.push(Hdlt_block.sha256(node.data));
-			}, (node, data) => {}, start_node);
+			succ = this.store.tree.bfs((node, d, data) => {
+				data.push([node]);
+			}, start_node, succ, true);
 		}
-
+		
 		return new Hdlt_msg({
 			data: succ,
 			type: Hdlt_msg.TYPE.RES,
