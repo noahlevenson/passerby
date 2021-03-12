@@ -112,8 +112,7 @@ class Hdlt {
 	start() {
 		this.net.network.on("message", this._on_message.bind(this));
 		Hlog.log(`[HDLT] (${this.net.app_id}) Online`);
-		const last_known = this._init();
-		Hlog.log(`[HDLT] (${this.net.app_id}) Init: ${this.store.size()} blocks at startup, last known ${last_known}`);
+		this._init();
 	}
 
 	stop() {
@@ -129,13 +128,14 @@ class Hdlt {
 			last_known_node = last_known_node.parent;
 		}
 
-		const last_known_block_hash = Hdlt_block.sha256(last_known_node.data);
+		const last_hash = Hdlt_block.sha256(last_known_node.data);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Init: ${this.store.size()} known blocks, last known ${last_hash}`);
 
-		// TODO: this is doing way too much extra work - a better way is to wait until we get all the lists of blocks,
+		// TODO: this is doing way too much pointless work - a better way is to wait until we get all the lists of blocks,
 		// then find the intersection of the lists before asking nodes to send blocks
-		// also: since we don't wait for blocks to arrive in order, we may get out of sync and not store any at all
+		// also: since we don't wait for blocks to arrive in order, we could kick off a lot of _res_block case 3's,
 		this.broadcast(this.getblocks_req, {
-			block_hash: last_known_block_hash, 
+			block_hash: last_hash, 
 			success: (res, addr, port, ctx) => {
 				res.data.forEach((block_hash) => {
 					if (!this.store.get_node(block_hash)) {
@@ -148,8 +148,6 @@ class Hdlt {
 				});
 			}
 		});
-
-		return last_known_block_hash;
 	}
 
 	_on_message(msg, rinfo) {
@@ -238,11 +236,8 @@ class Hdlt {
 				this.broadcast(this.block_req, {hdlt_block: req.data});
 			}
 		} else if (!parent) {
-			// Case 3: we don't know the new block's parent
-			// perform init function, broadcast our last known block hash with GETBLOCKS
-			// and try to rebuild our db
-
-			// TODO: write me after we have our init logic in place
+			// Case 3: we don't know the new block's parent, run init to rebuild our store
+			this._init();
 		}
 
 		return res;
