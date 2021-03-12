@@ -197,11 +197,10 @@ class Hdlt {
 			});
 
 			if (valid_tsacts) {
-				// Add the new block, rebuild the store, clear the tx cache, and rebroadcast it
+				// Add the new block, rebuild the store index, and rebroadcast it
 				const new_node = new Hntree_node({data: req.data, parent: parent})
 				parent.add_child(new_node);
 				this.store.build_dict();
-				req.data.tsacts.forEach(tx_new => this.tx_cache.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new))));
 				this.broadcast(this.block_req, {hdlt_block: req.data});
 			}
 		} else if (!parent) {

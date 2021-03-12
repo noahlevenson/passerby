@@ -129,12 +129,16 @@ class Hksrv {
 			unlock: unlock_script
 		});	
 
-		/* 
-		// If this tsact already exists in the db, it means that peer_a has already spent SIG_TOK on peer_b
-		if (check_db && this.dlt.utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact)))) {
-			return null;
+		if (check_db) {
+			// We want to prevent the peer from double spending SIG_TOK on peer_b
+			// if we've got an unresolved accidental fork, we need to consider all the branches
+			const dbs = this.dlt.store.get_deepest_blocks().map(node => this.dlt.build_db(node));
+			const double_spend = dbs.some(db => db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact))));
+
+			if (double_spend) {
+				return null;
+			}
 		}
-		*/
 
 		return tsact;
 	}
@@ -145,12 +149,14 @@ class Hksrv {
 		const prev_tsact = this.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
-		/*
-		// If the original tsact doesn't exist in the db, then peer_a hasn't signed peer_b
-		if (!this.dlt.utxo_db.has(utxo)) {
+		// We want to prevent the peer from issuing a revocation for a signature that doesn't exist
+		// if we've got an unresolved accidental fork, we need to consider all the branches
+		const dbs = this.dlt.store.get_deepest_blocks().map(node => this.dlt.build_db(node));
+		const has_utxo = dbs.some(db => db.has(utxo));
+
+		if (!has_utxo) {
 			return null;
 		}
-		*/
 
 		const tsact = new Hdlt_tsact({
 			utxo: utxo,

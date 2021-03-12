@@ -47,6 +47,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     const last_known_block = network.hksrv.dlt.store.tree.get_root().data;
 
     const tx_new = network.hksrv.sign(larosa, larosa);
+
     network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
 
     // network.hksrv.dlt.broadcast(
@@ -66,7 +67,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         {hdlt_block: block}
     );
     
-    // next block:
+    // *** here comes the next block:
 
     const new_block = new Hdlt_block({
         prev_block: block,
@@ -75,10 +76,11 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     new_block.nonce = Hdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
 
-    // network.hksrv.dlt.broadcast(
-    //     network.hksrv.dlt.block_req,
-    //     {hdlt_block: new_block}
-    // );
+    network.hksrv.dlt.broadcast(
+        network.hksrv.dlt.block_req,
+        {hdlt_block: new_block}
+    );
+    
 
     // console.log(network.hksrv.dlt.store.get_deepest_blocks());
 
