@@ -258,7 +258,7 @@ class Hdlt {
 
 		if (start_node) {
 			this.store.tree.bfs((node, d, data) => {
-				data.push([Hdlt_block.sha256(node.data)]);
+				data.push(Hdlt_block.sha256(node.data));
 			}, start_node, succ, true);
 		}
 		
