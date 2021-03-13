@@ -30,6 +30,8 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
+    console.log(Hid.generate_key_pair("yeahbro"));
+
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
     'MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiLhWWYGo9tOAICCAAw\n' +
     'DAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEEKcoNHdis4NY6VWiJPgOTZsEgZC2\n' +
@@ -42,6 +44,12 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     // Lil hack to make us one of the AUTH nodes
     Happ.AUTHORITIES = [larosa.pubkey];
+
+    Hid.set_passphrase_func(() => {
+        return new Promise((resolve, reject) => {
+            resolve("wrong passphrase");
+        });
+    });
 
     const network = new Happ({hid_pub: larosa});
     await network.start();

@@ -66,7 +66,8 @@ class Happ {
 	];
 
 	static AUTHORITIES = [
-		"3056301006072a8648ce3d020106052b8104000a034200044a8338487fd885fe91435de1b5f78bb14a4bbedd38caa467ec86715e4073d8cba6f02b6d63e2cd9981fc560579d96adbe6edd832b1d0bd0c73841704234cee9f"
+		"3056301006072a8648ce3d020106052b8104000a034200044a8338487fd885fe91435de1b5f78bb14a4bbedd38caa467ec86715e4073d8cba6f02b6d63e2cd9981fc560579d96adbe6edd832b1d0bd0c73841704234cee9f",
+		"3056301006072a8648ce3d020106052b8104000a0342000485184e4375109973bbd81554c1b161b23544a38458bc69712ad75ef2ae9844cdf00466d76cff4fa8020445e3d14e22c6ac82d697d039dfe52811f42c0886b3e9"
 	];
 
 	port;
@@ -447,6 +448,8 @@ class Happ {
 		const ksrv_dlt = new Hdlt({
 			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
+			hid_pub: this.hid_pub,
+			hid_prv: this.hid_prv,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			is_validator: this.is_keyserver_validator,
 			args: {auth: Happ.AUTHORITIES, rate: Happ.KEYSERVER_BLOCK_RATE, t_handle: null},

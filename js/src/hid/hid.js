@@ -18,6 +18,12 @@ const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hid {
+    static GET_PASSPHRASE_F = () => {
+        return new Promise((resolve, reject) => {
+            resolve(undefined);
+        });
+    };
+
     static SYM_ADJ_A = dict_adj_a;
     static SYM_ADJ_B = dict_adj_b;
     static SYM_NOUN = dict_noun;
@@ -26,7 +32,6 @@ class Hid {
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
 	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
-	
     static KEY_TYPE = "ec";
     static CURVE = "secp256k1" // Only applies if KEY_TYPE is "ec"
 	static MODULUS_LEN = 1024; // Only applies if KEY_TYPE is "rsa"
@@ -37,6 +42,20 @@ class Hid {
 
     static dict_err() {
         throw new Error("Dictionary cardinality must be power of 2");
+    }
+
+    // Set the systemwide function to fetch the user's passphrase
+    // must return a Promise which resolves with the password
+    static set_passphrase_func(f) {
+        if (typeof f !== "function") {
+            throw new TypeError("Argument f must be a function");
+        }
+
+        Hid.GET_PASSPHRASE_F = f;
+    }
+
+    static get_passphrase() {
+        return Hid.GET_PASSPHRASE_F();
     }
 
 	static generate_key_pair(passphrase) {
