@@ -447,7 +447,7 @@ class Happ {
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			is_validator: this.is_keyserver_validator,
-			args: {auth: Happ.AUTHORITIES, rate: [Happ.KEYSERVER_BLOCK_RATE], t_handle: null},
+			args: {auth: Happ.AUTHORITIES, rate: Happ.KEYSERVER_BLOCK_RATE, t_handle: null},
 			tx_valid_hook: Hksrv.TX_VALID_HOOK,
 			db_hook: Hksrv.UTXO_DB_HOOK,
 			db_init_hook: Hksrv.UTXO_DB_INIT_HOOK
