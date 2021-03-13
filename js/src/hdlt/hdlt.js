@@ -310,6 +310,14 @@ class Hdlt {
 				this.store.build_dict();
 				Hlog.log(`[HDLT] (${this.net.app_id}) Added new block ${block_hash}, ${this.store.size()} blocks total`);
 				this.broadcast(this.block_req, {hdlt_block: req.data});
+
+				// If I'm a validator and the new block is the first block at a 
+				// new height, then it's time to throw out my work and start a new block
+				const new_d = this.store.get_deepest_blocks();
+
+				if (this.is_validator && new_d.length === 1 && new_d[0] === new_node) {
+					this.make_block(new_node);
+				}
 			}
 		} else if (!parent) {
 			// Case 3: we don't know the new block's parent, run init to rebuild our store
