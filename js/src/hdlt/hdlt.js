@@ -160,9 +160,11 @@ class Hdlt {
 				return res.valid;
 			});
 
+			// If we have no reason to make a new block this time, and we didn't
+			// get interrupted by a new deepest block, then keep working on same predecessor
 			if (valid_tx.length < 1) {
 				Hlog.log(`[HDLT] (${this.net.app_id}) No valid new tx at block time!`);
-				this._make_block_auth(this.store.get_deepest_blocks()[0]);
+				this._make_block_auth(pred_block_node);
 			}
 		}, t);
 	}

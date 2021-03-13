@@ -56,7 +56,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     // );
 
     const block = new Hdlt_block({
-        prev_block: network.hksrv.dlt.store.get_deepest_blocks()[0].data,
+        prev_block: network.hksrv.dlt.store.tree.get_root().data,
         tsacts: [tx_new]
     });
 
