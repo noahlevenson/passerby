@@ -82,12 +82,7 @@ class Hdlt {
 	// returns a Map of unspent outputs as [tx_hash: tx]
 	build_db(last_node) {
 		const utxo_db = this.db_init_hook(new Map());
-		const branch = [];
-
-		while (last_node !== null) {
-			branch.unshift(last_node);
-			last_node = last_node.parent;
-		}
+		const branch = this.store.get_branch(last_node);
 
 		// Start at genesis block + 1
 		for (let i = 1; i < branch.length; i += 1) {

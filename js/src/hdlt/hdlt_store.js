@@ -43,6 +43,18 @@ class Hdlt_store {
 		return this.dict.get(hash);
 	}
 
+	// Collect a branch of the tree, in order, ending with last_node
+	get_branch(last_node) {
+		const branch = [];
+
+		while (last_node !== null) {
+			branch.unshift(last_node);
+			last_node = last_node.parent;
+		}
+
+		return branch;
+	}
+
 	// Fetch the current size of the store as number of total blocks
 	size() {
 		return this.dict.size;
