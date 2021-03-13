@@ -27,7 +27,7 @@ const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browse
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
 
-	// When using AUTH, pass this object as args: {auth: [pubkey1, pubkey2...], rate: [Happ.KEYSERVER_BLOCK_RATE], t_handle: null}
+	// When using AUTH, pass this object as args: {auth: [pubkey1, pubkey2...], rate: [min_ms, max_ms], t_handle: null}
 	// TODO: we should have classes for all the different consensus method args
 	static CONSENSUS_METHOD = {
 		AUTH: 0
@@ -35,6 +35,10 @@ class Hdlt {
 
 	NONCE_INTEGRITY = new Map([
 		[Hdlt.CONSENSUS_METHOD.AUTH, this._verify_nonce_auth]
+	]);
+
+	MAKE_BLOCK_ROUTINE = new Map([
+		[Hdlt.CONSENSUS_METHOD.AUTH, this._make_block_auth]
 	]);
 
 	FLAVOR_RES_EXEC = new Map([
@@ -47,6 +51,7 @@ class Hdlt {
 	net;
 	hkad;
 	consensus;
+	is_validator;
 	args;
 	store;
 	res;
@@ -55,7 +60,7 @@ class Hdlt {
 	db_hook;
 	db_init_hook;
 
-	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = {}, store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, is_validator = false, args = {}, store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -63,6 +68,7 @@ class Hdlt {
 		this.net = net;
 		this.hkad = hkad;
 		this.consensus = consensus;
+		this.is_validator = is_validator;
 		this.args = args;
 		this.store = store;
 		this.res = new EventEmitter();
@@ -112,9 +118,33 @@ class Hdlt {
 		});
 	}
 
+	make_block(pred_block) {
+		return this.MAKE_BLOCK_ROUTINE.get(this.consensus).bind(this)(pred_block);
+	}
+
+	_make_block_auth(pred_block) {
+		if (this.args.t_handle !== null) {
+			clearTimeout(this.args.t_handle);
+		}
+
+		const delta = this.args.rate[1] - this.args.rate[0];
+		const t = this.args.rate[0] + Math.floor(Math.random() * delta);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Making new block in ${t / 1000}s`);
+
+		setTimeout(() => {
+
+		}, t);
+	}
+
 	start() {
 		this.net.network.on("message", this._on_message.bind(this));
 		Hlog.log(`[HDLT] (${this.net.app_id}) Online`);
+
+		if (this.is_validator) {
+			Hlog.log(`[HDLT] (${this.net.app_id}) As validator`);
+			this.make_block(this.store.get_deepest_blocks()[0].data);
+		}
+
 		this._init();
 	}
 

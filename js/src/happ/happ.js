@@ -45,7 +45,6 @@ class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
 	static KEYSERVER_APP_ID = "k";
-	static KEYSERVER_IS_VALIDATOR = false;
 	static KEYSERVER_BLOCK_RATE = [10000, 20000];
 	static SEARCH_DIST_MILES = 2.0;
 	static T_NAT_KEEPALIVE = 20000;
@@ -80,11 +79,12 @@ class Happ {
 	keepalive;
 	keepalive_interval_handle;
 	geocoding;
+	is_keyserver_validator;
 
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of its public key, and and a PHT interface (indexing on GEO_INDEX_ATTR)
 	// TODO: Parameterize this to create different kinds of Happ instances
-	constructor({hid_pub = null, port = 27500, keepalive = true, geocoding = Happ.GEOCODING_METHOD.NOMINATIM} = {}) {
+	constructor({hid_pub = null, port = 27500, keepalive = true, geocoding = Happ.GEOCODING_METHOD.NOMINATIM, is_keyserver_validator = false} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Object.defineProperty(global.Map.prototype, "toJSON", {
 			value: Hutil._map_to_json
@@ -103,6 +103,7 @@ class Happ {
         this.keepalive = keepalive;
 		this.keepalive_interval_handle = null;
 		this.geocoding = geocoding;
+		this.is_keyserver_validator = is_keyserver_validator;
 	}
 
 	// Convenience method to generate a public/private key pair
@@ -445,6 +446,7 @@ class Happ {
 			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
+			is_validator: this.is_keyserver_validator,
 			args: {auth: Happ.AUTHORITIES, rate: [Happ.KEYSERVER_BLOCK_RATE], t_handle: null},
 			tx_valid_hook: Hksrv.TX_VALID_HOOK,
 			db_hook: Hksrv.UTXO_DB_HOOK,
