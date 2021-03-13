@@ -45,6 +45,7 @@ class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
 	static KEYSERVER_APP_ID = "k";
+	static KEYSERVER_BLOCK_RATE = [10000, 20000];
 	static SEARCH_DIST_MILES = 2.0;
 	static T_NAT_KEEPALIVE = 20000;
 
@@ -443,7 +444,7 @@ class Happ {
 			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
-			args: Happ.AUTHORITIES,
+			args: {auth: Happ.AUTHORITIES, rate: [Happ.KEYSERVER_BLOCK_RATE], t_handle: null},
 			tx_valid_hook: Hksrv.TX_VALID_HOOK,
 			db_hook: Hksrv.UTXO_DB_HOOK,
 			db_init_hook: Hksrv.UTXO_DB_INIT_HOOK

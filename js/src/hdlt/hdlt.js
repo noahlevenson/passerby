@@ -27,7 +27,8 @@ const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browse
 class Hdlt {
 	static MSG_TIMEOUT = 5000;
 
-	// TODO: When using AUTH, pass a list of authorities' pubkeys as args
+	// When using AUTH, pass this object as args: {auth: [pubkey1, pubkey2...], rate: [Happ.KEYSERVER_BLOCK_RATE], t_handle: null}
+	// TODO: we should have classes for all the different consensus method args
 	static CONSENSUS_METHOD = {
 		AUTH: 1
 	};
@@ -51,8 +52,10 @@ class Hdlt {
 	res;
 	tx_cache;
 	tx_valid_hook;
+	db_hook;
+	db_init_hook;
 
-	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = [], store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
+	constructor({net = null, hkad = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, args = {}, store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -103,7 +106,7 @@ class Hdlt {
 
 	// TODO: this is linear search through the pubkeys in args :(
 	_verify_nonce_auth(block) {
-		return this.args.some((arg) => {
+		return this.args.auth.some((arg) => {
 			const data = Buffer.from(Hdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
 			return Hid.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
 		});
@@ -247,6 +250,12 @@ class Hdlt {
 	// which is in a branch that is not part of our canonical branch, we use
 	// BFS in undirected mode, exploring the tree as though it were an undirected graph
 	// starting at the source node corresponding to the peer's last known hash
+	// TODO: since we use BFS, this method sends block hashes ordered by their distance
+	// from the last known block, which seems desirable -- but it also sends every single
+	// block in our data store except for the one known to the peer, and we leave it
+	// to the peer to decide which blocks to request. seems like we can do this better?
+	// the essential question: what do we really know about the state of a peer's store,
+	// given only one known block hash? 
 	_res_getblocks(req, rinfo) {
 		const start_node = this.store.get_node(req.data);
 		const succ = [];
