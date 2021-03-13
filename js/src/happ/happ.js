@@ -45,6 +45,7 @@ class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
 	static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
 	static KEYSERVER_APP_ID = "k";
+	static KEYSERVER_IS_VALIDATOR = false;
 	static KEYSERVER_BLOCK_RATE = [10000, 20000];
 	static SEARCH_DIST_MILES = 2.0;
 	static T_NAT_KEEPALIVE = 20000;

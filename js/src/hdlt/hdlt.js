@@ -30,7 +30,7 @@ class Hdlt {
 	// When using AUTH, pass this object as args: {auth: [pubkey1, pubkey2...], rate: [Happ.KEYSERVER_BLOCK_RATE], t_handle: null}
 	// TODO: we should have classes for all the different consensus method args
 	static CONSENSUS_METHOD = {
-		AUTH: 1
+		AUTH: 0
 	};
 
 	NONCE_INTEGRITY = new Map([
