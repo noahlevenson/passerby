@@ -290,16 +290,15 @@ class Hdlt {
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
 			// We'll validate transactions in this new block against the 
 			// state of the utxo db as computed from the genesis block through its parent block
-			const utxo_db = this.build_db(parent);
-			const valid_tsacts = [];
-
-			for (let i = 0; i < req.data.tsacts.length; i += 1) {
-				const res = this._validate_tx({tx: req.data.tsacts[i], utxo_db: utxo_db});
+			let utxo_db = this.build_db(parent);
+			
+			const valid_tsacts = req.data.tsacts.every((tx) => {
+				const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
 				utxo_db = res.utxo_db;
-				valid_tsacts.push(res.valid);
-			}
+				return res.valid;
+			});
 
-			if (valid_tsacts.every(bool => bool)) {
+			if (valid_tsacts) {
 				// Add the new block, rebuild the store index, and rebroadcast it
 				const new_node = new Hntree_node({data: req.data, parent: parent})
 				parent.add_child(new_node);
