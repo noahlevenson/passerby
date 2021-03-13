@@ -138,7 +138,7 @@ class Hdlt {
 
 	start() {
 		this.net.network.on("message", this._on_message.bind(this));
-		Hlog.log(`[HDLT] (${this.net.app_id}) Online`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Online using ${Object.keys(Hdlt.CONSENSUS_METHOD)[this.consensus]} consensus`);
 
 		if (this.is_validator) {
 			Hlog.log(`[HDLT] (${this.net.app_id}) As validator`);
