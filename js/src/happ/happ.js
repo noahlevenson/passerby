@@ -66,11 +66,12 @@ class Happ {
 	];
 
 	static AUTHORITIES = [
-		"3056301006072a8648ce3d020106052b8104000a034200046b5079733c780fd718aed4c4bea0fa08c7f143c09ee5c09247cb34f7bcea21fd69d08613a99611f4247e900f54f0ce41fac376b1705056dd7a2a31c6b37051fd"
+		"3056301006072a8648ce3d020106052b8104000a034200044a8338487fd885fe91435de1b5f78bb14a4bbedd38caa467ec86715e4073d8cba6f02b6d63e2cd9981fc560579d96adbe6edd832b1d0bd0c73841704234cee9f"
 	];
 
 	port;
-	hid;
+	hid_pub;
+	hid_prv;
 	hpht;
 	hbuy;
 	hksrv;
@@ -84,7 +85,7 @@ class Happ {
 	// Currently we can only create one kind of Happ instance - it implements a single UDP transport module, full STUN services,
 	// a DHT peer with a node id equal to the hash of its public key, and and a PHT interface (indexing on GEO_INDEX_ATTR)
 	// TODO: Parameterize this to create different kinds of Happ instances
-	constructor({hid_pub = null, port = 27500, keepalive = true, geocoding = Happ.GEOCODING_METHOD.NOMINATIM, is_keyserver_validator = false} = {}) {
+	constructor({hid_pub = null, hid_prv = null, port = 27500, keepalive = true, geocoding = Happ.GEOCODING_METHOD.NOMINATIM, is_keyserver_validator = false} = {}) {
 		// Give JavaScript's built-in Map type a serializer and a deserializer
 		Object.defineProperty(global.Map.prototype, "toJSON", {
 			value: Hutil._map_to_json
@@ -95,6 +96,7 @@ class Happ {
 		});
 
 		this.hid_pub = hid_pub;
+		this.hid_prv = hid_prv;
 		this.port = port;
 		this.hpht = null;
 		this.hbuy = null;
@@ -107,13 +109,13 @@ class Happ {
 	}
 
 	// Convenience method to generate a public/private key pair
-	static generate_key_pair() {
-		return Hid.generate_key_pair();
+	static generate_key_pair(passphrase) {
+		return Hid.generate_key_pair(passphrase);
 	}
 
 	// Convenience method to cryptographically sign some data
-	static sign(data, key) {
-		return Hid.sign(data, key);
+	static sign(data, key, passphrase) {
+		return Hid.sign(data, key, passphrase);
 	}
 
 	// Convenience method to verify a cryptographic signature

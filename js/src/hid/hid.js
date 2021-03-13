@@ -39,19 +39,19 @@ class Hid {
         throw new Error("Dictionary cardinality must be power of 2");
     }
 
-	static generate_key_pair() {
+	static generate_key_pair(passphrase) {
 		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: Hid.MODULUS_LEN,
             namedCurve: Hid.CURVE,
  			publicKeyEncoding: {
-			    type: 'spki',
-			    format: 'der'
+			    type: "spki",
+			    format: "der"
   			},
   			privateKeyEncoding: {
-			    type: 'pkcs8',
-			    format: 'pem',
-			    // cipher: 'aes-256-cbc'  // TODO: set cipher and passphrase!
-			    // passphrase: "test"
+			    type: "pkcs8",
+			    format: "pem",
+			    cipher: "aes-256-cbc", // TODO: is this optimal cipher?
+			    passphrase: passphrase
   			}
 		});
 
@@ -60,8 +60,8 @@ class Hid {
 	}
 
     // Assumes key as PEM string
-    static sign(data, key) {
-        return crypto.sign(null, data, key);
+    static sign(data, key, passphrase) {
+        return crypto.sign(null, data, crypto.createPrivateKey({key: key, format: "pem", passphrase: passphrase}));
     }
 
     // Assumes key as DER buffer

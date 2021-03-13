@@ -22,7 +22,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: '3056301006072a8648ce3d020106052b8104000a034200046b5079733c780fd718aed4c4bea0fa08c7f143c09ee5c09247cb34f7bcea21fd69d08613a99611f4247e900f54f0ce41fac376b1705056dd7a2a31c6b37051fd',
+        pubkey: "3056301006072a8648ce3d020106052b8104000a034200044a8338487fd885fe91435de1b5f78bb14a4bbedd38caa467ec86715e4073d8cba6f02b6d63e2cd9981fc560579d96adbe6edd832b1d0bd0c73841704234cee9f",
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
@@ -30,11 +30,13 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    const privkey = '-----BEGIN PRIVATE KEY-----\n' +
-    'MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg0TJLVlvPAom2iTy2Zdgb\n' +
-    'jFN0CcIdFZLtGwg9O8cylHGhRANCAARrUHlzPHgP1xiu1MS+oPoIx/FDwJ7lwJJH\n' +
-    'yzT3vOoh/WnQhhOplhH0JH6QD1TwzkH6w3axcFBW3XoqMcazcFH9\n' +
-    '-----END PRIVATE KEY-----\n'
+    const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
+    'MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiLhWWYGo9tOAICCAAw\n' +
+    'DAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEEKcoNHdis4NY6VWiJPgOTZsEgZC2\n' +
+    'f4udLVPbh+LhFq0FhnxDtLhEpTK1ZmiIGgtmT4oEo7s/ODDtUmYe2VGaenD2UiG+\n' +
+    'KqunI/83BdppRBh9lvqp46upAp19vqeDhxktp6x2GHtru8r86SYUbh72oQMBm3TA\n' +
+    'tYXJIRLxrOt8EwZciAy1S31dPnIyFvXX7sPQsIF0wCfQ+40FReKzwJJ2bvkLmDA=\n' +
+    '-----END ENCRYPTED PRIVATE KEY-----\n'
 
     Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 

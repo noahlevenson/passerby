@@ -10,14 +10,10 @@
 "use strict";
 
 class Hid_prv {
-	pk;
+	privkey;
 
 	constructor({privkey = null} = {}) {
-		this.pk = privkey
-	}
-
-	get_privkey() {
-		return this.pk;
+		this.privkey = privkey;
 	}
 }
 

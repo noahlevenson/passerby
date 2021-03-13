@@ -135,7 +135,7 @@ class Hdlt {
 			const tx_candidates = Array.from(new_tx.entries());
 			
 			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
-			// TODO: This is selection sort style O(n ^ 2), bad vibes bro
+			// TODO: This is selection sort O(n ^ 2), bad vibes bro
 			for (let i = 0; i < tx_candidates.length; i += 1) {
 				for (let j = i + 1; j < tx_candidates.length; j += 1) {
 					// If the hash of the tx at j equals the current tx's
@@ -162,7 +162,18 @@ class Hdlt {
 
 			// If we have no reason to make a new block this time, and we didn't
 			// get interrupted by a new deepest block, then keep working on same predecessor
-			if (valid_tx.length < 1) {
+			if (valid_tx.length > 0) {
+				const new_block = new Hdlt_block({
+					prev_block: pred_block_node.data,
+					tsacts: [...valid_tx]
+				});
+
+				new_block.nonce = Hdlt.make_nonce_auth(new_block, );
+
+
+
+				
+			} else {
 				Hlog.log(`[HDLT] (${this.net.app_id}) No valid new tx at block time!`);
 				this._make_block_auth(pred_block_node);
 			}
