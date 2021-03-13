@@ -131,7 +131,7 @@ class Hdlt {
 			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
 			const branch = this.store.get_branch(pred_block_node);
 			const new_tx = new Map(this.tx_cache);
-			branch.forEach(node => node.data.tsacts.forEach(tx => new_tx.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx))));
+			branch.forEach(node => node.data.tsacts.forEach(tx => new_tx.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx)))));
 			const tx_candidates = Array.from(new_tx.entries());
 			
 			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
