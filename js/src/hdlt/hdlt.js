@@ -154,11 +154,11 @@ class Hdlt {
 			// initial utxo db computed up through our predecessor block
 			const utxo_db = this.build_db(pred_block_node);
 
-			tx_candidates = tx_candidates.filter((tx) => {
-				const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
-				utxo_db = res.utxo_db;
-				return res.valid;
-			});
+			// tx_candidates = tx_candidates.filter((tx) => {
+			// 	const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
+			// 	utxo_db = res.utxo_db;
+			// 	return res.valid;
+			// });
 		}, t);
 	}
 
@@ -288,15 +288,15 @@ class Hdlt {
 		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
 		// block, and the new block's nonce passes verification
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
-			// We'll validate transactions in this new block against the 
-			// state of the utxo db as computed from the genesis block through its parent block
+			// Validate transactions in this new block against the state of the utxo db as 
+			// computed from the genesis block through its parent block
 			const utxo_db = this.build_db(parent);
 
 			const valid_tsacts = req.data.tsacts.every((tx_new) => {
 				const res = this._validate_tx({tx: tx_new, utxo_db: utxo_db});
 				utxo_db = res.utxo_db;
 				return res.valid;
-			});
+			}, this);
 
 			if (valid_tsacts) {
 				// Add the new block, rebuild the store index, and rebroadcast it
