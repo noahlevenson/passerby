@@ -126,7 +126,7 @@ class Hdlt {
 		const t = this.args.rate[0] + Math.floor(Math.random() * delta);
 		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
-		setTimeout(() => {
+		this.args.t_handle = setTimeout(() => {
 			// Find the transactions in our tx_cache which have not yet been added to a block 
 			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
 			const branch = this.store.get_branch(pred_block_node);
