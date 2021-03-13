@@ -162,7 +162,7 @@ class Hdlt {
 
 			if (valid_tx.length < 1) {
 				Hlog.log(`[HDLT] (${this.net.app_id}) No valid new tx at block time!`);
-				this._make_block_auth(pred_block_node);
+				this._make_block_auth(this.store.get_deepest_blocks()[0]);
 			}
 		}, t);
 	}
