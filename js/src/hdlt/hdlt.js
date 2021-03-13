@@ -129,7 +129,7 @@ class Hdlt {
 
 		const delta = this.args.rate[1] - this.args.rate[0];
 		const t = this.args.rate[0] + Math.floor(Math.random() * delta);
-		Hlog.log(`[HDLT] (${this.net.app_id}) Making new block in ${t / 1000}s`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block)} in ${t / 1000}s`);
 
 		setTimeout(() => {
 
