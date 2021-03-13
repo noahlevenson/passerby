@@ -152,13 +152,18 @@ class Hdlt {
 
 			// Filter out invalid transactions, validating them against an 
 			// initial utxo db computed up through our predecessor block
-			const utxo_db = this.build_db(pred_block_node);
+			let utxo_db = this.build_db(pred_block_node);
 
-			// tx_candidates = tx_candidates.filter((tx) => {
-			// 	const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
-			// 	utxo_db = res.utxo_db;
-			// 	return res.valid;
-			// });
+			const valid_tx = tx_candidates.filter((tx) => {
+				const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
+				utxo_db = res.utxo_db;
+				return res.valid;
+			});
+
+			if (valid_tx.length < 1) {
+				Hlog.log(`[HDLT] (${this.net.app_id}) No valid new tx at block time!`);
+				this._make_block_auth(pred_block_node);
+			}
 		}, t);
 	}
 
@@ -288,8 +293,8 @@ class Hdlt {
 		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
 		// block, and the new block's nonce passes verification
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
-			// We'll validate transactions in this new block against the 
-			// state of the utxo db as computed from the genesis block through its parent block
+			// We'll validate transactions in this new block against the state of the utxo db as 
+			// computed from the genesis block through its parent block
 			let utxo_db = this.build_db(parent);
 			
 			const valid_tsacts = req.data.tsacts.every((tx) => {
