@@ -154,11 +154,11 @@ class Hdlt {
 			// initial utxo db computed up through our predecessor block
 			const utxo_db = this.build_db(pred_block_node);
 
-			tx_candidates = tx_candidates.filter((tx) => {
-				const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
-				utxo_db = res.utxo_db;
-				return res.valid;
-			});
+			// tx_candidates = tx_candidates.filter((tx) => {
+			// 	const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
+			// 	utxo_db = res.utxo_db;
+			// 	return res.valid;
+			// });
 		}, t);
 	}
 
