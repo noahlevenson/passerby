@@ -44,6 +44,7 @@ class Hdlt_store {
 	}
 
 	// Collect a branch of the tree, in order, ending with last_node
+	// TODO: this is O(n) :(
 	get_branch(last_node) {
 		const branch = [];
 

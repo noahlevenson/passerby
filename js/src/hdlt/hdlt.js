@@ -113,22 +113,77 @@ class Hdlt {
 		});
 	}
 
-	make_block(pred_block) {
-		return this.MAKE_BLOCK_ROUTINE.get(this.consensus).bind(this)(pred_block);
+	make_block(pred_block_node) {
+		return this.MAKE_BLOCK_ROUTINE.get(this.consensus).bind(this)(pred_block_node);
 	}
 
-	_make_block_auth(pred_block) {
+	_make_block_auth(pred_block_node) {
 		if (this.args.t_handle !== null) {
 			clearTimeout(this.args.t_handle);
 		}
 
 		const delta = this.args.rate[1] - this.args.rate[0];
 		const t = this.args.rate[0] + Math.floor(Math.random() * delta);
-		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block)} in ${t / 1000}s`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
 		setTimeout(() => {
+			// Find the transactions in our tx_cache which have not yet been added to a block 
+			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
+			const branch = this.store.get_branch(pred_block_node);
+			const new_tx = new Map(this.tx_cache);
+			branch.forEach(node => node.data.tsacts.forEach(tx => new_tx.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx))));
+			const tx_candidates = Array.from(new_tx.entries());
+			
+			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
+			// TODO: This is selection sort style O(n ^ 2), bad vibes bro
+			for (let i = 0; i < tx_candidates.length; i += 1) {
+				for (let j = i + 1; j < tx_candidates.length; j += 1) {
+					// If the hash of the tx at j equals the current tx's
+					// utxo, swap the tx at j with the current tx and terminate
+					// the search over the unsorted righthand subarray
+					if (tx_candidates[j][0] === tx_candidates[i][1].utxo) {
+						const temp = tx_candidates[j];
+						tx_candidates[j] = tx_candidates[i];
+						tx_candidates[i] = temp;
+						break;
+					}
+				}
+			}
 
+			// Filter out invalid transactions, validating them against an 
+			// initial utxo db computed up through our predecessor block
+			const utxo_db = this.build_db(pred_block_node);
+
+			tx_candidates = tx_candidates.filter((tx) => {
+				const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
+				utxo_db = res.utxo_db;
+				return res.valid;
+			});
 		}, t);
+	}
+
+	// Validate a single tx against some state of a utxo db, returns
+	// true/false and the new state of the utxo db
+	_validate_tx({tx, utxo_db} = {}) {
+		const utxo = utxo_db.get(tx.utxo);
+	
+		if (!utxo) {
+			return {valid: false, utxo_db: utxo_db};
+		}
+
+		const vm = new Hdlt_vm({tx_prev: utxo, tx_new: tx});
+
+		if (!vm.exec()) {
+			return {valid: false, utxo_db: utxo_db};
+		}
+
+		const valid = this.tx_valid_hook(tx, utxo_db);
+
+		if (!valid) {
+			return {valid: false, utxo_db: utxo_db};
+		}
+
+		return {valid: true, utxo_db: this.db_hook(tx, utxo_db)};
 	}
 
 	start() {
@@ -137,7 +192,7 @@ class Hdlt {
 
 		if (this.is_validator) {
 			Hlog.log(`[HDLT] (${this.net.app_id}) As validator`);
-			this.make_block(this.store.get_deepest_blocks()[0].data);
+			this.make_block(this.store.get_deepest_blocks()[0]);
 		}
 
 		this._init();
@@ -238,21 +293,9 @@ class Hdlt {
 			const utxo_db = this.build_db(parent);
 
 			const valid_tsacts = req.data.tsacts.every((tx_new) => {
-				const utxo = utxo_db.get(tx_new.utxo);
-
-				if (!utxo) {
-					return false;
-				}
-
-				const vm = new Hdlt_vm({tx_prev: utxo, tx_new: tx_new});
-
-				if (!vm.exec()) {
-					return false;
-				}
-
-				const valid = this.tx_valid_hook(tx_new, utxo_db);
-				this.db_hook(tx_new, utxo_db);
-				return valid; 
+				const res = this._validate_tx({tx: tx_new, utxo_db: utxo_db});
+				utxo_db = res.utxo_db;
+				return res.valid;
 			});
 
 			if (valid_tsacts) {
