@@ -35,6 +35,7 @@ class Hid {
     static KEY_TYPE = "ec";
     static CURVE = "secp256k1" // Only applies if KEY_TYPE is "ec"
 	static MODULUS_LEN = 1024; // Only applies if KEY_TYPE is "rsa"
+    static SIG_ALGORITHM = "SHA256";
 
 	constructor() {
 
@@ -80,12 +81,18 @@ class Hid {
 
     // Assumes key as PEM string
     static sign(data, key, passphrase) {
-        return crypto.sign(null, data, crypto.createPrivateKey({key: key, format: "pem", passphrase: passphrase}));
+        const sign = crypto.createSign(Hid.SIG_ALGORITHM);
+        sign.update(data);
+        sign.end();
+        return sign.sign(crypto.createPrivateKey({key: key, format: "pem", passphrase: passphrase}));
     }
 
     // Assumes key as DER buffer
     static verify(data, key, sig) {
-        return crypto.verify(null, data, crypto.createPublicKey({key: key, format: "der", type: "spki"}), sig);
+        const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
+        verify.update(data);
+        verify.end();
+        return verify.verify(crypto.createPublicKey({key: key, format: "der", type: "spki"}), sig);
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce

@@ -43,7 +43,7 @@ class Hksrv {
 		}
 
 		// TODO: the specific case where a peer tries to revoke a signature that it never issued should be covered
-		// by the general case where we validate the unspent output in Hdlt._res_block - but test this!
+		// by the general case where we validate the unspent output before the hook is called - but test this!
 		
 		return true;
 	};
