@@ -145,7 +145,7 @@ class Hksrv {
 
 	// Create a revocation transaction: peer_a revokes SIG_TOK from peer_b
 	// a revocation basically spends a spent SIG_TOK, but then directs the new utxo to /dev/null
-	revoke(peer_a, peer_a_prv, peer_b) {
+	async revoke(peer_a, peer_a_prv, peer_b) {
 		const prev_tsact = this.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
@@ -164,7 +164,8 @@ class Hksrv {
 			unlock: Hksrv.SCRIPT_NO_UNLOCK
 		});
 
-		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.get_privkey());
+		const p = await Hid.get_passphrase();
+		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.privkey, p);
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH1, sig.length, ...Array.from(sig)] // push1, len, sig
 		return tsact;
 	}

@@ -2,6 +2,7 @@ const { Happ } = require("../src/happ/happ.js");
 const { Happ_bboard } = require("../src/happ/happ_bboard.js");
 const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
+const { Hid_prv } = require("../src/hid/hid_prv.js");
 const { Happ_env } = require("../src/happ/happ_env.js");
 const { Hgeo } = require("../src/hgeo/hgeo.js");
 const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
@@ -38,10 +39,12 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     'tYXJIRLxrOt8EwZciAy1S31dPnIyFvXX7sPQsIF0wCfQ+40FReKzwJJ2bvkLmDA=\n' +
     '-----END ENCRYPTED PRIVATE KEY-----\n'
 
+    const larosa_prv = new Hid_prv({privkey: privkey});
+
     Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 
     // Lil hack to make us one of the AUTH nodes
-    Happ.AUTHORITIES = [larosa.pubkey];
+    // Happ.AUTHORITIES = [larosa.pubkey];
 
     Hid.set_passphrase_func(() => {
         return new Promise((resolve, reject) => {
@@ -56,4 +59,20 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     const tx_new = network.hksrv.sign(larosa, larosa);
     network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
     network.hksrv.dlt.broadcast(network.hksrv.dlt.tx_req, {hdlt_tsact: tx_new});   
+
+    // Sign the bootstrap node, add it to our tx_cache, and broadcast it
+    const bs_bro = new Hid_pub({
+        pubkey: "3056301006072a8648ce3d020106052b8104000a0342000485184e4375109973bbd81554c1b161b23544a38458bc69712ad75ef2ae9844cdf00466d76cff4fa8020445e3d14e22c6ac82d697d039dfe52811f42c0886b3e9"
+    });
+
+    const tx_new_2 = network.hksrv.sign(larosa, bs_bro);
+    network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new_2)));
+    network.hksrv.dlt.broadcast(network.hksrv.dlt.tx_req, {hdlt_tsact: tx_new_2}); 
+
+    // Wait 30 seconds and revoke my signature from the bootstrap node
+    setTimeout(async () => {
+        const tx_new_3 = await network.hksrv.revoke(larosa, larosa_prv, bs_bro);
+        network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new_3)));
+        network.hksrv.dlt.broadcast(network.hksrv.dlt.tx_req, {hdlt_tsact: tx_new_3}); 
+    }, 30000); 
 })();
