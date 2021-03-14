@@ -182,7 +182,7 @@ class Hdlt {
 					const new_node = new Hntree_node({data: new_block, parent: pred_block_node})
 					pred_block_node.add_child(new_node);
 					this.store.build_dict();
-					Hlog.log(`[HDLT] (${this.net.app_id}) Made new block ${block_hash}, ${this.store.size()} blocks total`);
+					Hlog.log(`[HDLT] (${this.net.app_id}) Made new block ${block_hash} - ${valid_tx.length} tx - ${this.store.size()} blocks total`);
 					this.broadcast(this.block_req, {hdlt_block: new_block});
 					this._make_block_auth(new_node);
 				});
