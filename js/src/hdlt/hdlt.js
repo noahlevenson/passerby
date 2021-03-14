@@ -100,6 +100,7 @@ class Hdlt {
 
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
 	// where block.nonce is replaced with the signer's public key
+	// TODO: handle error/bad passphrase etc
 	static async make_nonce_auth(block, pubkey, privkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
 		const p = await Hid.get_passphrase();
@@ -165,7 +166,7 @@ class Hdlt {
 				return res.valid;
 			});
 
-			// If we have no reason to make a new block this time, and we didn't
+			// If we have no tx to put in a new block this time, and we didn't
 			// get interrupted by a new deepest block, then keep working on same predecessor
 			if (valid_tx.length > 0) {
 				const new_block = new Hdlt_block({
@@ -173,10 +174,18 @@ class Hdlt {
 					tsacts: [...valid_tx]
 				});
 
-				new_block.nonce = Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey, this.hid_prv.privkey);
+				Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey, this.hid_prv.privkey).then((nonce) => {
+					new_block.nonce = nonce;
+					const block_hash = Hdlt_block.sha256(new_block);
 
-
-		
+					// Add the new block, rebuild the store index, broadcast it, and get to work on the next block
+					const new_node = new Hntree_node({data: new_block, parent: pred_block_node})
+					parent.add_child(new_node);
+					this.store.build_dict();
+					Hlog.log(`[HDLT] (${this.net.app_id}) Made new block ${block_hash}, ${this.store.size()} blocks total`);
+					this.broadcast(this.block_req, {hdlt_block: new_block});
+					this._make_block_auth(new_node);
+				});
 			} else {
 				Hlog.log(`[HDLT] (${this.net.app_id}) No valid new tx at block time!`);
 				this._make_block_auth(pred_block_node);

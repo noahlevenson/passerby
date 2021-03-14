@@ -30,8 +30,6 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    console.log(Hid.generate_key_pair("yeahbro"));
-
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
     'MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiLhWWYGo9tOAICCAAw\n' +
     'DAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEEKcoNHdis4NY6VWiJPgOTZsEgZC2\n' +
@@ -47,7 +45,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     Hid.set_passphrase_func(() => {
         return new Promise((resolve, reject) => {
-            resolve("wrong passphrase");
+            resolve("mypassword");
         });
     });
 
@@ -70,7 +68,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         tsacts: [tx_new]
     });
 
-    block.nonce = Hdlt.make_nonce_auth(block, larosa.pubkey, privkey);
+    block.nonce = await Hdlt.make_nonce_auth(block, larosa.pubkey, privkey);
     
     network.hksrv.dlt.broadcast(
         network.hksrv.dlt.block_req,
@@ -84,7 +82,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         tsacts: [tx_new]
     });
 
-    new_block.nonce = Hdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
+    new_block.nonce = await Hdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
 
     network.hksrv.dlt.broadcast(
         network.hksrv.dlt.block_req,
