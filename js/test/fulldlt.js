@@ -66,6 +66,8 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 
+    console.log(larosa.nonce)
+
     // Lil hack to make us one of the AUTH nodes
     // Happ.AUTHORITIES = [larosa.pubkey];
 

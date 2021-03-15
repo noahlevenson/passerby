@@ -21,6 +21,7 @@ class Hdlt_vm {
 	static OPCODE = {
 		OP_NOOP: 0x61,
 		OP_PUSH1: 0x64,
+		OP_PUSH2: 0x65,
 		OP_CHECKSIG: 0xAC,
 		OP_CHECKPOW: 0xFF
 	};
@@ -96,6 +97,15 @@ class Hdlt_vm {
 		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
 		this.SP += 1;
 		this.PC += 2 + n;
+	}
+
+	// The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
+	_op_push2() {
+		const n = this.program[this.PC + 1] | (this.program[this.PC + 2] << Happ_ENV.SYS_BYTE_WIDTH);
+		const start = this.PC + 3;
+		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
+		this.SP += 1;
+		this.PC += 3 + n;
 	}
 
 	// Verify that the signature at (SP - 1) is valid for the pubkey at (SP - 2) - returns 1 if valid, 0 otherwise

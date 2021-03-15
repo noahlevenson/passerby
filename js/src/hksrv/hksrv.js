@@ -107,21 +107,21 @@ class Hksrv {
 		// (we ineffectually push the recipient's pubkey to the stack just so the 
 		// recipient's pubkey is in the script for us to hash over)
 		const lock_script = [].concat([
-			Hdlt_vm.OPCODE.OP_PUSH1,
-			peer_b_pubkey.length, 
+			Hdlt_vm.OPCODE.OP_PUSH2,
+			...Array.from(Hutil._int2Buf16(peer_b_pubkey.length)),
 			...peer_b_pubkey, 
-			Hdlt_vm.OPCODE.OP_PUSH1, 
-			nonce.length, 
+			Hdlt_vm.OPCODE.OP_PUSH2, 
+			...Array.from(Hutil._int2Buf16(nonce.length)), 
 			...nonce, 
-			Hdlt_vm.OPCODE.OP_PUSH1, 
-			peer_a_pubkey.length, 
+			Hdlt_vm.OPCODE.OP_PUSH2, 
+			...Array.from(Hutil._int2Buf16(peer_a_pubkey.length)), 
 			...peer_a_pubkey
 		]);
 
 		// unlock script (if not self-sig): push1, len, payee (self) pubkey, checksig
 		// (the only peer who may unlock this transaction is the peer who created this transaction)
 		const unlock_script = peer_a === peer_b ? Hksrv.SCRIPT_NO_UNLOCK : 
-			[].concat([Hdlt_vm.OPCODE.OP_PUSH1, peer_a_pubkey.length, ...peer_a_pubkey, Hdlt_vm.OPCODE.OP_CHECKSIG]);
+			[].concat([Hdlt_vm.OPCODE.OP_PUSH2, ...Array.from(Hutil._int2Buf16(peer_a_pubkey.length), ...peer_a_pubkey, Hdlt_vm.OPCODE.OP_CHECKSIG]);
 
 		const tsact = new Hdlt_tsact({
 			utxo: Hksrv.SIG_TOK,
@@ -166,7 +166,7 @@ class Hksrv {
 
 		const p = await Hid.get_passphrase();
 		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), peer_a_prv.privkey, p);
-		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH1, sig.length, ...Array.from(sig)] // push1, len, sig
+		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH2, ...Array.from(Hutil._int2Buf16(sig.length), ...Array.from(sig)] // push1, len, sig
 		return tsact;
 	}
 }
