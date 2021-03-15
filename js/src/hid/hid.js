@@ -32,11 +32,10 @@ class Hid {
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
 	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
-    static KEY_TYPE = "ec";
-    static CURVE = "secp256k1" // Only applies if KEY_TYPE is "ec"
-	static MODULUS_LEN = 1024; // Only applies if KEY_TYPE is "rsa"
     static SIG_ALGORITHM = "SHA256";
-
+    static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
+	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
+    
 	constructor() {
 
 	}
@@ -62,7 +61,6 @@ class Hid {
 	static generate_key_pair(passphrase) {
 		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: Hid.MODULUS_LEN,
-            namedCurve: Hid.CURVE,
  			publicKeyEncoding: {
 			    type: "spki",
 			    format: "der"

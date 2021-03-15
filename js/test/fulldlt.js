@@ -31,6 +31,8 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
+    console.log(Hid.generate_key_pair("foo"));
+    
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
     'MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAiLhWWYGo9tOAICCAAw\n' +
     'DAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEEKcoNHdis4NY6VWiJPgOTZsEgZC2\n' +
