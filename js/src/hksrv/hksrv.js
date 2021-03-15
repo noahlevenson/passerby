@@ -101,8 +101,8 @@ class Hksrv {
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
 	sign(peer_a, peer_b, check_db = true) {
 		const nonce = Array.from(Buffer.from(peer_a.nonce, "hex"));
-		const peer_a_pubkey = Array.from(Buffer.from(peer_a.pubkey, "hex"));
-		const peer_b_pubkey = Array.from(Buffer.from(peer_b.pubkey, "hex"));
+		const peer_a_pubkey = Array.from(Buffer.from(peer_a.pubkey, "utf8"));
+		const peer_b_pubkey = Array.from(Buffer.from(peer_b.pubkey, "utf8"));
 
 		// lock script: push1, len, recip pubkey, push1, len, nonce, push1, len, my pubkey
 		// (we ineffectually push the recipient's pubkey to the stack just so the 

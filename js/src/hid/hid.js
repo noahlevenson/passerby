@@ -63,7 +63,7 @@ class Hid {
 			modulusLength: Hid.MODULUS_LEN,
  			publicKeyEncoding: {
 			    type: "spki",
-			    format: "der"
+			    format: "pem"
   			},
   			privateKeyEncoding: {
 			    type: "pkcs8",

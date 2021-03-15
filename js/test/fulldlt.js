@@ -23,43 +23,51 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100de6fe41b07563599c8f54e104c3fd2df32286300f741eb9b2963c90913156b454da7a516623a9d6ffb4991391ba7773502228d0c033c4c59b1ec54faccdce4d4dabf196802b43195481fc7f42c647d81a87cacca414b545bdd8eb7a8d384553e6a5317806452b9f1742d43cb8f5bd3fdad361a86ad90641057be383908eddfc64a916722c851297684a69c93a2210a5077b5cb53613c2aba151f7cccd837a4bf1dcc033abf3b6af51e553648d1a2ca6e90dca0b256ebbaa622375202060a46ef5f035d4f43d36e53b437dea6a96ea6072100dca7b6f1b1af38fbf1d357c147857c82e1d3653fd8ca2fb8809ca4e43f8aface3cb8d6dd1fbf8bed04c71abc21770203010001',
+        pubkey: '-----BEGIN PUBLIC KEY-----\n' +
+            'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1rrZeYggXfaJqYdiixFC\n' +
+            'WS2MdVaJR0AVJghP5KD2eFV0Nd1SNbGAebiYeG9MXZcXNU8r9BvROAl208hAEOLs\n' +
+            'C/NZOtMFkQ/HYaK5mLcRem3+pLntZpKKiXMtF2FKUsCNIf4z7zkftZeQy02C7cmo\n' +
+            '1lE4aZ2sekfaFvA++haddHLcdlNZGPNx8uvVHyK/F2YjOwiH6ca8vPunydUomXad\n' +
+            'fp5buXakN0lZxkiu2RACSGPczB6u93ZxbE12rdpC/SirBqAjVzqVNrefcMBVC5nO\n' +
+            '4X93LtMyehZLcuO98z5V5VQYRZcZwocZCfObLu+P9/pPTPGRKF7cLbWT8f4UjnXf\n' +
+            'vQIDAQAB\n' +
+            '-----END PUBLIC KEY-----\n',
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
         lat: 40.9018663,
         long: -73.7912739
     });
-    
+ 
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
-    '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
+    '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\n' +
     '-----END ENCRYPTED PRIVATE KEY-----\n'
 
     const larosa_prv = new Hid_prv({privkey: privkey});
