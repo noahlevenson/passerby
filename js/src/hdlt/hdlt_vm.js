@@ -101,7 +101,7 @@ class Hdlt_vm {
 
 	// The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
 	_op_push2() {
-		const n = this.program[this.PC + 2] | (this.program[this.PC + 1] << Happ_ENV.SYS_BYTE_WIDTH);
+		const n = this.program[this.PC + 1] | (this.program[this.PC + 2] << Happ_ENV.SYS_BYTE_WIDTH);
 		const start = this.PC + 3;
 		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
 		this.SP += 1;
