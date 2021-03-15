@@ -30,9 +30,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         lat: 40.9018663,
         long: -73.7912739
     });
-
-    console.log(Hid.generate_key_pair("yeahbro"));
-    
+ 
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
     'MIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIuH6IO/rsgB4CAggA\n' +
     'MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBBaGE/M1sa6H7SzvPU/LJWyBIIE\n' +

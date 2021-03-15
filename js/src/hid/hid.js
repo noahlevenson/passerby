@@ -58,6 +58,12 @@ class Hid {
         return Hid.GET_PASSPHRASE_F();
     }
 
+    static der2pem(der_buf) {
+        const prefix = "-----BEGIN CERTIFICATE-----\n";
+        const postfix = "-----END CERTIFICATE-----";
+        return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
+    }
+
 	static generate_key_pair(passphrase) {
 		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: Hid.MODULUS_LEN,
@@ -82,15 +88,16 @@ class Hid {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign(crypto.createPrivateKey({key: key, format: "pem", passphrase: passphrase}));
+        return sign.sign({key: key, format: "pem", passphrase: passphrase});
     }
 
     // Assumes key as DER buffer
+    // TODO: we annoyingly convert to pem only because our Android crypto implementation seems to require it
     static verify(data, key, sig) {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
         verify.update(data);
         verify.end();
-        return verify.verify(crypto.createPublicKey({key: key, format: "der", type: "spki"}), sig);
+        return verify.verify({key: Hid.der2pem(Buffer.from(key, "hex")), format: "pem", type: "spki"}, sig);
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
