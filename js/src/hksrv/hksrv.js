@@ -16,6 +16,7 @@ const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../hdlt/hdlt_vm.js");
 const { Hdlt_block } = require("../hdlt/hdlt_block.js");
 const { Hlog } = require("../hlog/hlog.js");
+const { Hutil } = require("../hutil/hutil.js");
 
 // The keyserver is an application layer built atop HDLT which provides a distributed database 
 // of public keys and a record of relationships between keys in the form of signatures:
