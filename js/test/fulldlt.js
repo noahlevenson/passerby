@@ -30,7 +30,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         lat: 40.9018663,
         long: -73.7912739
     });
- 
+
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
     'MIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIuH6IO/rsgB4CAggA\n' +
     'MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBBaGE/M1sa6H7SzvPU/LJWyBIIE\n' +
@@ -65,8 +65,6 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     const larosa_prv = new Hid_prv({privkey: privkey});
 
     Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
-
-    console.log(larosa.nonce)
 
     // Lil hack to make us one of the AUTH nodes
     // Happ.AUTHORITIES = [larosa.pubkey];
