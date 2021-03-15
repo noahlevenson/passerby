@@ -175,7 +175,7 @@ class Hutil {
 	static _int2Buf16(int) {
 		const buf = Buffer.alloc(2);
 
-		buf[0] = 0xFF & (int >>> 8);
+		buf[0] = 0xFF & (int >>> Happ_env.SYS_BYTE_WIDTH);
 		buf[1] = 0xFF & int;
 
 		return buf;
