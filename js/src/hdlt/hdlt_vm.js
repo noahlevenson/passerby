@@ -29,6 +29,7 @@ class Hdlt_vm {
 	GRAMMAR = new Map([
 		[Hdlt_vm.OPCODE.OP_NOOP, this._op_noop],
 		[Hdlt_vm.OPCODE.OP_PUSH1, this._op_push1],
+		[Hdlt_vm.OPCODE.OP_PUSH2, this._op_push2],
 		[Hdlt_vm.OPCODE.OP_CHECKSIG, this._op_checksig],
 		[Hdlt_vm.OPCODE.OP_CHECKPOW, this._op_checkpow]
 	]);
@@ -101,7 +102,7 @@ class Hdlt_vm {
 
 	// The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
 	_op_push2() {
-		const n = (this.program[this.PC + 1] << Happ_env.SYS_BYTE_WIDTH) | this.program[this.PC + 2]
+		const n = (this.program[this.PC + 1] << Happ_env.SYS_BYTE_WIDTH) | this.program[this.PC + 2];
 		const start = this.PC + 3;
 		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
 		this.SP += 1;
