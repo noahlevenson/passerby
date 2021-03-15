@@ -97,7 +97,7 @@ class Hid {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
         verify.update(data);
         verify.end();
-        return verify.verify({key: Hid.der2pem(Buffer.from(key, "hex")), format: "pem", type: "spki"}, sig);
+        return verify.verify({key: Hid.der2pem(key), format: "pem", type: "spki"}, sig);
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
