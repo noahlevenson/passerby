@@ -32,7 +32,7 @@ class Hid {
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
 	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
-    static SIG_ALGORITHM = "SHA256";
+    static SIG_ALGORITHM = Happ_env.BROWSER ? "sha256" : "SHA256"; // TODO: on Android, crypto.getHashes() returns lowercase?!
     static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
 	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
     
@@ -73,7 +73,7 @@ class Hid {
 			    format: "der"
   			},
   			privateKeyEncoding: {
-			    type: "pkcs8",
+			    type: "pkcs1",
 			    format: "pem",
 			    cipher: "aes-256-cbc", // TODO: is this optimal cipher?
 			    passphrase: passphrase
@@ -89,7 +89,7 @@ class Hid {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign({key: key, format: "pem", passphrase: passphrase});
+        return sign.sign({key: key, format: "pem", type: "pkcs1", passphrase: passphrase});
     }
 
     // Assumes key as DER buffer
@@ -98,6 +98,13 @@ class Hid {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
         verify.update(data);
         verify.end();
+
+        try {
+            console.log(verify.verify({key: Hid.der2pem(key), format: "pem", type: "spki"}, sig));
+        } catch (err) {
+            console.log(err);
+        }
+
         return verify.verify({key: Hid.der2pem(key), format: "pem", type: "spki"}, sig);
     }
 

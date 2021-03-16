@@ -23,7 +23,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100de6fe41b07563599c8f54e104c3fd2df32286300f741eb9b2963c90913156b454da7a516623a9d6ffb4991391ba7773502228d0c033c4c59b1ec54faccdce4d4dabf196802b43195481fc7f42c647d81a87cacca414b545bdd8eb7a8d384553e6a5317806452b9f1742d43cb8f5bd3fdad361a86ad90641057be383908eddfc64a916722c851297684a69c93a2210a5077b5cb53613c2aba151f7cccd837a4bf1dcc033abf3b6af51e553648d1a2ca6e90dca0b256ebbaa622375202060a46ef5f035d4f43d36e53b437dea6a96ea6072100dca7b6f1b1af38fbf1d357c147857c82e1d3653fd8ca2fb8809ca4e43f8aface3cb8d6dd1fbf8bed04c71abc21770203010001',
+        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100c8e6597fa0c97bfc295820ba4e897f3388cb68a548f04416d9a8d056bab07d9d774f453760db03278907723d9de7f98caa48403b9b34d71919def12272a47cc418bcda9096b5225f162cb98dbfc1e3e32bda691d1619f15de4b9f5c66903ae0895b05a9bd534c008d38937dba4d5e54f05deca0a1b84d5e0ad8deb65288bc132c1eaa05997a83dfbf4c55a956dda779df76192403599292be94fac47c09d0942716ddfb727ab45ec83a22419dc7f94897e27033b204d6ab90b521ab30be977756b171117899b365978feba7432464d32ef0f724c054ee50dfcc9f68b0188ce3c5c2f8522aedb055dde2e2ee9509c9ace8b11c2ec058dba5dc08be11cb4ad081d0203010001',
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
@@ -31,36 +31,38 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
-    '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\n' +
-    '-----END ENCRYPTED PRIVATE KEY-----\n'
+    console.log(Hid.generate_key_pair("yeahbro"))
+
+    const privkey = '-----BEGIN RSA PRIVATE KEY-----\n' +
+    'Proc-Type: 4,ENCRYPTED\n' +
+    'DEK-Info: AES-256-CBC,BCB9550FBAB5D927F63D829C0F0E5EA5\n' +
+    '\n' +
+    'UXv63xP/mzq0c8DcHYqrzXCY0QIWxhO5TII+GoHUAuu9AtNOnv98z64JcdrZL+fZ\n' +
+    'w+LhYrRY/eovGTLeHGhKVXe1YYR/TmFL+9WkUTbYKAv8IiZJ0nrhwhp6OhhT2neI\n' +
+    'rl6piBuEpuJfb7TPBfxc6c+fpHNiTqmNc5Br4JaYjwLxuzMOSa4kqDUt111BR8CT\n' +
+    's2qTfXfRU/LisIc4KF9E5FU0X4C0j6+Y0Rv3SFvxFpyaM+dW0/5dQPG8QwOZNayb\n' +
+    'teukzRgGq/ujHB7MGBBDWjPk/9pZzfzv49nEbjaZ9HzQi66hBr4HCTMhSYFNq0Ux\n' +
+    'S5O9YHzpXoGu5NG8w9B0JMe84yw/DN9CB7mIaC2+1ZemoQYCAuI2zwtf6QFbcnkP\n' +
+    'H5ZLWSbp4l0zNdRZJ9jJGpYHYcVrwufscLdGLR8lihor61s4rRr+0jT6CAp838jD\n' +
+    '7VfEIXvNOqRTIuXjSpE7Cr+43gSsp8VhJmhR/yZwtAsJWvQpLMi1nACKKkD0lS5t\n' +
+    '4vREznc0c0Y4BrP57jkDqOLJa6rBMR3AMMaMRke0iNyp/cDgSTWis3k7aLMmk4bK\n' +
+    'uWhc4I9ROTF8K0F/7ZYQ6BVJ0pD859p3HYIaAsveejp6VaJnNQGqySf33r6CPLMk\n' +
+    'YeEHasJXe2FoZVerX7Q0nBFxoqt3a6zdKuJ8M3GIyat8TnSfZLn+yo8pUKBwoe6j\n' +
+    '2Ze6toXbZpiMHTU6hzH7Y3Tsx4GdyAVnYUWAD3/rj3CTAsuP3bT8BefhXS1wtv7f\n' +
+    'WJDh32ts+QImwrxZUMIxDyhgcydl/ZkYe7gqLpkAkGBnQoP3Zk4nTOdsaUfwqPhL\n' +
+    'nrSIODAqA2lCBsAIElOWX7UE1KiEf6vq0nLw60U3lLyNI5SsVjJ+cBkT7352zaQD\n' +
+    'KSRCFHkmT/Cj5LGVIedI3TVH5L63wetzXcL1gYiWBz3LzGhjmjIuo5xmMbrWE5/l\n' +
+    'Ra/RkY39GrTbw66EsnC7lB1zphf7DjzEYB8oFId+a31mnwBF00IoNjuksHbC5pwr\n' +
+    'h8gpsBrsGyVoT0ZD0Bh1mGZ5kRZ6yHBET4k9uEtyXuYReDecKSzf/KH34ccJjK0Y\n' +
+    'cyMIyXfa/8GBSs2YqpZJactxeFzDmYD63WpZucLwHn9Oegy2kQbzb5lWIRzClqvb\n' +
+    'NQN2L6dHBq9bmHFnFSlvMN4MQMokUAJhQxvVhKluZKdkFessmjBQbyY6uKQU7wnL\n' +
+    'vQSzjmxE1qq7ZWnRYpJ/7pxDQgPweEVWCRWTvFjvszM1ElI7sr5kGxpD5UEeVbjM\n' +
+    'i6xqgN7zC1uE5xPqjoxDiGNqw3tSlH6OVyJ9Xk2uH5W7jsIj6S0pFfNeXvNysNX3\n' +
+    '1I5wNT2FuSnKOX1J7sMcLSEPT5B6WOPmfW8m4g4q/Yo19sNT/6uLkvxPNvxy20Hg\n' +
+    'HZhxdVyyr9lz8c2UXK8N9nGa38l0EYpCjtTHXzk9ANxTd4bXmJZsJ3RfrQdSeMiY\n' +
+    'bkS5rhfRAjae9051DOkCi5gjdDsdB0yn3zUQ295ZyPnKO0VH0sw2KxgUiVskQ0et\n' +
+    'U+E6MJpqMxdZx3OvJlGXHh3FSxgQszLMJ7a66p7ni/1LFSwxlN/Q6U2WkGM5IPj5\n' +
+    '-----END RSA PRIVATE KEY-----\n'
 
     const larosa_prv = new Hid_prv({privkey: privkey});
 
