@@ -14,7 +14,7 @@ const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hpht {
 	static BIT_DEPTH = 80; // Bit depth of our input keys (our Hgeo linearizations are 80 bits)

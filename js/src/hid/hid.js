@@ -15,7 +15,7 @@ const dict_adj_b = require("./dict/adj_4096_b.json");
 const dict_noun = require("./dict/noun_4096.json");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hid {
     static GET_PASSPHRASE_F = () => {

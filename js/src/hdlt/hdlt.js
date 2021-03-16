@@ -20,7 +20,7 @@ const { Hdlt_store } = require("./hdlt_store.js");
 const { Hdlt_vm } = require("./hdlt_vm.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 // HDLT only concerns itself with the technical functionality of a DLT: blocks, transactions, 
 // the VM, messaging/propagation, consensus, and processing state of the chain

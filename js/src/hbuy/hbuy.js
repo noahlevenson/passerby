@@ -18,7 +18,7 @@ const { Hbuy_sms } = require("./hbuy_sms.js");
 const { Hbuy_tsact } = require("./hbuy_tsact.js");
 const { Hbuy_status } = require("./hbuy_status.js");
 const { Hlog } = require("../hlog/hlog.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hbuy {
 	static MSG_TIMEOUT = 5000;

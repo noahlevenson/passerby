@@ -23,7 +23,7 @@ const { Hbuy_transaction } = require("../hbuy/hbuy_transaction.js");
 const { Hbuy_item_ref } = require("../hbuy/hbuy_item_ref.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hgeo_rect } = require("../hgeo/hgeo_rect.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 const { Larosa_menu } = require("../../test/menu.js");
 const { Toms_hot_dogs_menu } = require("../../test/toms_hot_dogs_menu.js");

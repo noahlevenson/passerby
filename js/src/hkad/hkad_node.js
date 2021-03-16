@@ -22,7 +22,7 @@ const { Hkad_ds } = require("./hkad_ds.js");
 const { Hkad_data } = require("./hkad_data.js");
 const { Hbintree } = require("../htypes/hbintree/hbintree.js");
 const { Hbintree_node } = require("../htypes/hbintree/hbintree_node.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hkad_node {
 	static DHT_BIT_WIDTH = 160;

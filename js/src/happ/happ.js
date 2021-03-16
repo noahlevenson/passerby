@@ -38,8 +38,8 @@ const { Hbuy_tsact } = require("../hbuy/hbuy_tsact.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../htypes/hbigint/hbigint_browser.js") : require("../htypes/hbigint/hbigint_node.js");
-const https = Happ_env.BROWSER ? null : require("https");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
+const https = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? null : require("https");
 
 class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls

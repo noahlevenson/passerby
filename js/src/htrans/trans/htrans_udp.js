@@ -16,7 +16,7 @@ const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
 const { Hutil } = require("../../hutil/hutil.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../../htypes/hbigint/hbigint_browser.js") : require("../../htypes/hbigint/hbigint_node.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../../htypes/hbigint/hbigint_rn.js") : require("../../htypes/hbigint/hbigint_node.js");
 
 class Htrans_udp extends Htrans {
 	static RETRANSMIT = true;

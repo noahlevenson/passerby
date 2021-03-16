@@ -1,6 +1,7 @@
 /** 
-* HBIGINT_BROWSER
-* Implementation of the HBIGINT_BASE interface for the browser (and React Native) environment
+* HBIGINT_RN
+* Implementation of the HBIGINT_BASE interface for the React Native environment
+* and similar limited JavaScript runtimes
 * It uses BigInteger.js under the hood: https://www.npmjs.com/package/big-integer
 * 
 * 
