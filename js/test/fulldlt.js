@@ -21,9 +21,11 @@ const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js")
 const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
 const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
+const crypto = require("crypto");
+
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100c8e6597fa0c97bfc295820ba4e897f3388cb68a548f04416d9a8d056bab07d9d774f453760db03278907723d9de7f98caa48403b9b34d71919def12272a47cc418bcda9096b5225f162cb98dbfc1e3e32bda691d1619f15de4b9f5c66903ae0895b05a9bd534c008d38937dba4d5e54f05deca0a1b84d5e0ad8deb65288bc132c1eaa05997a83dfbf4c55a956dda779df76192403599292be94fac47c09d0942716ddfb727ab45ec83a22419dc7f94897e27033b204d6ab90b521ab30be977756b171117899b365978feba7432464d32ef0f724c054ee50dfcc9f68b0188ce3c5c2f8522aedb055dde2e2ee9509c9ace8b11c2ec058dba5dc08be11cb4ad081d0203010001',
+        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100a18ed1840adbc2c12dcc6e47dd03e7155cc93fe08f2134fc3694d174ad7e9803d98ba97ecbe2a1fb84ca6138d15fe53ccbf1963a7de52edf08c221a160c54894c0ce6294480ec5184feb8599eb3306b35321f0ce0174b157de870a3baa969a650d392d3a597a9d64ae56069a8b93ac88048f6bbe48e70966c967c9750a2630c60fe974907e50fcb445de48bc7c71b471dcd0efd6cf2594fea1589f61f4415ef2a7dba94177114c8247af18af7c9c9a536b0e04fc896c7d5ffd32b142ec4408deeba3670a17bec455d878d0e171d4ca74e2b72edb518f1f176490e01e2de96f50349cf95a6c50cda8663e64057dda5b2d16158e843951ff798174f13c4667aaed0203010001',
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
@@ -31,38 +33,36 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    console.log(Hid.generate_key_pair("yeahbro"))
-
-    const privkey = '-----BEGIN RSA PRIVATE KEY-----\n' +
-    'Proc-Type: 4,ENCRYPTED\n' +
-    'DEK-Info: AES-256-CBC,BCB9550FBAB5D927F63D829C0F0E5EA5\n' +
-    '\n' +
-    'UXv63xP/mzq0c8DcHYqrzXCY0QIWxhO5TII+GoHUAuu9AtNOnv98z64JcdrZL+fZ\n' +
-    'w+LhYrRY/eovGTLeHGhKVXe1YYR/TmFL+9WkUTbYKAv8IiZJ0nrhwhp6OhhT2neI\n' +
-    'rl6piBuEpuJfb7TPBfxc6c+fpHNiTqmNc5Br4JaYjwLxuzMOSa4kqDUt111BR8CT\n' +
-    's2qTfXfRU/LisIc4KF9E5FU0X4C0j6+Y0Rv3SFvxFpyaM+dW0/5dQPG8QwOZNayb\n' +
-    'teukzRgGq/ujHB7MGBBDWjPk/9pZzfzv49nEbjaZ9HzQi66hBr4HCTMhSYFNq0Ux\n' +
-    'S5O9YHzpXoGu5NG8w9B0JMe84yw/DN9CB7mIaC2+1ZemoQYCAuI2zwtf6QFbcnkP\n' +
-    'H5ZLWSbp4l0zNdRZJ9jJGpYHYcVrwufscLdGLR8lihor61s4rRr+0jT6CAp838jD\n' +
-    '7VfEIXvNOqRTIuXjSpE7Cr+43gSsp8VhJmhR/yZwtAsJWvQpLMi1nACKKkD0lS5t\n' +
-    '4vREznc0c0Y4BrP57jkDqOLJa6rBMR3AMMaMRke0iNyp/cDgSTWis3k7aLMmk4bK\n' +
-    'uWhc4I9ROTF8K0F/7ZYQ6BVJ0pD859p3HYIaAsveejp6VaJnNQGqySf33r6CPLMk\n' +
-    'YeEHasJXe2FoZVerX7Q0nBFxoqt3a6zdKuJ8M3GIyat8TnSfZLn+yo8pUKBwoe6j\n' +
-    '2Ze6toXbZpiMHTU6hzH7Y3Tsx4GdyAVnYUWAD3/rj3CTAsuP3bT8BefhXS1wtv7f\n' +
-    'WJDh32ts+QImwrxZUMIxDyhgcydl/ZkYe7gqLpkAkGBnQoP3Zk4nTOdsaUfwqPhL\n' +
-    'nrSIODAqA2lCBsAIElOWX7UE1KiEf6vq0nLw60U3lLyNI5SsVjJ+cBkT7352zaQD\n' +
-    'KSRCFHkmT/Cj5LGVIedI3TVH5L63wetzXcL1gYiWBz3LzGhjmjIuo5xmMbrWE5/l\n' +
-    'Ra/RkY39GrTbw66EsnC7lB1zphf7DjzEYB8oFId+a31mnwBF00IoNjuksHbC5pwr\n' +
-    'h8gpsBrsGyVoT0ZD0Bh1mGZ5kRZ6yHBET4k9uEtyXuYReDecKSzf/KH34ccJjK0Y\n' +
-    'cyMIyXfa/8GBSs2YqpZJactxeFzDmYD63WpZucLwHn9Oegy2kQbzb5lWIRzClqvb\n' +
-    'NQN2L6dHBq9bmHFnFSlvMN4MQMokUAJhQxvVhKluZKdkFessmjBQbyY6uKQU7wnL\n' +
-    'vQSzjmxE1qq7ZWnRYpJ/7pxDQgPweEVWCRWTvFjvszM1ElI7sr5kGxpD5UEeVbjM\n' +
-    'i6xqgN7zC1uE5xPqjoxDiGNqw3tSlH6OVyJ9Xk2uH5W7jsIj6S0pFfNeXvNysNX3\n' +
-    '1I5wNT2FuSnKOX1J7sMcLSEPT5B6WOPmfW8m4g4q/Yo19sNT/6uLkvxPNvxy20Hg\n' +
-    'HZhxdVyyr9lz8c2UXK8N9nGa38l0EYpCjtTHXzk9ANxTd4bXmJZsJ3RfrQdSeMiY\n' +
-    'bkS5rhfRAjae9051DOkCi5gjdDsdB0yn3zUQ295ZyPnKO0VH0sw2KxgUiVskQ0et\n' +
-    'U+E6MJpqMxdZx3OvJlGXHh3FSxgQszLMJ7a66p7ni/1LFSwxlN/Q6U2WkGM5IPj5\n' +
-    '-----END RSA PRIVATE KEY-----\n'
+    const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
+    '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\n' +
+    '-----END ENCRYPTED PRIVATE KEY-----\n';
 
     const larosa_prv = new Hid_prv({privkey: privkey});
 
