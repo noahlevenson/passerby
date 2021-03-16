@@ -32,7 +32,7 @@ class Hid {
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
 	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
-    static SIG_ALGORITHM = Happ_env.BROWSER ? "sha256" : "SHA256"; // TODO: on Android, crypto.getHashes() returns lowercase?!
+    static SIG_ALGORITHM = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? "sha256" : "SHA256"; // TODO: on RN/Android, crypto.getHashes() returns lowercase?! This is untested for ENV_TYPE.BROWSER
     static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
 	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
     

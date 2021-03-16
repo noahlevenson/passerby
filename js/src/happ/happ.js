@@ -39,7 +39,7 @@ const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hutil } = require("../hutil/hutil.js"); 
 const { Hlog } = require("../hlog/hlog.js");
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
-const https = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? null : require("https");
+const https = Happ_env.ENV === Happ_env.ENV_TYPE.NODE ? require("https") : null;
 
 class Happ {
 	static USER_AGENT = "Free Food (https://freefood.is)"; // Currently used only for geocoding API calls
@@ -153,9 +153,9 @@ class Happ {
 	}
 
 	static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
-		if (Happ_env.BROWSER) {
+		if (Happ_env.ENV === Happ_env.ENV_TYPE.BROWSER || Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
 			// TODO: do the browser implementation using XMLHttpRequest (or, worst case scenario, use RN "Fetch" API)
-			throw new Error("No browser implementation for HTTPS requests yet!"); 
+			throw new Error("No browser or React Native implementation for HTTPS requests yet!"); 
 		}
 
 		const query = new URLSearchParams([
