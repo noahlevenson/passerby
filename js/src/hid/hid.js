@@ -18,12 +18,6 @@ const { Hutil } = require("../hutil/hutil.js");
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hid {
-    static GET_PASSPHRASE_F = () => {
-        return new Promise((resolve, reject) => {
-            resolve(undefined);
-        });
-    };
-
     static SYM_ADJ_A = dict_adj_a;
     static SYM_ADJ_B = dict_adj_b;
     static SYM_NOUN = dict_noun;
@@ -32,9 +26,22 @@ class Hid {
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
 	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
-    static SIG_ALGORITHM = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? "RSA-SHA256" : "RSA-SHA256";
+    static SIG_ALGORITHM = "RSA-SHA256"; // Be careful, must work with KEY_TYPE
     static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
 	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
+    static PUBKEY_PEM_PREFIX = "PUBLIC KEY";
+    static PRIVKEY_PEM_PREFIX = "RSA PRIVATE KEY";
+    static PUBKEY_TYPE = "spki";
+    static PUBKEY_FORMAT = "der";
+    static PRIVKEY_TYPE = "pkcs1";
+    static PRIVKEY_FORMAT = "pem";
+    static PRIVKEY_CIPHER = "aes-256-cbc"; // TODO: is this optimal cipher?
+
+    static GET_PASSPHRASE_F = () => {
+        return new Promise((resolve, reject) => {
+            resolve(undefined);
+        });
+    };
     
 	constructor() {
 
@@ -59,7 +66,7 @@ class Hid {
     }
 
     static der2pem(der_buf, is_public = true) {
-        const type = is_public ? "PUBLIC KEY" : "RSA PRIVATE KEY";
+        const type = is_public ? Hid.PUBKEY_PEM_PREFIX : Hid.PRIVKEY_PEM_PREFIX;
         const prefix = `-----BEGIN ${type}-----\n`;
         const postfix = `-----END ${type}-----`;
         return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
@@ -69,13 +76,13 @@ class Hid {
 		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
 			modulusLength: Hid.MODULUS_LEN,
  			publicKeyEncoding: {
-			    type: "spki",
-			    format: "der"
+			    type: Hid.PUBKEY_TYPE,
+			    format: Hid.PUBKEY_FORMAT
   			},
   			privateKeyEncoding: {
-			    type: "pkcs1",
-			    format: "pem",
-			    cipher: "aes-256-cbc", // TODO: is this optimal cipher?
+			    type: Hid.PRIVKEY_TYPE,
+			    format: Hid.PRIVKEY_FORMAT,
+			    cipher: Hid.PRIVKEY_CIPHER, 
 			    passphrase: passphrase
   			}
 		});
@@ -89,16 +96,16 @@ class Hid {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign({key: key, format: "pem", type: "pkcs1", passphrase: passphrase});
+        return sign.sign({key: key, format: "pem", type: Hid.PRIVKEY_TYPE, passphrase: passphrase});
     }
 
     // Assumes key as DER buffer
-    // TODO: we annoyingly convert to pem only because our Android crypto implementation seems to require it
+    // TODO: we annoyingly convert to pem only because our RN/Android crypto implementation seems to require it
     static verify(data, key, sig) {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
         verify.update(data);
         verify.end();
-        return verify.verify({key: Hid.der2pem(key), format: "pem", type: "spki"}, sig);
+        return verify.verify({key: Hid.der2pem(key), format: "pem", type: Hid.PUBKEY_TYPE}, sig);
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
