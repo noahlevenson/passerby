@@ -31,7 +31,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    console.log(Hid.generate_key_pair("yeahbro"));
+    //console.log(Hid.generate_key_pair("yeahbro"));
 
     const privkey = '-----BEGIN RSA PRIVATE KEY-----\n' +
     'Proc-Type: 4,ENCRYPTED\n' +
