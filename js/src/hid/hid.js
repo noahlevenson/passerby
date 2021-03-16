@@ -100,6 +100,7 @@ class Hid {
         verify.end();
 
         try {
+            console.log(sig);
             console.log(verify.verify({key: Hid.der2pem(key), format: "pem", type: "spki"}, sig));
         } catch (err) {
             console.log(err);
