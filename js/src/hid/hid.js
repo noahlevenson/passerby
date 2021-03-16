@@ -59,7 +59,7 @@ class Hid {
     }
 
     static der2pem(der_buf, is_public = true) {
-        const type = is_public ? "PUBLIC KEY" : "ENCRYPTED PRIVATE KEY";
+        const type = is_public ? "PUBLIC KEY" : "RSA PRIVATE KEY";
         const prefix = `-----BEGIN ${type}-----\n`;
         const postfix = `-----END ${type}-----`;
         return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
