@@ -21,8 +21,6 @@ const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js")
 const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
 const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
-const crypto = require("crypto");
-
 (async function run() {
     const larosa = new Hid_pub({
         pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100a7cdcd4051c561bc73b83b5078ef60d3a2482b10ef401658e89ea1dca533c53e5ea4ab5d803b9db771a4b56aaa245f733c368e4096d6e7b4eedf844acd1d9dd302d76e8da604ae2c6c9fe6f8078708170f90fb560d6f0b21c5e0d9442365c9830e23e04c464247d68d00c129e02ffdbe525dd86a59f43c8e4434527bc8b95683b4f9f0992c604604a91c5df808a76aae4a2b4ed29bf62204df7cba754dd4cc841e91816e2363a130a75b58c18c4274508c749b39c9b06d31cf13055b34d5f6164344d0f6ff1afdcc7d75e5f112af023c0c0b7a44b5ae6bfe245d032aba807db712fdec1f02da3167d4489f1af2604de3a995eea0098f0e8e00754b36e4e0465d0203010001',
@@ -32,8 +30,6 @@ const crypto = require("crypto");
         lat: 40.9018663,
         long: -73.7912739
     });
-
-    console.log(Hid.generate_key_pair("yeahbro"));
 
     const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
     'MIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQI4D8v1UmkfPMCAggA\n' +
