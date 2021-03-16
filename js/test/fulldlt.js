@@ -23,7 +23,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
 (async function run() {
     const larosa = new Hid_pub({
-        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100a7cdcd4051c561bc73b83b5078ef60d3a2482b10ef401658e89ea1dca533c53e5ea4ab5d803b9db771a4b56aaa245f733c368e4096d6e7b4eedf844acd1d9dd302d76e8da604ae2c6c9fe6f8078708170f90fb560d6f0b21c5e0d9442365c9830e23e04c464247d68d00c129e02ffdbe525dd86a59f43c8e4434527bc8b95683b4f9f0992c604604a91c5df808a76aae4a2b4ed29bf62204df7cba754dd4cc841e91816e2363a130a75b58c18c4274508c749b39c9b06d31cf13055b34d5f6164344d0f6ff1afdcc7d75e5f112af023c0c0b7a44b5ae6bfe245d032aba807db712fdec1f02da3167d4489f1af2604de3a995eea0098f0e8e00754b36e4e0465d0203010001',
+        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100cdbb9e2e8f5c82f11c19af04f8313bbbc15e2a637a41f6fdcef3bf4496c45efbc1344efa9fecbd223b7e76348cdedc2479445215d0b9d12ff20afbc8ed2bf214bd66ad9c1ec89fb6b847e5b83495af9ae84c951f573ad4acd8765cfd2876262cd42793fccc8f5634510e6c884b9e431bece455631d7121a280ecba2ac3fcd8a0bd634f68d9997f8ac560fc5248c4a2996455210b461077bb3e8b1fe1cc497bcd73a5865cef1f6090cf8c19f6397a4c1136ad6d82793bcdf551cf5666b0c358da4c81c91c3b0441fcc92dbd4dc8d20a846657c20c993f862d70cbc5d1e26a88af865a31a48dc1ee2f7e12581f78c9fc44560d1c278cdc80633a4808d6d2398d210203010001',
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
         phone: "914-633-0800",
@@ -31,36 +31,39 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    const privkey = '-----BEGIN ENCRYPTED PRIVATE KEY-----\n' +
-    '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\n' +
-    '-----END ENCRYPTED PRIVATE KEY-----\n';
+    console.log(Hid.generate_key_pair("yeahbro"));
+
+    const privkey = '-----BEGIN RSA PRIVATE KEY-----\n' +
+    'Proc-Type: 4,ENCRYPTED\n' +
+    'DEK-Info: AES-256-CBC,D407068552C99578279EEE96E15DEF55\n' +
+    '\n' +
+    '7r8hIShR+RvH0Lv2Wp4LstkE9TRLhT5m+X+/X1SyLEs+7UT9koC0JJrbkGawh8YI\n' +
+    '7X4sFrf/rvedtdzlcyh4yfZ/G8/7sqCCU1GV5prKGBTgpsurEuh2zg1dOH/57rgJ\n' +
+    'ERscNXoNIBVkuRq8n+ntl9iOhhmCn55r5EyzWbget4YzW9YelRAzwQERvjvw95Ov\n' +
+    '0MPQ5lUTuJ1gaEMftqiCqatw9jZmBGXiJw2crIYHDpNLgv9nEqKP3zsrsrJjlL6G\n' +
+    'mRHggYN0A9mPAljQ8aZt86F+4lGDOqMMxE/NeJihr8tWs1xzfJ/DIRYaoa8V7BUB\n' +
+    'MLLMiXyTksraSNj/06qoFktR2SSQHGCrMMaY1xLo3vnErWsJnQHZTKPYux9qWLjF\n' +
+    'wyjHx7VHbCtdCki7J/w5UMchi4PyD7JKeWAesSIDiGY6QQHlB2gKK9C8uePURVOx\n' +
+    'kTxvjUmvpNFscEuXNw1+52a8YUg8mvvywHk+EF/E4dTvz59XPKr0hqlolqDxPCO4\n' +
+    'OJxhZt5tlfpD3DUNM5KIHes6gEYH9SIJpQKJJiVZ0IxN2BUZmCs2nNqPBpvrl/dk\n' +
+    '9VoUxY4bn6ULPl2SgVH3EYBJdgHA9f9YvAunQV6ccfKD271yifzBrW5ZLhwUTDho\n' +
+    'NeBvEvqq/wCexwUVjT2WcQedkY0wzAqxiJVDSaBvcBWTyyy+iun5iD9fGDXVdycJ\n' +
+    'X6WuPdPovCgDDja9B5KvJ6jVoVm6+KYl/B63ySqlbbqVuLa7rV/qVVpr9E1gfz91\n' +
+    'agwfUE5cCMmLLcEHcKE7fgCOXy573taw9Iz+mywlk/ftua0T/a0AGEBwRNmrvdQS\n' +
+    'BHzyHs2fH/uyeJGbtQLauGGCMkLyR9xZvr5MGGmZ+hghaJETp4k/OdWLtJCTLYlE\n' +
+    'HipnKQzIR0iPOj+gWWsa4a+gUcILoBX7N1XsBmEWlYHMz1UB4RmczIP8pat21FCa\n' +
+    'mGd9ZP7kjokbVoac78Qie29IDyrsl/F1XHoEzWJDgutqKzwTY20pW565w5/x702N\n' +
+    'aE7HAIxRF0Yo3+6D5GnvXHfgda3Sr4sy6ihF1+ARCYce97/kleFg7b8Orv5C1SBA\n' +
+    'TlAUTog6oL5e8vgGoZ3NIbXGKOk2Q2sr3pnuGJk4dkR/32n1Hwd5HoOmsWB2Y13m\n' +
+    '1zSnDCPwh0fQyHoD3r7on9Db6fT90r7UYz8zEibvrhytqInIFyAtlcT/qzq0Elzr\n' +
+    'In5mQHLSoT8iLOuVFysPxlWlo7/mc65CFTh14TdNBsjnJ4cF/9nZzXG3CJotsKLC\n' +
+    'BxDFJh7a5Aloz8P0Pbe0mGaaQGat3TjzwirG/yZxh3QPcDHOltLGszK5QCp0OJQS\n' +
+    'LTZaIJ00KcW2KJTrop6I4HvKiQwberOwyDgSZmHETAUcGKSDVoamP7zBnyudw/wF\n' +
+    'WLA1NIfIfeyfMvK9kIXC0T19IrW6aiKC/hrRcCv/HVLz+BAX4ymiPKonKKoEG19I\n' +
+    'w994mPvadd/Ci89EOv+BeoQu01PlR/pQGTOBHgqNsWiBBT6z9BWlF4/cJHzSLYAI\n' +
+    'UqGa2c+/DP79CkmtNJNngS4NoHsBVSzoghhJNFHObNuhS8qJtz68BLqLE9KaEuqi\n' +
+    '-----END RSA PRIVATE KEY-----\n'
+;
 
     const larosa_prv = new Hid_prv({privkey: privkey});
 
@@ -85,7 +88,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     // Sign the bootstrap node, add it to our tx_cache, and broadcast it
     const bs_bro = new Hid_pub({
-        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100c9930f21dcecc26d53562cfcbe27a9726bb3bfa4d60308f17f37bfac54dc9afe5065661f1abb4056c73d563393048e764487e5522c2ea1da4eeea50df49eaaf61a14c996f3ad526160ab85c60254b2b4a8c670cece21658ad866b5a0bf5d078c0badbb986271b5ce767ccf22d3f9200efde2136233107d6aca7d0724d0de64d745a8eb9566a9c0c9033937bc6d1c9a8137524c491dc30b708a74b8c1e11154f246702285f8ab9a618233b86ba75a870305e44484919ef8c060c2a0041b1de011663b00341a80a0aa15ad228e973918d4850b51b7d12ecfa743d22056fa09d54da3e387f7e3f787296e4404aeb089ab3be9c0c80096c6176ffacb23d1a04f86b10203010001'
+        pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100caba866e6b543fe0dadf671425b00717734d6fbf8af19b981f37a8d8449297597eaebfdfe6f4c6bfb2d1b2dcbf85003120fbc2d76159847cee87e39318aa81f2dd828bdd373acab37f713f1087a31145833795906c4b619fe1f99e902938e3056710efe0ee6dedb296a7a2e392d912357630c68a00cea19f808cc27810e027a85c14ae97a171f3bde538e7625591f4c9f825d48ef980070431fe0e001acbbdd451aaab19d9af51783c2a30cde74ea30b4ce0c7d07771aa865d687a167a3ca837cb6348abf13345f20f98ac26bb1cb03c3d4916cca3c61d646052157705cbc3b563b35ea1bbfa2e017343263d5e8f7855190c775f60c8060a3cbd78302f043e550203010001'
     });
 
     const tx_new_2 = network.hksrv.sign(larosa, bs_bro);
