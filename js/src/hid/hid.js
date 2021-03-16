@@ -89,7 +89,7 @@ class Hid {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign({key: key, format: "pem", type: "pkcs8", passphrase: passphrase});
+        return sign.sign({key: key, format: "pem", passphrase: passphrase});
     }
 
     // Assumes key as DER buffer
