@@ -154,7 +154,7 @@ class Hksrv {
 	// Create a revocation transaction: peer_a revokes SIG_TOK from peer_b
 	// a revocation basically spends a spent SIG_TOK, but then directs the new utxo to /dev/null
 	async revoke(peer_a, peer_a_prv, peer_b) {
-		const prev_tsact = this.sign(peer_a, peer_a_prv, peer_b, false);
+		const prev_tsact = await this.sign(peer_a, peer_a_prv, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
 		// We want to prevent the peer from issuing a revocation for a signature that doesn't exist
