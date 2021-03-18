@@ -24,14 +24,20 @@ const { Hutil } = require("../hutil/hutil.js");
 // SIG_TOK exactly once for every other peer known to the keyserver. A peer registers his new
 // key with the keyserver by signing his own key. Peers may revoke their signatures, except
 // in the case of self-signatures, which are made permanent via SCRIPT_NO_UNLOCK. Anytime a peer
-// spends SIG_TOK to sign a peer's key, they must present a valid proof of work for their identity,
-// which is enforced with SCRIPT_IS_VALID_POW.
+// spends SIG_TOK to sign a peer's key, they must present both a signature for proof of identity
+// AND a valid proof of work for their identity, which is enforced with SCRIPT_IS_VALID_SIG_AND_POW.
 
 class Hksrv {
 	static REQ_POW_BITS = 20; // TODO: set to nontrivial value
 	static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
-	static SCRIPT_IS_VALID_POW = [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS];
+	static SCRIPT_IS_VALID_SIG_AND_POW = [Hdlt_vm.OPCODE.OP_CHECKSIGPOW, Hksrv.REQ_POW_BITS];
+
+	static SIG_TX = new Hdlt_tsact({
+		utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
+		lock: [Hdlt_vm.OPCODE.OP_NOOP], 
+		unlock: Hksrv.SCRIPT_IS_VALID_SIG_AND_POW
+	})
 
 	// The application layer tx validation hook is where you specify any special validation logic for 
 	// transactions beyond what's applied by the Hdlt layer - should return true if valid, false if not
@@ -69,13 +75,7 @@ class Hksrv {
 	// this is called in Hdlt.build_db
 	static UTXO_DB_INIT_HOOK(utxo_db) {
 		// Here we just set our persistent signature token
-		const tok = new Hdlt_tsact({
-			utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
-			lock: [Hdlt_vm.OPCODE.OP_NOOP], 
-			unlock: [Hdlt_vm.OPCODE.OP_CHECKPOW, Hksrv.REQ_POW_BITS]
-		})
-
-		utxo_db.set(Hksrv.SIG_TOK, tok);
+		utxo_db.set(Hksrv.SIG_TOK, Hksrv.SIG_TX);
 		return utxo_db;
 	}
 
@@ -99,25 +99,10 @@ class Hksrv {
 	}
 
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
-	sign(peer_a, peer_b, check_db = true) {
+	async sign(peer_a, peer_a_prv, peer_b, check_db = true) {
 		const nonce = Array.from(Buffer.from(peer_a.nonce, "hex"));
 		const peer_a_pubkey = Array.from(Buffer.from(peer_a.pubkey, "hex"));
 		const peer_b_pubkey = Array.from(Buffer.from(peer_b.pubkey, "hex"));
-
-		// lock script: push1, len, recip pubkey, push1, len, nonce, push1, len, my pubkey
-		// (we ineffectually push the recipient's pubkey to the stack just so the 
-		// recipient's pubkey is in the script for us to hash over)
-		const lock_script = [].concat([
-			Hdlt_vm.OPCODE.OP_PUSH2,
-			...Array.from(Hutil._int2Buf16(peer_b_pubkey.length)),
-			...peer_b_pubkey, 
-			Hdlt_vm.OPCODE.OP_PUSH2, 
-			...Array.from(Hutil._int2Buf16(nonce.length)), 
-			...nonce, 
-			Hdlt_vm.OPCODE.OP_PUSH2, 
-			...Array.from(Hutil._int2Buf16(peer_a_pubkey.length)), 
-			...peer_a_pubkey
-		]);
 
 		// unlock script (if not self-sig): push1, len, payee (self) pubkey, checksig
 		// (the only peer who may unlock this transaction is the peer who created this transaction)
@@ -126,9 +111,31 @@ class Hksrv {
 
 		const tsact = new Hdlt_tsact({
 			utxo: Hksrv.SIG_TOK,
-			lock: lock_script,
+			lock: [],
 			unlock: unlock_script
 		});	
+
+		const p = await Hid.get_passphrase();
+		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(Hksrv.SIG_TX, tsact), peer_a_prv.privkey, p);
+
+		// lock script: push2, len, recip pubkey, push2, len, sig, push2, len, nonce, push2, len, my pubkey
+		// (we ineffectually push the recipient's pubkey to the stack just so the recipient's pubkey is in the script)
+		const lock_script = [].concat([
+			Hdlt_vm.OPCODE.OP_PUSH2,
+			...Array.from(Hutil._int2Buf16(peer_b_pubkey.length)),
+			...peer_b_pubkey, 
+			Hdlt_vm.OPCODE.OP_PUSH2,
+			...Array.from(Hutil._int2Buf16(sig.length)),
+			...sig,
+			Hdlt_vm.OPCODE.OP_PUSH2, 
+			...Array.from(Hutil._int2Buf16(nonce.length)), 
+			...nonce, 
+			Hdlt_vm.OPCODE.OP_PUSH2, 
+			...Array.from(Hutil._int2Buf16(peer_a_pubkey.length)), 
+			...peer_a_pubkey
+		]);
+
+		tsact.lock = lock_script;
 
 		if (check_db) {
 			// We want to prevent the peer from double spending SIG_TOK on peer_b

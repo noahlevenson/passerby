@@ -23,7 +23,8 @@ class Hdlt_vm {
 		OP_PUSH1: 0x64,
 		OP_PUSH2: 0x65,
 		OP_CHECKSIG: 0xAC,
-		OP_CHECKPOW: 0xFF
+		OP_CHECKPOW: 0xFF,
+		OP_CHECKSIGPOW: 0xAF
 	};
 
 	GRAMMAR = new Map([
@@ -31,7 +32,8 @@ class Hdlt_vm {
 		[Hdlt_vm.OPCODE.OP_PUSH1, this._op_push1],
 		[Hdlt_vm.OPCODE.OP_PUSH2, this._op_push2],
 		[Hdlt_vm.OPCODE.OP_CHECKSIG, this._op_checksig],
-		[Hdlt_vm.OPCODE.OP_CHECKPOW, this._op_checkpow]
+		[Hdlt_vm.OPCODE.OP_CHECKPOW, this._op_checkpow],
+		[Hdlt_vm.OPCODE.OP_CHECKSIGPOW, this._op_checksigpow]
 	]);
 
 	STACK;
@@ -109,7 +111,7 @@ class Hdlt_vm {
 		this.PC += 3 + n;
 	}
 
-	// Verify that the signature at (SP - 1) is valid for the pubkey at (SP - 2) - returns 1 if valid, 0 otherwise
+	// Verify that the pubkey at (SP - 1) is valid for the sig at (SP - 2) - returns 1 if valid, 0 otherwise
 	// Like Bitcoin's OP_CHECKSIG instruction, it compares the sig against a copy of tx_new with its lock script replaced by tx_prev's unlock script
 	_op_checksig() {
 		const pubkey = this.STACK[this.SP - 1];
@@ -133,7 +135,7 @@ class Hdlt_vm {
 		this.PC += 1;
 	}
 
-	// Verify that the proof of work for the nonce at (SP - 1) is valid for the pubkey at (SP - 2)
+	// Verify that the proof of work for the pubkey at (SP - 1) is valid for the nonce at (SP - 2)
 	// OP_CHECKPOW assumes the next byte represents the number of leading zero bits required
 	// returns 1 if valid, 0 otherwise
 	_op_checkpow() {
@@ -147,6 +149,44 @@ class Hdlt_vm {
 
 		const h = Hid.hash_cert(pubkey.toString(16), nonce);
 		const res = Hid.is_valid_pow(h, n) ? 1 : 0;
+
+		this.STACK[this.SP] = new Hbigint(res);
+		this.SP += 1;
+		this.PC += 2;
+	}
+
+	// Combines OP_CHECKSIG and OP_CHECKPOW: Verify that proof of work for the pubkey at (SP - 1) is valid for the nonce
+	// at (SP - 2) and also that the pubkey at (SP - 1) is valid for the sig at (SP - 3)
+	// OP_CHECKSIGPOW assumes the next byte represents the number of leading zero bits required
+	// returns 1 if valid, 0 otherwise
+	// TODO: this is duplicating code from both OP_CHECKSIG and OP_CHECKPOW in a way we might be able to avoid
+	_op_checksigpow() {
+		const n = this.program[this.PC + 1];
+		const pubkey = this.STACK[this.SP - 1];
+
+		// TODO: this is pure noob but necessary to match the leading zero established in Hid_pub
+		const nonce = this.STACK[this.SP - 2].toString(16);
+		nonce = nonce.padStart(nonce.length + (nonce.length % 2), "0");
+		
+		this.SP -= 3;
+		const sig = this.STACK[this.SP];
+		
+		const h = Hid.hash_cert(pubkey.toString(16), nonce);
+		const is_valid_pow = Hid.is_valid_pow(h, n);
+
+		const copy = new Hdlt_tsact({
+			utxo: this.tx_new.utxo.slice(),
+			lock: [...this.tx_prev.unlock],
+			unlock: [...this.tx_new.unlock]
+		});
+
+		const is_valid_sig = Hid.verify(
+			Hdlt_tsact.serialize(copy), 
+			Buffer.from(pubkey.toString(16), "hex"), 
+			Buffer.from(sig.toString(16), "hex")
+		);
+
+		const res = is_valid_pow && is_valid_sig ? 1 : 0;
 
 		this.STACK[this.SP] = new Hbigint(res);
 		this.SP += 1;
