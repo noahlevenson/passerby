@@ -165,7 +165,7 @@ class Hdlt_vm {
 		const pubkey = this.STACK[this.SP - 1];
 
 		// TODO: this is pure noob but necessary to match the leading zero established in Hid_pub
-		const nonce = this.STACK[this.SP - 2].toString(16);
+		let nonce = this.STACK[this.SP - 2].toString(16);
 		nonce = nonce.padStart(nonce.length + (nonce.length % 2), "0");
 		
 		this.SP -= 3;

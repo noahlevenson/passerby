@@ -82,7 +82,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     await network.start();
 
     // Make a self-signature transaction, add it to our tx_cache, and broadcast it
-    const tx_new = await network.hksrv.sign(larosa, larosa);
+    const tx_new = await network.hksrv.sign(larosa, larosa_prv, larosa);
     network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
     network.hksrv.dlt.broadcast(network.hksrv.dlt.tx_req, {hdlt_tsact: tx_new});   
 
@@ -91,7 +91,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100caba866e6b543fe0dadf671425b00717734d6fbf8af19b981f37a8d8449297597eaebfdfe6f4c6bfb2d1b2dcbf85003120fbc2d76159847cee87e39318aa81f2dd828bdd373acab37f713f1087a31145833795906c4b619fe1f99e902938e3056710efe0ee6dedb296a7a2e392d912357630c68a00cea19f808cc27810e027a85c14ae97a171f3bde538e7625591f4c9f825d48ef980070431fe0e001acbbdd451aaab19d9af51783c2a30cde74ea30b4ce0c7d07771aa865d687a167a3ca837cb6348abf13345f20f98ac26bb1cb03c3d4916cca3c61d646052157705cbc3b563b35ea1bbfa2e017343263d5e8f7855190c775f60c8060a3cbd78302f043e550203010001'
     });
 
-    const tx_new_2 = await network.hksrv.sign(larosa, bs_bro);
+    const tx_new_2 = await network.hksrv.sign(larosa, larosa_prv, bs_bro);
     network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new_2)));
     network.hksrv.dlt.broadcast(network.hksrv.dlt.tx_req, {hdlt_tsact: tx_new_2}); 
 
