@@ -30,11 +30,11 @@ class Hid {
     static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
 	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
     static PUBKEY_PEM_PREFIX = "PUBLIC KEY";
-    static PRIVKEY_PEM_PREFIX = "RSA PRIVATE KEY";
+    static PRIVKEY_PEM_PREFIX = "ENCRYPTED PRIVATE KEY";
     static PUBKEY_TYPE = "spki";
     static PUBKEY_FORMAT = "der";
-    static PRIVKEY_TYPE = "pkcs1";
-    static PRIVKEY_FORMAT = "pem";
+    static PRIVKEY_TYPE = "pkcs8";
+    static PRIVKEY_FORMAT = "der";
     static PRIVKEY_CIPHER = "aes-256-cbc"; // TODO: is this optimal cipher?
 
     static GET_PASSPHRASE_F = () => {
@@ -88,19 +88,21 @@ class Hid {
 		});
 
         pair.publicKey = Buffer.isBuffer(pair.publicKey) ? pair.publicKey.toString("hex") : pair.publicKey;
+        pair.privateKey = Buffer.isBuffer(pair.privateKey) ? pair.privateKey.toString("hex") : pair.privateKey;
         return pair;
 	}
 
-    // Assumes key as PEM string
+    // Assumes key as DER buffer
+    // TODO: we annoyingly convert to pem only because our crypto-browserify (RN/Android env) seems to require it
     static sign(data, key, passphrase) {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign({key: key, format: "pem", type: Hid.PRIVKEY_TYPE, passphrase: passphrase});
+        return sign.sign({key: Hid.der2pem(key), format: "pem", type: Hid.PRIVKEY_TYPE, passphrase: passphrase});
     }
 
     // Assumes key as DER buffer
-    // TODO: we annoyingly convert to pem only because our RN/Android crypto implementation seems to require it
+    // TODO: we annoyingly convert to pem only because our crypto-browserify (RN/Android env) seems to require it
     static verify(data, key, sig) {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
         verify.update(data);
