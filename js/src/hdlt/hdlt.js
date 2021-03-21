@@ -104,7 +104,7 @@ class Hdlt {
 	static async make_nonce_auth(block, pubkey, privkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
 		const p = await Hid.get_passphrase();
-		return Hid.sign(data, privkey, p).toString("hex");
+		return Hid.sign(data, Buffer.from(privkey, "hex"), p).toString("hex");
 	}
 
 	verify_nonce(block) {
