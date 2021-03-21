@@ -92,16 +92,16 @@ class Hid {
         return pair;
 	}
 
-    // Assumes key as DER buffer
+    // Assumes privkey key as DER buffer
     // TODO: we annoyingly convert to pem only because our crypto-browserify (RN/Android env) seems to require it
     static sign(data, key, passphrase) {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign({key: Hid.der2pem(key), format: "pem", type: Hid.PRIVKEY_TYPE, passphrase: passphrase});
+        return sign.sign({key: Hid.der2pem(key, false), format: "pem", type: Hid.PRIVKEY_TYPE, passphrase: passphrase});
     }
 
-    // Assumes key as DER buffer
+    // Assumes pubkey key as DER buffer
     // TODO: we annoyingly convert to pem only because our crypto-browserify (RN/Android env) seems to require it
     static verify(data, key, sig) {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
