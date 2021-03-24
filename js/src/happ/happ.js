@@ -162,7 +162,7 @@ class Happ {
 			"street": street,
 			"city": city,
 			"state": state,
-			"postalcode": postalcode
+			"postalcode": postalcode,
 			"format": "json"
 		});
 
