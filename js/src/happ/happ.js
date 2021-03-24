@@ -153,40 +153,57 @@ class Happ {
 	}
 
 	static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
-		if (Happ_env.ENV === Happ_env.ENV_TYPE.BROWSER || Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
-			// TODO: do the browser implementation using XMLHttpRequest (or, worst case scenario, use RN "Fetch" API)
-			throw new Error("No browser or React Native implementation for HTTPS requests yet!"); 
+		if (Happ_env.ENV === Happ_env.ENV_TYPE.BROWSER) {
+			// TODO: write the browser implementation using XMLHttpRequest
+			throw new Error("No browser implementation for HTTPS requests yet!"); 
 		}
 
-		const query = new URLSearchParams([
-			["street", street],
-			["city", city],
-			["state", state],
-			["postalcode", postalcode],
-			["format", "json"]
-		]);
-
-		const opt = {
-			hostname: hostname,
-			headers: {"User-Agent": Happ.USER_AGENT},
-			path: `/search?${query.toString()}`,
-			timeout: 3000
-		};
-
-		return new Promise((resolve, reject) => {
-			const req = https.request(opt, (res) => {
-				res.on("data", (d) => {
-					try {
-						const parsed = JSON.parse(d)[0];
-						resolve(new Hgeo_coord({lat: parseFloat(parsed.lat), long: parseFloat(parsed.lon)}));
-					} catch (err) {
-						reject(err);
-					}
-				});
-			});
-
-			req.end();
+		const query = new URLSearchParams({
+			"street": street,
+			"city": city,
+			"state": state,
+			"postalcode": postalcode
+			"format": "json"
 		});
+
+		const path = `/search?${query.toString()}`;
+		const headers = {"User-Agent": Happ.USER_AGENT};
+		
+		if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
+			return fetch(`https://${hostname}${path}`, {
+				method: "GET",
+				headers: headers
+			}).then((res) => res.json()).then((data) => {
+				const parsed = data[0];
+				return new Hgeo_coord({lat: parseFloat(parsed.lat), long: parseFloat(parsed.lon)});
+			}).catch((err) => {
+				// TODO: handle error!
+			});
+		}
+
+		if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
+			const opt = {
+				hostname: hostname,
+				headers: headers,
+				path: path,
+				timeout: 3000
+			};
+
+			return new Promise((resolve, reject) => {
+				const req = https.request(opt, (res) => {
+					res.on("data", (d) => {
+						try {
+							const parsed = JSON.parse(d)[0];
+							resolve(new Hgeo_coord({lat: parseFloat(parsed.lat), long: parseFloat(parsed.lon)}));
+						} catch (err) {
+							reject(err);
+						}
+					});
+				});
+
+				req.end();
+			});
+		}
 	}
 
 	// Convenience method: send a transaction request to the peer named on credential 'cred' and
