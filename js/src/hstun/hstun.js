@@ -9,13 +9,13 @@
 
 "use strict";
 
-const crypto = require("crypto");
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hstun_msg } = require("./hstun_msg.js");
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");
+const crypto = Happ_env.ENV === Happ_env.ENV_TYPE.NODE ? require("crypto") : null;
 
 class Hstun {
 	static REQ_TIMEOUT = 5000;

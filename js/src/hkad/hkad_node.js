@@ -9,7 +9,7 @@
 
 "use strict";
 
-const crypto = require("crypto");
+
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
@@ -22,6 +22,7 @@ const { Hkad_ds } = require("./hkad_ds.js");
 const { Hkad_data } = require("./hkad_data.js");
 const { Hbintree } = require("../htypes/hbintree/hbintree.js");
 const { Hbintree_node } = require("../htypes/hbintree/hbintree_node.js");
+const crypto = Happ_env.ENV === Happ_env.ENV_TYPE.NODE ? require("crypto") : null;
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hkad_node {

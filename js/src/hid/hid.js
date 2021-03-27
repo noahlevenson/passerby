@@ -8,13 +8,12 @@
 */ 
 
 "use strict";
-
-const crypto = require("crypto");
+const { Happ_env } = require("../happ/happ_env.js");
 const dict_adj_a = require("./dict/adj_4096_a.json");
 const dict_adj_b = require("./dict/adj_4096_b.json");
 const dict_noun = require("./dict/noun_4096.json");
-const { Happ_env } = require("../happ/happ_env.js");
 const { Hutil } = require("../hutil/hutil.js");
+const crypto = Happ_env.ENV === Happ_env.ENV_TYPE.NODE ? require("crypto") : null;
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hid {
