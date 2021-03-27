@@ -36,13 +36,14 @@ class Hid {
     static PRIVKEY_TYPE = "pkcs8";
     static PRIVKEY_FORMAT = "der";
     static PRIVKEY_CIPHER = "aes-256-cbc"; // This must comport with what's available in our native crypto implementations and account for several known bugs in Java - see HNativeCrypto
+    static NATIVE_CRYPTO = null;
 
     static GET_PRIVKEY_F = () => {
         return new Promise((resolve, reject) => {
             resolve(undefined);
         });
     };
-    
+
 	constructor() {
 
 	}
@@ -65,6 +66,12 @@ class Hid {
         return Hid.GET_PRIVKEY_F();
     }
 
+    // Set the interface for native crypto functions
+    // This must be set when ENV is REACT_NATIVE
+    static set_native_crypto(ref) {
+        Hid.NATIVE_CRYPTO = ref;
+    }
+
     // TODO: we're not using this anymore, should we /dev/null it?
     // static der2pem(der_buf, is_public = true) {
     //     const type = is_public ? Hid.PUBKEY_PEM_PREFIX : Hid.PRIVKEY_PEM_PREFIX;
@@ -73,24 +80,37 @@ class Hid {
     //     return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
     // }
 
-	static generate_key_pair(passphrase) {
-		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
-			modulusLength: Hid.MODULUS_LEN,
- 			publicKeyEncoding: {
-			    type: Hid.PUBKEY_TYPE,
-			    format: Hid.PUBKEY_FORMAT
-  			},
-  			privateKeyEncoding: {
-			    type: Hid.PRIVKEY_TYPE,
-			    format: Hid.PRIVKEY_FORMAT,
-			    cipher: Hid.PRIVKEY_CIPHER, 
-			    passphrase: passphrase
-  			}
-		});
+	static async generate_key_pair(passphrase) {
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
+            const res = await Hid.NATIVE_CRYPTO.generateRSAKeyPair(Hid.MODULUS_LEN, passphrase);
 
-        pair.publicKey = Buffer.isBuffer(pair.publicKey) ? pair.publicKey.toString("hex") : pair.publicKey;
-        pair.privateKey = Buffer.isBuffer(pair.privateKey) ? pair.privateKey.toString("hex") : pair.privateKey;
-        return pair;
+            // TODO: handle error
+            
+            return {
+                publicKey: Buffer.from(res[0]).toString("hex"),
+                privateKey: Buffer.from(res[1]).toString("hex")
+            }
+        }
+
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
+            const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
+                modulusLength: Hid.MODULUS_LEN,
+                publicKeyEncoding: {
+                    type: Hid.PUBKEY_TYPE,
+                    format: Hid.PUBKEY_FORMAT
+                },
+                privateKeyEncoding: {
+                    type: Hid.PRIVKEY_TYPE,
+                    format: Hid.PRIVKEY_FORMAT,
+                    cipher: Hid.PRIVKEY_CIPHER, 
+                    passphrase: passphrase
+                }
+            });
+
+            pair.publicKey = Buffer.isBuffer(pair.publicKey) ? pair.publicKey.toString("hex") : pair.publicKey;
+            pair.privateKey = Buffer.isBuffer(pair.privateKey) ? pair.privateKey.toString("hex") : pair.privateKey;
+            return pair;
+        }
 	}
 
     // Assumes encrypted privkey key as DER buffer
