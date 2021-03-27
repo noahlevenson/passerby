@@ -85,7 +85,7 @@ class Hid {
             const res = await Hid.NATIVE_CRYPTO.generateRSAKeyPair(Hid.MODULUS_LEN, passphrase);
 
             // TODO: handle error
-            
+
             return {
                 publicKey: Buffer.from(res[0]).toString("hex"),
                 privateKey: Buffer.from(res[1]).toString("hex")
@@ -115,8 +115,13 @@ class Hid {
 
     // Assumes encrypted privkey key as DER buffer
     // Returns unencrypted key as DER buffer
-    static decrypt_private_key(key, passphrase) {
-        try {
+    static async decrypt_private_key(key, passphrase) {
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
+            const res = await Hid.NATIVE_CRYPTO.decryptPrivateKeyRSA(key.toString("hex"), passphrase);
+            return Buffer.from(res, "hex");
+        }
+
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
             return crypto.createPrivateKey({
                 key: key, 
                 format: Hid.PRIVKEY_FORMAT, 
@@ -126,25 +131,37 @@ class Hid {
                 format: Hid.PRIVKEY_FORMAT,
                 type: Hid.PRIVKEY_TYPE
             });
-        } catch (err) {
-            return null;
-        }
+        } 
     }
 
     // Assumes UNENCRYPTED privkey key as DER buffer
-    static sign(data, key) {
-        const sign = crypto.createSign(Hid.SIG_ALGORITHM);
-        sign.update(data);
-        sign.end();
-        return sign.sign({key: key, format: Hid.PRIVKEY_FORMAT, type: Hid.PRIVKEY_TYPE});
+    static async sign(data, key) {
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
+            const res = await Hid.NATIVE_CRYPTO.signRSA(data.toString("hex"), key.toString("hex"));
+            return Buffer.from(res, "hex");
+        }
+
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
+            const sign = crypto.createSign(Hid.SIG_ALGORITHM);
+            sign.update(data);
+            sign.end();
+            return sign.sign({key: key, format: Hid.PRIVKEY_FORMAT, type: Hid.PRIVKEY_TYPE});
+        }
     }
 
     // Assumes pubkey key as DER buffer
     static verify(data, key, sig) {
-        const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
-        verify.update(data);
-        verify.end();
-        return verify.verify({key: key, format: Hid.PUBKEY_FORMAT, type: Hid.PUBKEY_TYPE}, sig);
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
+            const res = await Hid.NATIVE_CRYPTO.verifyRSA(data.toString("hex"), key.toString("hex"), sig.toString("hex"));
+            return Buffer.from(res, "hex");
+        }
+
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
+            const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
+            verify.update(data);
+            verify.end();
+            return verify.verify({key: key, format: Hid.PUBKEY_FORMAT, type: Hid.PUBKEY_TYPE}, sig);
+        }
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
