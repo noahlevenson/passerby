@@ -72,29 +72,29 @@ class Hdlt_vm {
 
 	// Execute the stored program until the end of instructions
 	// Returns true if no errors and the topmost stack value is nonzero
-	exec() {
+	async exec() {
 		const inst = this.GRAMMAR.get(this.program[this.PC]);
 
 		if (!inst) {
 			return false; // Program error
 		}
 
-		inst.bind(this)();
+		await inst.bind(this)();
 
 		if (this.PC < this.program.length) {
-			return this.exec();
+			return await this.exec();
 		}
 
 		return this.SP - 1 >= 0 && !this.STACK[this.SP - 1].equals(new Hbigint(0)) ? true : false;
 	}
 
 	// No op
-	_op_noop() {
+	async _op_noop() {
 		return;
 	}
 
 	// The next byte represents the number of following bytes to push onto the stack
-	_op_push1() {
+	async _op_push1() {
 		const n = this.program[this.PC + 1];
 		const start = this.PC + 2;
 		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
@@ -103,7 +103,7 @@ class Hdlt_vm {
 	}
 
 	// The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
-	_op_push2() {
+	async _op_push2() {
 		const n = (this.program[this.PC + 1] << Happ_env.SYS_BYTE_WIDTH) | this.program[this.PC + 2];
 		const start = this.PC + 3;
 		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
@@ -138,7 +138,7 @@ class Hdlt_vm {
 	// Verify that the proof of work for the pubkey at (SP - 1) is valid for the nonce at (SP - 2)
 	// OP_CHECKPOW assumes the next byte represents the number of leading zero bits required
 	// returns 1 if valid, 0 otherwise
-	_op_checkpow() {
+	async _op_checkpow() {
 		const n = this.program[this.PC + 1];
 		const pubkey = this.STACK[this.SP - 1];
 		this.SP -= 2;

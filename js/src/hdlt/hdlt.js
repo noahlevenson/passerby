@@ -117,11 +117,11 @@ class Hdlt {
 		});
 	}
 
-	make_block(pred_block_node) {
+	async make_block(pred_block_node) {
 		return this.MAKE_BLOCK_ROUTINE.get(this.consensus).bind(this)(pred_block_node);
 	}
 
-	_make_block_auth(pred_block_node) {
+	async _make_block_auth(pred_block_node) {
 		if (this.args.t_handle !== null) {
 			clearTimeout(this.args.t_handle);
 		}
@@ -130,7 +130,7 @@ class Hdlt {
 		const t = this.args.rate[0] + Math.floor(Math.random() * delta);
 		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
-		this.args.t_handle = setTimeout(() => {
+		this.args.t_handle = setTimeout(async () => {
 			// Find the transactions in our tx_cache which have not yet been added to a block 
 			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
 			const branch = this.store.get_branch(pred_block_node);
@@ -158,8 +158,8 @@ class Hdlt {
 			// initial utxo db computed up through our predecessor block
 			let utxo_db = this.build_db(pred_block_node);
 
-			const valid_tx = tx_candidates.filter((pair) => {
-				const res = this._validate_tx({tx: pair[1], utxo_db: utxo_db});
+			const valid_tx = tx_candidates.filter(async (pair) => {
+				const res = await this._validate_tx({tx: pair[1], utxo_db: utxo_db});
 				utxo_db = res.utxo_db;
 				return res.valid;
 			}).map(pair => pair[1]);
@@ -172,7 +172,7 @@ class Hdlt {
 					tsacts: [...valid_tx]
 				});
 
-				Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey).then((nonce) => {
+				Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey).then(async (nonce) => {
 					new_block.nonce = nonce;
 					const block_hash = Hdlt_block.sha256(new_block);
 
@@ -182,18 +182,18 @@ class Hdlt {
 					this.store.build_dict();
 					Hlog.log(`[HDLT] (${this.net.app_id}) Made block ${block_hash} (${valid_tx.length} tx, ${tx_candidates.length - valid_tx.length} invalid) ${this.store.size()} blocks total`);
 					this.broadcast(this.block_req, {hdlt_block: new_block});
-					this._make_block_auth(new_node);
+					await this._make_block_auth(new_node);
 				});
 			} else {
 				Hlog.log(`[HDLT] (${this.net.app_id}) No valid new tx at block time!`);
-				this._make_block_auth(pred_block_node);
+				await this._make_block_auth(pred_block_node);
 			}
 		}, t);
 	}
 
 	// Validate a single tx against some state of a utxo db, returns
 	// true/false and the new state of the utxo db
-	_validate_tx({tx, utxo_db} = {}) {
+	async _validate_tx({tx, utxo_db} = {}) {
 		const utxo = utxo_db.get(tx.utxo);
 	
 		if (!utxo) {
@@ -202,7 +202,7 @@ class Hdlt {
 
 		const vm = new Hdlt_vm({tx_prev: utxo, tx_new: tx});
 
-		if (!vm.exec()) {
+		if (!(await vm.exec())) {
 			return {valid: false, utxo_db: utxo_db};
 		}
 
@@ -215,13 +215,13 @@ class Hdlt {
 		return {valid: true, utxo_db: this.db_hook(tx, utxo_db)};
 	}
 
-	start() {
+	async start() {
 		this.net.network.on("message", this._on_message.bind(this));
 		Hlog.log(`[HDLT] (${this.net.app_id}) Online using ${Object.keys(Hdlt.CONSENSUS_METHOD)[this.consensus]} consensus`);
 
 		if (this.is_validator) {
 			Hlog.log(`[HDLT] (${this.net.app_id}) As validator`);
-			this.make_block(this.store.get_deepest_blocks()[0]);
+			await this.make_block(this.store.get_deepest_blocks()[0]);
 		}
 
 		this._init();
@@ -321,8 +321,8 @@ class Hdlt {
 			// computed from the genesis block through its parent block
 			let utxo_db = this.build_db(parent);
 			
-			const valid_tsacts = req.data.tsacts.every((tx) => {
-				const res = this._validate_tx({tx: tx, utxo_db: utxo_db});
+			const valid_tsacts = req.data.tsacts.every(async (tx) => {
+				const res = await this._validate_tx({tx: tx, utxo_db: utxo_db});
 				utxo_db = res.utxo_db;
 				return res.valid;
 			});
@@ -340,7 +340,7 @@ class Hdlt {
 				const new_d = this.store.get_deepest_blocks();
 
 				if (this.is_validator && new_d.length === 1 && new_d[0] === new_node) {
-					this.make_block(new_node);
+					await this.make_block(new_node);
 				}
 			}
 		} else if (!parent) {
