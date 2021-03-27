@@ -150,7 +150,7 @@ class Hid {
     }
 
     // Assumes pubkey key as DER buffer
-    static verify(data, key, sig) {
+    static async verify(data, key, sig) {
         if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
             const res = await Hid.NATIVE_CRYPTO.verifyRSA(data.toString("hex"), key.toString("hex"), sig.toString("hex"));
             return Buffer.from(res, "hex");
