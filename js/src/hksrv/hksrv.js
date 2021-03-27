@@ -99,7 +99,7 @@ class Hksrv {
 	}
 
 	// Create a signing transaction: peer_a spends SIG_TOK on peer_b
-	async sign(peer_a, peer_a_prv, peer_b, check_db = true) {
+	async sign(peer_a, peer_b, check_db = true) {
 		const nonce = Array.from(Buffer.from(peer_a.nonce, "hex"));
 		const peer_a_pubkey = Array.from(Buffer.from(peer_a.pubkey, "hex"));
 		const peer_b_pubkey = Array.from(Buffer.from(peer_b.pubkey, "hex"));
@@ -115,8 +115,8 @@ class Hksrv {
 			unlock: unlock_script
 		});	
 
-		const p = await Hid.get_passphrase();
-		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(Hksrv.SIG_TX, tsact), Buffer.from(peer_a_prv.privkey, "hex"), p);
+		const privkey = await Hid.get_privkey();
+		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(Hksrv.SIG_TX, tsact), Buffer.from(privkey, "hex"));
 
 		// lock script: push2, len, recip pubkey, push2, len, sig, push2, len, nonce, push2, len, my pubkey
 		// (we ineffectually push the recipient's pubkey to the stack just so the recipient's pubkey is in the script)
@@ -153,8 +153,8 @@ class Hksrv {
 
 	// Create a revocation transaction: peer_a revokes SIG_TOK from peer_b
 	// a revocation basically spends a spent SIG_TOK, but then directs the new utxo to /dev/null
-	async revoke(peer_a, peer_a_prv, peer_b) {
-		const prev_tsact = await this.sign(peer_a, peer_a_prv, peer_b, false);
+	async revoke(peer_a, peer_b) {
+		const prev_tsact = await this.sign(peer_a, peer_b, false);
 		const utxo = Hdlt_tsact.sha256(Hdlt_tsact.serialize(prev_tsact));
 
 		// We want to prevent the peer from issuing a revocation for a signature that doesn't exist
@@ -172,8 +172,8 @@ class Hksrv {
 			unlock: Hksrv.SCRIPT_NO_UNLOCK
 		});
 
-		const p = await Hid.get_passphrase();
-		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), Buffer.from(peer_a_prv.privkey, "hex"), p);
+		const privkey = await Hid.get_privkey();
+		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), Buffer.from(privkey, "hex"));
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH2, ...Array.from(Hutil._int2Buf16(sig.length)), ...Array.from(sig)] // push1, len, sig
 		return tsact;
 	}

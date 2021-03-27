@@ -115,8 +115,8 @@ class Happ {
 	}
 
 	// Convenience method to cryptographically sign some data
-	static sign(data, key, passphrase) {
-		return Hid.sign(data, key, passphrase);
+	static sign(data, key) {
+		return Hid.sign(data, key);
 	}
 
 	// Convenience method to verify a cryptographic signature

@@ -51,7 +51,6 @@ class Hdlt {
 	net;
 	hkad;
 	hid_pub;
-	hid_prv;
 	consensus;
 	is_validator;
 	args;
@@ -62,7 +61,7 @@ class Hdlt {
 	db_hook;
 	db_init_hook;
 
-	constructor({net = null, hkad = null, hid_pub = null, hid_prv = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, is_validator = false, args = {}, store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
+	constructor({net = null, hkad = null, hid_pub = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, is_validator = false, args = {}, store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -70,7 +69,6 @@ class Hdlt {
 		this.net = net;
 		this.hkad = hkad;
 		this.hid_pub = hid_pub;
-		this.hid_prv = hid_prv;
 		this.consensus = consensus;
 		this.is_validator = is_validator;
 		this.args = args;
@@ -101,10 +99,10 @@ class Hdlt {
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
 	// where block.nonce is replaced with the signer's public key
 	// TODO: handle error/bad passphrase etc
-	static async make_nonce_auth(block, pubkey, privkey) {
+	static async make_nonce_auth(block, pubkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
-		const p = await Hid.get_passphrase();
-		return Hid.sign(data, Buffer.from(privkey, "hex"), p).toString("hex");
+		const privkey = await Hid.get_privkey();
+		return Hid.sign(data, Buffer.from(privkey, "hex")).toString("hex");
 	}
 
 	verify_nonce(block) {
@@ -174,7 +172,7 @@ class Hdlt {
 					tsacts: [...valid_tx]
 				});
 
-				Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey, this.hid_prv.privkey).then((nonce) => {
+				Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey).then((nonce) => {
 					new_block.nonce = nonce;
 					const block_hash = Hdlt_block.sha256(new_block);
 

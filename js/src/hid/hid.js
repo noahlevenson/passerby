@@ -29,15 +29,15 @@ class Hid {
     static SIG_ALGORITHM = "RSA-SHA256"; // Be careful, must work with KEY_TYPE
     static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
 	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
-    static PUBKEY_PEM_PREFIX = "PUBLIC KEY";
-    static PRIVKEY_PEM_PREFIX = "ENCRYPTED PRIVATE KEY";
+    // static PUBKEY_PEM_PREFIX = "PUBLIC KEY";
+    // static PRIVKEY_PEM_PREFIX = "ENCRYPTED PRIVATE KEY";
     static PUBKEY_TYPE = "spki";
     static PUBKEY_FORMAT = "der";
     static PRIVKEY_TYPE = "pkcs8";
     static PRIVKEY_FORMAT = "der";
-    static PRIVKEY_CIPHER = "aes-256-cbc"; // TODO: is this optimal cipher?
+    static PRIVKEY_CIPHER = "aes-256-cbc"; // This must comport with what's available in our native crypto implementations and account for several known bugs in Java - see HNativeCrypto
 
-    static GET_PASSPHRASE_F = () => {
+    static GET_PRIVKEY_F = () => {
         return new Promise((resolve, reject) => {
             resolve(undefined);
         });
@@ -51,26 +51,27 @@ class Hid {
         throw new Error("Dictionary cardinality must be power of 2");
     }
 
-    // Set the systemwide function to fetch the user's passphrase
+    // Set the systemwide function to fetch the user's unencrypted privkey,
     // must return a Promise which resolves with the password
-    static set_passphrase_func(f) {
+    static set_privkey_func(f) {
         if (typeof f !== "function") {
             throw new TypeError("Argument f must be a function");
         }
 
-        Hid.GET_PASSPHRASE_F = f;
+        Hid.GET_PRIVKEY_F = f;
     }
 
-    static get_passphrase() {
-        return Hid.GET_PASSPHRASE_F();
+    static get_privkey() {
+        return Hid.GET_PRIVKEY_F();
     }
 
-    static der2pem(der_buf, is_public = true) {
-        const type = is_public ? Hid.PUBKEY_PEM_PREFIX : Hid.PRIVKEY_PEM_PREFIX;
-        const prefix = `-----BEGIN ${type}-----\n`;
-        const postfix = `-----END ${type}-----`;
-        return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
-    }
+    // TODO: we're not using this anymore, should we /dev/null it?
+    // static der2pem(der_buf, is_public = true) {
+    //     const type = is_public ? Hid.PUBKEY_PEM_PREFIX : Hid.PRIVKEY_PEM_PREFIX;
+    //     const prefix = `-----BEGIN ${type}-----\n`;
+    //     const postfix = `-----END ${type}-----`;
+    //     return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
+    // }
 
 	static generate_key_pair(passphrase) {
 		const pair = crypto.generateKeyPairSync(Hid.KEY_TYPE, {
@@ -92,22 +93,38 @@ class Hid {
         return pair;
 	}
 
-    // Assumes privkey key as DER buffer
-    // TODO: we annoyingly convert to pem only because our crypto-browserify (RN/Android env) seems to require it
-    static sign(data, key, passphrase) {
+    // Assumes encrypted privkey key as DER buffer
+    // Returns unencrypted key as DER buffer
+    static decrypt_private_key(key, passphrase) {
+        try {
+            return crypto.createPrivateKey({
+                key: key, 
+                format: Hid.PRIVKEY_FORMAT, 
+                type: Hid.PRIVKEY_TYPE, 
+                passphrase: passphrase
+            }).export({
+                format: Hid.PRIVKEY_FORMAT,
+                type: Hid.PRIVKEY_TYPE
+            });
+        } catch (err) {
+            return null;
+        }
+    }
+
+    // Assumes UNENCRYPTED privkey key as DER buffer
+    static sign(data, key) {
         const sign = crypto.createSign(Hid.SIG_ALGORITHM);
         sign.update(data);
         sign.end();
-        return sign.sign({key: Hid.der2pem(key, false), format: "pem", type: Hid.PRIVKEY_TYPE, passphrase: passphrase});
+        return sign.sign({key: key, format: Hid.PRIVKEY_FORMAT, type: Hid.PRIVKEY_TYPE});
     }
 
     // Assumes pubkey key as DER buffer
-    // TODO: we annoyingly convert to pem only because our crypto-browserify (RN/Android env) seems to require it
     static verify(data, key, sig) {
         const verify = crypto.createVerify(Hid.SIG_ALGORITHM);
         verify.update(data);
         verify.end();
-        return verify.verify({key: Hid.der2pem(key), format: "pem", type: Hid.PUBKEY_TYPE}, sig);
+        return verify.verify({key: key, format: Hid.PUBKEY_FORMAT, type: Hid.PUBKEY_TYPE}, sig);
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
