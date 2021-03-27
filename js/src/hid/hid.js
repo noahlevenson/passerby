@@ -79,6 +79,20 @@ class Hid {
     //     return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
     // }
 
+    static async random_bytes(len) {
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
+            const res = await Hid.NATIVE_CRYPTO.randomBytes(len);
+
+            // TODO: handle error
+
+            return Buffer.from(res);
+        }
+
+        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
+            return crypto.randomBytes(len);
+        }
+    }
+
 	static async generate_key_pair(passphrase) {
         if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
             const res = await Hid.NATIVE_CRYPTO.generateRSAKeyPair(Hid.MODULUS_LEN, passphrase);

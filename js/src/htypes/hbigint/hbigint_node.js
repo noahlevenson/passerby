@@ -9,8 +9,8 @@
 
 "use strict";
 
-const crypto = require("crypto");
 const { Hbigint_base } = require("./hbigint_base.js");
+const { Hid } = require("../../src/hid/hid.js");
 
 class Hbigint extends Hbigint_base {
 	// Using the default constructor, an Hbigint can be constructed from a base16 string, a Number, or another Hbigint -- that's it
@@ -48,8 +48,9 @@ class Hbigint extends Hbigint_base {
 		return val;
 	}
 
-	static random(len) {
-		return new Hbigint(crypto.randomBytes(len).toString("hex"));
+	static async random(len) {
+		const rb = await Hid.random_bytes(len);
+		return new Hbigint(rb.toString("hex"));
 	}
 
 	get() {

@@ -136,14 +136,16 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		const msg = new Hbuy_msg({
-			data: hbuy_transaction,
-			type: Hbuy_msg.TYPE.REQ,
-			flavor: Hbuy_msg.FLAVOR.TRANSACT,
-			id: Hbigint.random(Hbuy_msg.ID_LEN)
-		});
+		Hbigint.random(Hbuy_msg.ID_LEN).then((res) => {
+			const msg = new Hbuy_msg({
+				data: hbuy_transaction,
+				type: Hbuy_msg.TYPE.REQ,
+				flavor: Hbuy_msg.FLAVOR.TRANSACT,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
+			this._send(msg, addr, port, success, timeout);
+		});
 	}
 
 	// TODO: this should be refactored to work like transact_req above -- don't construct the Hbuy_status, just send it
@@ -153,14 +155,16 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		const msg = new Hbuy_msg({
-			data: hbuy_status,
-			type: Hbuy_msg.TYPE.REQ,
-			flavor: Hbuy_msg.FLAVOR.STATUS,
-			id: Hbigint.random(Hbuy_msg.ID_LEN)
-		});
+		Hbigint.random(Hbuy_msg.ID_LEN).then((res) => {
+			const msg = new Hbuy_msg({
+				data: hbuy_status,
+				type: Hbuy_msg.TYPE.REQ,
+				flavor: Hbuy_msg.FLAVOR.STATUS,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
+			this._send(msg, addr, port, success, timeout);
+		});
 	}
 
 	sms_req({hbuy_sms = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
@@ -169,15 +173,16 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		const msg = new Hbuy_msg({
-			data: hbuy_sms,
-			type: Hbuy_msg.TYPE.REQ,
-			flavor: Hbuy_msg.FLAVOR.SMS,
-			id: Hbigint.random(Hbuy_msg.ID_LEN)
-		});
+		Hbigint.random(Hbuy_msg.ID_LEN).then((res) => {
+			const msg = new Hbuy_msg({
+				data: hbuy_sms,
+				type: Hbuy_msg.TYPE.REQ,
+				flavor: Hbuy_msg.FLAVOR.SMS,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
-		return sms;
+			this._send(msg, addr, port, success, timeout);
+		});
 	}
 
 	start() {

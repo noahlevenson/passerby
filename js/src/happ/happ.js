@@ -209,14 +209,16 @@ class Happ {
 	// Convenience method: send a transaction request to the peer named on credential 'cred' and
 	// listen once for Hbuy_status.CODE.CONFIRMED, calling status_cb if we hear it
 	// Immediately returns the transaction ID as a string without regard for the success or failure of the operation
-	send_transaction({cred, order, pment, success = () => {}, timeout = () => {}, status_cb} = {}) {
+	async send_transaction({cred, order, pment, success = () => {}, timeout = () => {}, status_cb} = {}) {
 		// TODO: verify the credential!
+
+		const rnd = await Hbigint.random(Hbuy_tsact.ID_LEN);
 
 		const transaction = new Hbuy_tsact({
 	    	order: order,
 	        pment: pment,
 	        from: this.hid_pub, // TODO: How should we handle different addresses?
-	        id: Hbigint.random(Hbuy_tsact.ID_LEN).toString()
+	        id: rnd.toString()
     	});
 
 		// Set up the status listener before sending the transaction to avoid a race condition 

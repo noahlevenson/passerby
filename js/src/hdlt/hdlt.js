@@ -461,15 +461,17 @@ class Hdlt {
 			throw new Error("Arguments cannot be null");
 		}
 
-		const msg = new Hdlt_msg({
-			data: hdlt_tsact,
-			type: Hdlt_msg.TYPE.REQ,
-			flavor: Hdlt_msg.FLAVOR.TX,
-			app_id: this.net.app_id,
-			id: Hbigint.random(Hdlt_msg.ID_LEN)
-		});
+		Hbigint.random(Hdlt_msg.ID_LEN).then((res) => {
+			const msg = new Hdlt_msg({
+				data: hdlt_tsact,
+				type: Hdlt_msg.TYPE.REQ,
+				flavor: Hdlt_msg.FLAVOR.TX,
+				app_id: this.net.app_id,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
+			this._send(msg, addr, port, success, timeout);
+		});
 	}
 
 	block_req({hdlt_block = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
@@ -478,15 +480,17 @@ class Hdlt {
 			throw new Error("Arguments cannot be null");
 		}
 
-		const msg = new Hdlt_msg({
-			data: hdlt_block,
-			type: Hdlt_msg.TYPE.REQ,
-			flavor: Hdlt_msg.FLAVOR.BLOCK,
-			app_id: this.net.app_id,
-			id: Hbigint.random(Hdlt_msg.ID_LEN)
-		});
+		Hbigint.random(Hdlt_msg.ID_LEN).then((res) => {
+			const msg = new Hdlt_msg({
+				data: hdlt_block,
+				type: Hdlt_msg.TYPE.REQ,
+				flavor: Hdlt_msg.FLAVOR.BLOCK,
+				app_id: this.net.app_id,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
+			this._send(msg, addr, port, success, timeout);
+		});	
 	}
 
 	getblocks_req({block_hash = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
@@ -495,15 +499,17 @@ class Hdlt {
 			throw new Error("Arguments cannot be null");
 		}
 
-		const msg = new Hdlt_msg({
-			data: block_hash,
-			type: Hdlt_msg.TYPE.REQ,
-			flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
-			app_id: this.net.app_id,
-			id: Hbigint.random(Hdlt_msg.ID_LEN)
-		});
+		Hbigint.random(Hdlt_msg.ID_LEN).then((res) => {
+			const msg = new Hdlt_msg({
+				data: block_hash,
+				type: Hdlt_msg.TYPE.REQ,
+				flavor: Hdlt_msg.FLAVOR.GETBLOCKS,
+				app_id: this.net.app_id,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
+			this._send(msg, addr, port, success, timeout);
+		});
 	}
 
 	getdata_req({block_hash = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
@@ -512,15 +518,17 @@ class Hdlt {
 			throw new Error("Arguments cannot be null");
 		}
 
-		const msg = new Hdlt_msg({
-			data: block_hash,
-			type: Hdlt_msg.TYPE.REQ,
-			flavor: Hdlt_msg.FLAVOR.GETDATA,
-			app_id: this.net.app_id,
-			id: Hbigint.random(Hdlt_msg.ID_LEN)
-		});
+		Hbigint.random(Hdlt_msg.ID_LEN).then((res) => {
+			const msg = new Hdlt_msg({
+				data: block_hash,
+				type: Hdlt_msg.TYPE.REQ,
+				flavor: Hdlt_msg.FLAVOR.GETDATA,
+				app_id: this.net.app_id,
+				id: res
+			});
 
-		this._send(msg, addr, port, success, timeout);
+			this._send(msg, addr, port, success, timeout);
+		});
 	}
 }
 

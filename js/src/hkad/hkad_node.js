@@ -22,7 +22,6 @@ const { Hkad_ds } = require("./hkad_ds.js");
 const { Hkad_data } = require("./hkad_data.js");
 const { Hbintree } = require("../htypes/hbintree/hbintree.js");
 const { Hbintree_node } = require("../htypes/hbintree/hbintree_node.js");
-const crypto = Happ_env.ENV === Happ_env.ENV_TYPE.NODE ? require("crypto") : null;
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hkad_node {
@@ -70,8 +69,7 @@ class Hkad_node {
 
 		this.net = net;
 		this.eng = eng;
-
-		this.node_id = id || Hkad_node.get_random_key(); // You sure you wanna be able to do this bro?
+		this.node_id = id;
 
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
@@ -95,10 +93,6 @@ class Hkad_node {
 	// Get XOR "distance" between two Hbigint values
 	static _get_distance(key1, key2) {
 		return key1.xor(key2);
-	}
-
-	static get_random_key(len = Hkad_node.ID_LEN) {
-		return new Hbigint(crypto.randomBytes(len).toString("hex"));
 	}
 
 	// Prints DFS
@@ -344,51 +338,58 @@ class Hkad_node {
 	}
 
 	_req_ping(node_info, success, timeout) {
-		const msg = new Hkad_msg({
-			rpc: Hkad_msg.RPC.PING,
-			from: new Hkad_node_info(this.node_info),
-			type: Hkad_msg.TYPE.REQ,
-			id: Hkad_node.get_random_key()
-		});
+		Hbigint.random(Hkad_node.ID_LEN).then((res) => {
+			const msg = new Hkad_msg({
+				rpc: Hkad_msg.RPC.PING,
+				from: new Hkad_node_info(this.node_info),
+				type: Hkad_msg.TYPE.REQ,
+				id: res
+			});
 
-		this.eng._send(msg, node_info, success, timeout);
+			this.eng._send(msg, node_info, success, timeout);
+		});
 	}
 
 	_req_store(key, val, node_info, success, timeout) {
-		const msg = new Hkad_msg({
-			rpc: Hkad_msg.RPC.STORE,
-			from: new Hkad_node_info(this.node_info),
+		Hbigint.random(Hkad_node.ID_LEN).then((res) => {
+			const msg = new Hkad_msg({
+				rpc: Hkad_msg.RPC.STORE,
+				from: new Hkad_node_info(this.node_info),
+				type: Hkad_msg.TYPE.REQ,
+				data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
+				id: res
+			});
 
-			type: Hkad_msg.TYPE.REQ,
-			data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
-			id: Hkad_node.get_random_key()
+			this.eng._send(msg, node_info, success, timeout);
 		});
-
-		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_node(key, node_info, success, timeout) {
-		const msg = new Hkad_msg({
-			rpc: Hkad_msg.RPC.FIND_NODE,
-			from: new Hkad_node_info(this.node_info),
-			type: Hkad_msg.TYPE.REQ,
-			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
-			id: Hkad_node.get_random_key()
-		});
+		Hbigint.random(Hkad_node.ID_LEN).then((res) => {
+			const msg = new Hkad_msg({
+				rpc: Hkad_msg.RPC.FIND_NODE,
+				from: new Hkad_node_info(this.node_info),
+				type: Hkad_msg.TYPE.REQ,
+				data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
+				id: res
+			});
 
-		this.eng._send(msg, node_info, success, timeout);
+			this.eng._send(msg, node_info, success, timeout);
+		});	
 	}
 
 	_req_find_value(key, node_info, success, timeout) {
-		const msg = new Hkad_msg({
-			rpc: Hkad_msg.RPC.FIND_VALUE,
-			from: new Hkad_node_info(this.node_info),
-			type: Hkad_msg.TYPE.REQ,
-			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
-			id: Hkad_node.get_random_key()
-		});
+		Hbigint.random(Hkad_node.ID_LEN).then((res) => {
+			const msg = new Hkad_msg({
+				rpc: Hkad_msg.RPC.FIND_VALUE,
+				from: new Hkad_node_info(this.node_info),
+				type: Hkad_msg.TYPE.REQ,
+				data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
+				id: res
+			});
 
-		this.eng._send(msg, node_info, success, timeout);
+			this.eng._send(msg, node_info, success, timeout);
+		});
 	}
 
 	_res_ping(req) {
