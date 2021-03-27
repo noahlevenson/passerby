@@ -113,7 +113,7 @@ class Hdlt_vm {
 
 	// Verify that the pubkey at (SP - 1) is valid for the sig at (SP - 2) - returns 1 if valid, 0 otherwise
 	// Like Bitcoin's OP_CHECKSIG instruction, it compares the sig against a copy of tx_new with its lock script replaced by tx_prev's unlock script
-	_op_checksig() {
+	async _op_checksig() {
 		const pubkey = this.STACK[this.SP - 1];
 		this.SP -= 2;
 		const sig = this.STACK[this.SP];
@@ -124,7 +124,7 @@ class Hdlt_vm {
 			unlock: [...this.tx_new.unlock]
 		});
 
-		const res = Hid.verify(
+		const res = await Hid.verify(
 			Hdlt_tsact.serialize(copy), 
 			Buffer.from(pubkey.toString(16), "hex"), 
 			Buffer.from(sig.toString(16), "hex")
@@ -160,7 +160,7 @@ class Hdlt_vm {
 	// OP_CHECKSIGPOW assumes the next byte represents the number of leading zero bits required
 	// returns 1 if valid, 0 otherwise
 	// TODO: this is duplicating code from both OP_CHECKSIG and OP_CHECKPOW in a way we might be able to avoid
-	_op_checksigpow() {
+	async _op_checksigpow() {
 		const n = this.program[this.PC + 1];
 		const pubkey = this.STACK[this.SP - 1];
 
@@ -180,7 +180,7 @@ class Hdlt_vm {
 			unlock: [...this.tx_new.unlock]
 		});
 
-		const is_valid_sig = Hid.verify(
+		const is_valid_sig = await Hid.verify(
 			Hdlt_tsact.serialize(copy), 
 			Buffer.from(pubkey.toString(16), "hex"), 
 			Buffer.from(sig.toString(16), "hex")

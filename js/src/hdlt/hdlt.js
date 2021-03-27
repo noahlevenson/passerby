@@ -102,18 +102,18 @@ class Hdlt {
 	static async make_nonce_auth(block, pubkey) {
 		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
 		const privkey = await Hid.get_privkey();
-		return Hid.sign(data, Buffer.from(privkey, "hex")).toString("hex");
+		return await Hid.sign(data, Buffer.from(privkey, "hex")).toString("hex");
 	}
 
-	verify_nonce(block) {
-		return this.NONCE_INTEGRITY.get(this.consensus).bind(this)(block);
+	async verify_nonce(block) {
+		return await this.NONCE_INTEGRITY.get(this.consensus).bind(this)(block);
 	}
 
 	// TODO: this is linear search through the pubkeys in args :(
-	_verify_nonce_auth(block) {
-		return this.args.auth.some((arg) => {
+	async _verify_nonce_auth(block) {
+		return this.args.auth.some(async (arg) => {
 			const data = Buffer.from(Hdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
-			return Hid.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
+			return await Hid.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
 		});
 	}
 
@@ -276,7 +276,7 @@ class Hdlt {
 	// in the sense that it's spending a valid utxo and its scripts
 	// are legal etc - we leave that to the network validators
 	// and tbd at block validation time
-	_res_tx(req, rinfo) {
+	async _res_tx(req, rinfo) {
 		const tx_hash = Hdlt_tsact.sha256(Hdlt_tsact.serialize(req.data));
 
 		if (!this.tx_cache.has(tx_hash)) {
@@ -295,7 +295,7 @@ class Hdlt {
 
 	// TODO: make sure req.data is a structurally valid Hdlt_block
 	// Also, we're doing all block validation in here, but we should break this out elsewhere
-	_res_block(req, rinfo) {
+	async _res_block(req, rinfo) {
 		const res = new Hdlt_msg({
 			data: "OK",
 			type: Hdlt_msg.TYPE.RES,
@@ -316,7 +316,7 @@ class Hdlt {
 
 		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
 		// block, and the new block's nonce passes verification
-		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && this.verify_nonce(req.data)) {
+		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && await this.verify_nonce(req.data)) {
 			// We'll validate transactions in this new block against the state of the utxo db as 
 			// computed from the genesis block through its parent block
 			let utxo_db = this.build_db(parent);
@@ -361,7 +361,7 @@ class Hdlt {
 	// to the peer to decide which blocks to request. seems like we can do this better?
 	// the essential question: what do we really know about the state of a peer's store,
 	// given only one known block hash? 
-	_res_getblocks(req, rinfo) {
+	async _res_getblocks(req, rinfo) {
 		const start_node = this.store.get_node(req.data);
 		const succ = [];
 
@@ -380,7 +380,7 @@ class Hdlt {
 		});
 	}
 
-	_res_getdata(req, rinfo) {
+	async _res_getdata(req, rinfo) {
 		// If we have the block, we send a BLOCK message to the requester
 		// as well as a RES for their GETDATA message
 		const block_node = this.store.get_node(req.data);
@@ -402,9 +402,9 @@ class Hdlt {
 		});
 	}
 
-	_on_req(msg, rinfo) {
+	async _on_req(msg, rinfo) {
 		Hlog.log(`[HDLT] (${this.net.app_id}) Inbound ${Object.keys(Hdlt_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
-		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
+		const res = await this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
 		this._send(res, rinfo.address, rinfo.port);
 	}
 

@@ -115,13 +115,13 @@ class Happ {
 	}
 
 	// Convenience method to cryptographically sign some data
-	static sign(data, key) {
-		return Hid.sign(data, key);
+	static async sign(data, key) {
+		return await Hid.sign(data, key);
 	}
 
 	// Convenience method to verify a cryptographic signature
-	static verify(data, key, sig) {
-		return Hid.verify(data, key, sig);
+	static async verify(data, key, sig) {
+		return await Hid.verify(data, key, sig);
 	}
     
 	// Compute the peer ID derived from input 'data'

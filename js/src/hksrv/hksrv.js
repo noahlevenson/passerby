@@ -116,7 +116,7 @@ class Hksrv {
 		});	
 
 		const privkey = await Hid.get_privkey();
-		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(Hksrv.SIG_TX, tsact), Buffer.from(privkey, "hex"));
+		const sig = await Hid.sign(Hdlt_vm.make_sig_preimage(Hksrv.SIG_TX, tsact), Buffer.from(privkey, "hex"));
 
 		// lock script: push2, len, recip pubkey, push2, len, sig, push2, len, nonce, push2, len, my pubkey
 		// (we ineffectually push the recipient's pubkey to the stack just so the recipient's pubkey is in the script)
@@ -173,7 +173,7 @@ class Hksrv {
 		});
 
 		const privkey = await Hid.get_privkey();
-		const sig = Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), Buffer.from(privkey, "hex"));
+		const sig = await Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), Buffer.from(privkey, "hex"));
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH2, ...Array.from(Hutil._int2Buf16(sig.length)), ...Array.from(sig)] // push1, len, sig
 		return tsact;
 	}
