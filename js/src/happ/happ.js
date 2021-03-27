@@ -466,7 +466,6 @@ class Happ {
 			net: new Hdlt_net_solo(happ_udp_trans, Happ.KEYSERVER_APP_ID),
 			hkad: peer_node,
 			hid_pub: this.hid_pub,
-			hid_prv: this.hid_prv,
 			consensus: Hdlt.CONSENSUS_METHOD.AUTH, 
 			is_validator: this.is_keyserver_validator,
 			args: {auth: Happ.AUTHORITIES, rate: Happ.KEYSERVER_BLOCK_RATE, t_handle: null},
