@@ -153,7 +153,7 @@ class Hid {
     static async verify(data, key, sig) {
         if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
             const res = await Hid.NATIVE_CRYPTO.verifyRSA(data.toString("hex"), key.toString("hex"), sig.toString("hex"));
-            return Buffer.from(res, "hex");
+            return res;
         }
 
         if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
