@@ -11,6 +11,7 @@
 
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hlog } = require("../hlog/hlog.js");
+const { Hid } = require("../hid/hid.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_data } = require("../hkad/hkad_data.js");
 const { Hpht_node } = require("./hpht_node.js");
