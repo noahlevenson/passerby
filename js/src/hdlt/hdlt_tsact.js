@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Hid } = require("../hid/hid.js"); 
+const { Hutil } = require("../hutil/hutil.js"); 
 
 class Hdlt_tsact {
 	static VERSION = {
@@ -76,8 +76,8 @@ class Hdlt_tsact {
 	}
 
 	// Compute the SHA256 hash of a serialized transaction, returns a string
-	static async sha256(buf) {
-		return await Hid.sha256(buf.toString("hex"));
+	static sha256(buf) {
+		return Hutil._sha256(buf.toString("hex"));
 	}
 }
 

@@ -33,8 +33,8 @@ class Hdlt_store {
 	build_dict() {
 		this.dict.clear();
 
-		this.tree.dfs(async (node, data) => {
-			this.dict.set(await Hdlt_block.sha256(node.data), node);
+		this.tree.dfs((node, data) => {
+			this.dict.set(Hdlt_block.sha256(node.data), node);
 		}, (node, data) => {}, this.tree.get_root());
 	}
 

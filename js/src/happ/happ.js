@@ -126,8 +126,8 @@ class Happ {
     
 	// Compute the peer ID derived from input 'data'
 	// Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion
-	static async get_peer_id(data) {
-		return new Hbigint(await Hid.sha1(data));
+	static get_peer_id(data) {
+		return new Hbigint(Hutil._sha1(data));
 	}
 
 	// Derive a lat/long pair from an address using the specified geocoding method
@@ -226,9 +226,7 @@ class Happ {
 		// request fails due to timeout or error
 		this.on_status({transact_id: transaction.id, status_code: Hbuy_status.CODE.CONFIRMED, cb: status_cb});
 
-		const pid = await Happ.get_peer_id(cred.pubkey);
-
-		this.search_node_info(pid).then((res) => {
+		this.search_node_info(Happ.get_peer_id(cred.pubkey)).then((res) => {
 			this.hbuy.transact_req({
 		  		hbuy_transaction: transaction,
 		        addr: res.addr,
@@ -254,7 +252,7 @@ class Happ {
 		});
 
 		// Do this right away but don't wait for it
-		Happ.get_peer_id(pubkey).then((pid) => this.search_node_info(pid)).then((res) => {
+		this.search_node_info(Happ.get_peer_id(pubkey)).then((res) => {
 			this.hbuy.sms_req({
 				hbuy_sms: sms,
 				addr: res.addr,
@@ -278,7 +276,7 @@ class Happ {
 			code: code
 		});
 
-		Happ.get_peer_id(pubkey).then((pid) => this.search_node_info(pid)).then((res) => {
+		this.search_node_info(Happ.get_peer_id(pubkey)).then((res) => {
 			this.hbuy.status_req({
 				hbuy_status: status,
 				addr: res.addr,
@@ -315,9 +313,9 @@ class Happ {
     }
 
     // Convenience factory method to create an Hbuy_item_ref
-    async create_item_ref({menu = null, froz_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
+    create_item_ref({menu = null, froz_idx = null, size_idx = null, cust_cats_idx = [], qty = 1, comment = null} = {}) {
 		return new Hbuy_item_ref({
-			form_id: await this.get_form_id(menu),
+			form_id: this.get_form_id(menu),
 			froz_idx: froz_idx,
 			size_idx: size_idx,
 			cust_cats_idx: cust_cats_idx,
@@ -336,8 +334,8 @@ class Happ {
     }
 
     // Convenience method to compute the form ID for an Hbuy_menu (which will eventually be a subclass of Hbuy_form)
-    async get_form_id(hbuy_form) {
-    	return await Hbuy_menu.get_form_id(hbuy_form);
+    get_form_id(hbuy_form) {
+    	return Hbuy_menu.get_form_id(hbuy_form);
     }
 
 	// Return a reference to our DHT node

@@ -61,7 +61,7 @@ class Hdlt {
 	db_hook;
 	db_init_hook;
 
-	constructor({net = null, hkad = null, hid_pub = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, is_validator = false, args = {}, store = new Hdlt_store(), tx_valid_hook = async () => {}, db_hook = async () => {}, db_init_hook = async () => {}} = {}) {
+	constructor({net = null, hkad = null, hid_pub = null, consensus = Hdlt.CONSENSUS_METHOD.AUTH, is_validator = false, args = {}, store = new Hdlt_store(), tx_valid_hook = () => {}, db_hook = () => {}, db_init_hook = () => {}} = {}) {
 		if (!(net instanceof Hdlt_net)) {
 			throw new TypeError("Argument 'net' must be instance of Hdlt_net");
 		}
@@ -82,8 +82,8 @@ class Hdlt {
 
 	// Compute the state of of a branch of blocks ending with last_node
 	// returns a Map of unspent outputs as [tx_hash: tx]
-	async build_db(last_node) {
-		const utxo_db = await this.db_init_hook(new Map());
+	build_db(last_node) {
+		const utxo_db = this.db_init_hook(new Map());
 		const branch = this.store.get_branch(last_node);
 
 		// Start at genesis block + 1
@@ -100,7 +100,7 @@ class Hdlt {
 	// where block.nonce is replaced with the signer's public key
 	// TODO: handle error/bad passphrase etc
 	static async make_nonce_auth(block, pubkey) {
-		const data = Buffer.from(await Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
+		const data = Buffer.from(Hdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
 		const privkey = await Hid.get_privkey();
 		return await Hid.sign(data, Buffer.from(privkey, "hex")).toString("hex");
 	}
@@ -112,7 +112,7 @@ class Hdlt {
 	// TODO: this is linear search through the pubkeys in args :(
 	async _verify_nonce_auth(block) {
 		return this.args.auth.some(async (arg) => {
-			const data = Buffer.from(await Hdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
+			const data = Buffer.from(Hdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
 			return await Hid.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
 		});
 	}
@@ -128,17 +128,14 @@ class Hdlt {
 
 		const delta = this.args.rate[1] - this.args.rate[0];
 		const t = this.args.rate[0] + Math.floor(Math.random() * delta);
-
-		const bh = await Hdlt_block.sha256(pred_block_node.data);
-
-		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${bh} in ${t / 1000}s...`);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
 		this.args.t_handle = setTimeout(async () => {
 			// Find the transactions in our tx_cache which have not yet been added to a block 
 			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
 			const branch = this.store.get_branch(pred_block_node);
 			const new_tx = new Map(this.tx_cache);
-			branch.forEach(node => node.data.tsacts.forEach(async tx => new_tx.delete(await Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx)))));
+			branch.forEach(node => node.data.tsacts.forEach(tx => new_tx.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx)))));
 			const tx_candidates = Array.from(new_tx.entries());
 			
 			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
@@ -159,7 +156,7 @@ class Hdlt {
 
 			// Filter out invalid transactions, validating them against an 
 			// initial utxo db computed up through our predecessor block
-			let utxo_db = await this.build_db(pred_block_node);
+			let utxo_db = this.build_db(pred_block_node);
 
 			const valid_tx = tx_candidates.filter(async (pair) => {
 				const res = await this._validate_tx({tx: pair[1], utxo_db: utxo_db});
@@ -171,14 +168,13 @@ class Hdlt {
 			// get interrupted by a new deepest block, then keep working on same predecessor
 			if (valid_tx.length > 0) {
 				const new_block = new Hdlt_block({
-					hash_prev: await Hdlt_block.sha256(pred_block_node.data),
-					hash_merkle_root: await Hbintree.build_merkle(valid_tx.map(tx => Hdlt_tsact.serialize(tx).toString("hex"))).get_root().get_data(),
+					prev_block: pred_block_node.data,
 					tsacts: [...valid_tx]
 				});
 
 				Hdlt.make_nonce_auth(new_block, this.hid_pub.pubkey).then(async (nonce) => {
 					new_block.nonce = nonce;
-					const block_hash = await Hdlt_block.sha256(new_block);
+					const block_hash = Hdlt_block.sha256(new_block);
 
 					// Add the new block, rebuild the store index, broadcast it, and get to work on the next block
 					const new_node = new Hntree_node({data: new_block, parent: pred_block_node})
@@ -210,13 +206,13 @@ class Hdlt {
 			return {valid: false, utxo_db: utxo_db};
 		}
 
-		const valid = await this.tx_valid_hook(tx, utxo_db);
+		const valid = this.tx_valid_hook(tx, utxo_db);
 
 		if (!valid) {
 			return {valid: false, utxo_db: utxo_db};
 		}
 
-		return {valid: true, utxo_db: await this.db_hook(tx, utxo_db)};
+		return {valid: true, utxo_db: this.db_hook(tx, utxo_db)};
 	}
 
 	async start() {
@@ -244,26 +240,25 @@ class Hdlt {
 			last_known_node = last_known_node.parent;
 		}
 
-		const last_hash = Hdlt_block.sha256(last_known_node.data).then((res) => {
-			Hlog.log(`[HDLT] (${this.net.app_id}) Init: ${this.store.size()} known blocks, last known ${last_hash}`);
+		const last_hash = Hdlt_block.sha256(last_known_node.data);
+		Hlog.log(`[HDLT] (${this.net.app_id}) Init: ${this.store.size()} known blocks, last known ${last_hash}`);
 
-			// TODO: this is doing way too much pointless work - a better way is to wait until we get all the lists of blocks,
-			// then find the intersection of the lists before asking nodes to send blocks
-			// also: since we don't wait for blocks to arrive in order, we could kick off a lot of _res_block case 3's,
-			this.broadcast(this.getblocks_req, {
-				block_hash: last_hash, 
-				success: (res, addr, port, ctx) => {
-					res.data.forEach((block_hash) => {
-						if (!this.store.get_node(block_hash)) {
-							this.getdata_req({
-								block_hash: block_hash, 
-								addr: addr, 
-								port: port
-							});
-						}
-					});
-				}
-			});
+		// TODO: this is doing way too much pointless work - a better way is to wait until we get all the lists of blocks,
+		// then find the intersection of the lists before asking nodes to send blocks
+		// also: since we don't wait for blocks to arrive in order, we could kick off a lot of _res_block case 3's,
+		this.broadcast(this.getblocks_req, {
+			block_hash: last_hash, 
+			success: (res, addr, port, ctx) => {
+				res.data.forEach((block_hash) => {
+					if (!this.store.get_node(block_hash)) {
+						this.getdata_req({
+							block_hash: block_hash, 
+							addr: addr, 
+							port: port
+						});
+					}
+				});
+			}
 		});
 	}
 
@@ -282,7 +277,7 @@ class Hdlt {
 	// are legal etc - we leave that to the network validators
 	// and tbd at block validation time
 	async _res_tx(req, rinfo) {
-		const tx_hash = await Hdlt_tsact.sha256(Hdlt_tsact.serialize(req.data));
+		const tx_hash = Hdlt_tsact.sha256(Hdlt_tsact.serialize(req.data));
 
 		if (!this.tx_cache.has(tx_hash)) {
 			this.tx_cache.set(tx_hash, req.data);
@@ -309,7 +304,7 @@ class Hdlt {
 			id: req.id
 		});
 
-		const block_hash = await Hdlt_block.sha256(req.data);
+		const block_hash = Hdlt_block.sha256(req.data);
 		const block_node = this.store.get_node(block_hash);
 
 		// Case 1: we already have the new block
@@ -321,10 +316,10 @@ class Hdlt {
 
 		// Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
 		// block, and the new block's nonce passes verification
-		if (parent && await Hdlt_block.sha256(parent.data) === req.data.hash_prev && await this.verify_nonce(req.data)) {
+		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && await this.verify_nonce(req.data)) {
 			// We'll validate transactions in this new block against the state of the utxo db as 
 			// computed from the genesis block through its parent block
-			let utxo_db = await this.build_db(parent);
+			let utxo_db = this.build_db(parent);
 			
 			const valid_tsacts = req.data.tsacts.every(async (tx) => {
 				const res = await this._validate_tx({tx: tx, utxo_db: utxo_db});
@@ -371,8 +366,8 @@ class Hdlt {
 		const succ = [];
 
 		if (start_node) {
-			this.store.tree.bfs(async (node, d, data) => {
-				data.push(await Hdlt_block.sha256(node.data));
+			this.store.tree.bfs((node, d, data) => {
+				data.push(Hdlt_block.sha256(node.data));
 			}, start_node, succ, true);
 		}
 		

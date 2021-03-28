@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Hid } = require("../hid/hid.js");
+const { Hutil } = require("../hutil/hutil.js");
 const { Hbintree } = require("../htypes/hbintree/hbintree.js");
 const { Hdlt_tsact } = require("./hdlt_tsact.js");
 
@@ -29,20 +29,20 @@ class Hdlt_block {
 	nonce;
 	tsacts;
 
-	constructor ({hash_prev, hash_merkle_root, tsacts = []} = {}) {
-		this.hash_prev = hash_prev;
-		this.hash_merkle_root = hash_merkle_root;
+	constructor ({prev_block, tsacts = []} = {}) {
+		this.hash_prev = Hdlt_block.sha256(prev_block);
+		this.hash_merkle_root = Hbintree.build_merkle(tsacts.map(tx => Hdlt_tsact.serialize(tx).toString("hex"))).get_root().get_data();
 		this.nonce = "00"; // Need two digits for Buffer to parse correctly
 		this.tsacts = [...tsacts];
 	}
 
 	// Compute the SHA256 hash of a block
-	static async sha256(block) {
+	static sha256(block) {
 		if (block.hash_prev === undefined || block.hash_merkle_root === undefined || block.nonce === undefined) {
 			throw new Error("Debug warning - do not hash over undefined values!");
 		}
 
-		return await Hid.sha256(`${block.hash_prev}${block.hash_merkle_root}${block.nonce}`);
+		return Hutil._sha256(`${block.hash_prev}${block.hash_merkle_root}${block.nonce}`);
 	}
 }
 

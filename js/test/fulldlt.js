@@ -32,8 +32,6 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
-    larosa.peer_id = await Hid.sha256(larosa.pubkey);
-
     // const pw_hash = Hutil._sha256("noah");
     // console.log(pw_hash);
     // console.log(Hid.generate_key_pair(pw_hash));
@@ -42,7 +40,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     const larosa_prv = new Hid_prv({privkey: privkey});
 
-    await Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
+    Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 
     const decrypted = await Hid.decrypt_private_key(Buffer.from(privkey, "hex"), "mypassword");
 

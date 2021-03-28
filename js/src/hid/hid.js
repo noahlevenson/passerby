@@ -80,40 +80,6 @@ class Hid {
     //     return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
     // }
 
-    // data as string
-    static async sha1(data) {
-        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Hid.NATIVE_CRYPTO.sha1(Buffer.from(data, "utf8").toString("hex"));
-
-            // TODO: handle error
-
-            return Buffer.from(res).toString("hex");
-        }
-
-        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
-            const hash = crypto.createHash("SHA1"); // TODO: this encoding string is host dependent, 'openssl list -digest-algorithms'
-            hash.update(Buffer.from(data, "utf8").toString("hex"));
-            return hash.digest("hex");
-        }
-    }
-
-    // data as string
-    static async sha256(data) {
-        if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Hid.NATIVE_CRYPTO.sha256(Buffer.from(data, "utf8").toString("hex"));
-
-            // TODO: handle error
-
-            return Buffer.from(res).toString("hex");
-        }
-
-        if (Happ_env.ENV === Happ_env.ENV_TYPE.NODE) {
-            const hash = crypto.createHash("SHA256"); // TODO: this encoding string is host dependent, 'openssl list -digest-algorithms'
-            hash.update(Buffer.from(data, "utf8").toString("hex"));
-            return hash.digest("hex");
-        }
-    }
-
     static async random_bytes(len) {
         if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
             const res = await Hid.NATIVE_CRYPTO.randomBytes(len);
@@ -213,8 +179,8 @@ class Hid {
     }
 
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
-	static async hash_cert(pubkey, nonce, str = false) {
-        const h = await Hid.sha256(`${pubkey}${nonce}`);
+	static hash_cert(pubkey, nonce, str = false) {
+        const h = Hutil._sha256(`${pubkey}${nonce}`);
 		return str ? h : new Hbigint(h);
 	}
 
@@ -227,8 +193,8 @@ class Hid {
     // Find a partial preimage (by brute force) for hash_cert(obj) which has n_lead_zero_bits
     // function 'mod' modifies obj (e.g., to increment a nonce) after each attempt
 	static find_partial_preimage(obj, mod, n_lead_zero_bits) {
-		return new Promise(async (resolve, reject) => {
-            while (!Hid.is_valid_pow(await Hid.hash_cert(obj.pubkey, obj.nonce), n_lead_zero_bits)) {
+		return new Promise((resolve, reject) => {
+            while (!Hid.is_valid_pow(Hid.hash_cert(obj.pubkey, obj.nonce), n_lead_zero_bits)) {
 	            mod(obj);
 		    }
 
@@ -236,8 +202,8 @@ class Hid {
         });
     }
 
-    static async get_symbol_indices(cert) {
-        const hash = await Hid.hash_cert(cert.pubkey, cert.nonce);
+    static get_symbol_indices(cert) {
+        const hash = Hid.hash_cert(cert.pubkey, cert.nonce);
         
         if (!Hid.is_valid_pow(hash, Hid.POW_LEAD_ZERO_BITS)) {
             return null; 

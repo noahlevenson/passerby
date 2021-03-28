@@ -10,7 +10,7 @@
 "use strict";
 
 const { Hbintree_node } = require("./hbintree_node.js");
-const { Hid } = require("../../hid/hid.js");
+const { Hutil } = require("../../hutil/hutil.js");
 
 class Hbintree {
 	root;
@@ -20,8 +20,8 @@ class Hbintree {
 	}
 
 	// Factory function to build a Merkle tree from an array of data as strings
-	static async build_merkle(data) {
-		const q = data.map(async (d) => new Hbintree_node({data: await Hid.sha256(d)})); // Leaf nodes
+	static build_merkle(data) {
+		const q = data.map(d => new Hbintree_node({data: Hutil._sha256(d)})); // Leaf nodes
 
 		while (q.length > 0) {
 			const node = q.shift();
@@ -35,8 +35,7 @@ class Hbintree {
 				node.parent.set_right(sibling); 
 			}
 
-			const h = await Hid.sha256(`${node.data}${sibling.data}`);
-			node.get_parent().set_data(h);
+			node.get_parent().set_data(Hutil._sha256(`${node.data}${sibling.data}`));
 			node.get_parent().set_left(node);
 	
 			if (q.length > 0) {

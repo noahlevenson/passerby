@@ -14,6 +14,7 @@ const { Hdlt } = require("../hdlt/hdlt.js");
 const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
 const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../hdlt/hdlt_vm.js");
+const { Hdlt_block } = require("../hdlt/hdlt_block.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
 
@@ -40,11 +41,11 @@ class Hksrv {
 
 	// The application layer tx validation hook is where you specify any special validation logic for 
 	// transactions beyond what's applied by the Hdlt layer - should return true if valid, false if not
-	static async TX_VALID_HOOK(tx_new, utxo_db) {
+	static TX_VALID_HOOK(tx_new, utxo_db) {
 		// TODO: make sure that tx_new only has the scripts it's allowed to have
 
 		// If tx_new is spending SIG_TOK and it already exists in the db, that's a double signature spend
-		if (tx_new.utxo === Hksrv.SIG_TOK && utxo_db.has(await Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)))) {
+		if (tx_new.utxo === Hksrv.SIG_TOK && utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)))) {
 			return false;
 		}
 
@@ -57,11 +58,11 @@ class Hksrv {
 	// The application layer UTXO DB hook is is expected to modify a utxo db Map as necessary when
 	// accepting a new valid transaction, including any special logic that's unique to this 
 	// application (the default behavior would be just to set tx_new)
-	static async UTXO_DB_HOOK(tx_new, utxo_db) {
+	static UTXO_DB_HOOK(tx_new, utxo_db) {
 		// Only add the new transaction to the db if it's a signature
 		// Only delete the unspent output from the db if it's not SIG_TOK
 		if (tx_new.utxo === Hksrv.SIG_TOK) {
-			utxo_db.set(Hdlt_tsact.sha256(await Hdlt_tsact.serialize(tx_new)), tx_new);
+			utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)), tx_new);
 		} else {
 			utxo_db.delete(tx_new.utxo);
 		}
@@ -139,7 +140,7 @@ class Hksrv {
 		if (check_db) {
 			// We want to prevent the peer from double spending SIG_TOK on peer_b
 			// if we've got an unresolved accidental fork, we need to consider all the branches
-			const dbs = this.dlt.store.get_deepest_blocks().map(async node => await this.dlt.build_db(node));
+			const dbs = this.dlt.store.get_deepest_blocks().map(node => this.dlt.build_db(node));
 			const double_spend = dbs.some(db => db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact))));
 
 			if (double_spend) {
@@ -158,7 +159,7 @@ class Hksrv {
 
 		// We want to prevent the peer from issuing a revocation for a signature that doesn't exist
 		// if we've got an unresolved accidental fork, we need to consider all the branches
-		const dbs = this.dlt.store.get_deepest_blocks().map(async node => await this.dlt.build_db(node));
+		const dbs = this.dlt.store.get_deepest_blocks().map(node => this.dlt.build_db(node));
 		const has_utxo = dbs.some(db => db.has(utxo));
 
 		if (!has_utxo) {
