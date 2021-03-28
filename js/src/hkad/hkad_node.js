@@ -266,6 +266,7 @@ class Hkad_node {
 					rpc.bind(this)(key, node.get_data(), (res, ctx) => {
 						if (res.data.type === Hkad_data.TYPE.VAL) {
 							resolve([res.data.payload, active.bst_min()]);
+							return;
 						}	
 
 						active.bst_insert(new Hbintree_node({data: res.from}), _by_distance_and_lex.bind(this));
