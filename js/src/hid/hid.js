@@ -8,6 +8,7 @@
 */ 
 
 "use strict";
+
 const { Happ_env } = require("../happ/happ_env.js");
 const dict_adj_a = require("./dict/adj_4096_a.json");
 const dict_adj_b = require("./dict/adj_4096_b.json");

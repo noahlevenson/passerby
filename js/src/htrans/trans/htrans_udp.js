@@ -15,6 +15,7 @@ const { Happ_env } = require("../../happ/happ_env.js");
 const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
+const { Hid } = require("../../hid/hid.js"); 
 const { Hutil } = require("../../hutil/hutil.js");
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../../htypes/hbigint/hbigint_rn.js") : require("../../htypes/hbigint/hbigint_node.js");
 
@@ -122,8 +123,8 @@ class Htrans_udp extends Htrans {
 		// 	htrans_msg.id = Hbigint.random(Htrans_msg.ID_LEN);
 		// }
 
-		Hbigint.random(Htrans_msg.ID_LEN).then((res) => {
-			htrans_msg.id = res;
+		Hid.random_bytes(Htrans_msg.ID_LEN).then((res) => {
+			htrans_msg.id = new Hbigint(res.toString("hex"));
 
 			// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
 			const buf = Buffer.from(JSON.stringify(htrans_msg));

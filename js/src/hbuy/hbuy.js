@@ -11,6 +11,7 @@
 
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
+const { Hid } = require("../hid/hid.js");
 const { Hid_pub } = require("../hid/hid_pub.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
@@ -136,12 +137,12 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		Hbigint.random(Hbuy_msg.ID_LEN).then((res) => {
+		Hid.random_bytes(Hbuy_msg.ID_LEN).then((res) => {
 			const msg = new Hbuy_msg({
 				data: hbuy_transaction,
 				type: Hbuy_msg.TYPE.REQ,
 				flavor: Hbuy_msg.FLAVOR.TRANSACT,
-				id: res
+				id: new Hbigint(res.toString("hex"))
 			});
 
 			this._send(msg, addr, port, success, timeout);
@@ -155,12 +156,12 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		Hbigint.random(Hbuy_msg.ID_LEN).then((res) => {
+		Hid.random_bytes(Hbuy_msg.ID_LEN).then((res) => {
 			const msg = new Hbuy_msg({
 				data: hbuy_status,
 				type: Hbuy_msg.TYPE.REQ,
 				flavor: Hbuy_msg.FLAVOR.STATUS,
-				id: res
+				id: new Hbigint(res.toString("hex"))
 			});
 
 			this._send(msg, addr, port, success, timeout);
@@ -173,12 +174,12 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		Hbigint.random(Hbuy_msg.ID_LEN).then((res) => {
+		Hid.random_bytes(Hbuy_msg.ID_LEN).then((res) => {
 			const msg = new Hbuy_msg({
 				data: hbuy_sms,
 				type: Hbuy_msg.TYPE.REQ,
 				flavor: Hbuy_msg.FLAVOR.SMS,
-				id: res
+				id: new Hbigint(res.toString("hex"))
 			});
 
 			this._send(msg, addr, port, success, timeout);

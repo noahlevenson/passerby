@@ -212,13 +212,13 @@ class Happ {
 	async send_transaction({cred, order, pment, success = () => {}, timeout = () => {}, status_cb} = {}) {
 		// TODO: verify the credential!
 
-		const rnd = await Hbigint.random(Hbuy_tsact.ID_LEN);
+		const rnd = await Hid.random_bytes(Hbuy_tsact.ID_LEN);
 
 		const transaction = new Hbuy_tsact({
 	    	order: order,
 	        pment: pment,
 	        from: this.hid_pub, // TODO: How should we handle different addresses?
-	        id: rnd.toString()
+	        id: rnd.toString("hex")
     	});
 
 		// Set up the status listener before sending the transaction to avoid a race condition 

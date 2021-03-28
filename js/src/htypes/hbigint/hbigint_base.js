@@ -26,10 +26,6 @@ class Hbigint_base {
 		throw new Error("Subclasses must implement the _json_revive() method");
 	}
 
-	static random(len) {
-		throw new Error("Subclasses must implement the random() method");
-	}
-
 	get() {
 		throw new Error("Subclasses must implement the get() method");
 	}

@@ -1,5 +1,6 @@
 const { Happ } = require("../src/happ/happ.js");
 const { Happ_bboard } = require("../src/happ/happ_bboard.js");
+const { Hutil } = require("../src/hutil/hutil.js");
 const { Hid } = require("../src/hid/hid.js");
 const { Hid_pub } = require("../src/hid/hid_pub.js");
 const { Hid_prv } = require("../src/hid/hid_prv.js");
@@ -10,7 +11,6 @@ const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
 const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
 const { Hbuy_menu } = require("../src/hbuy/hbuy_menu.js");
 const { Hlog } = require("../src/hlog/hlog.js");
-const { Hutil } = require("../src/hutil/hutil.js");
 const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_browser.js") : require("../src/htypes/hbigint/hbigint_node.js");
 const { Larosa_menu } = require("./menu.js");
 const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
