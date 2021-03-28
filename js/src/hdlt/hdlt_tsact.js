@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Hid } = require("../hutil/hutil.js"); 
+const { Hid } = require("../hid/hid.js"); 
 
 class Hdlt_tsact {
 	static VERSION = {

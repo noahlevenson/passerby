@@ -32,6 +32,8 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         long: -73.7912739
     });
 
+    larosa.peer_id = await Hid.sha256(larosa.pubkey);
+
     // const pw_hash = Hutil._sha256("noah");
     // console.log(pw_hash);
     // console.log(Hid.generate_key_pair(pw_hash));
