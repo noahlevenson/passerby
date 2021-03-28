@@ -139,7 +139,7 @@ class Hksrv {
 		if (check_db) {
 			// We want to prevent the peer from double spending SIG_TOK on peer_b
 			// if we've got an unresolved accidental fork, we need to consider all the branches
-			const dbs = this.dlt.store.get_deepest_blocks().map(node => this.dlt.build_db(node));
+			const dbs = this.dlt.store.get_deepest_blocks().map(async node => await this.dlt.build_db(node));
 			const double_spend = dbs.some(db => db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tsact))));
 
 			if (double_spend) {
@@ -158,7 +158,7 @@ class Hksrv {
 
 		// We want to prevent the peer from issuing a revocation for a signature that doesn't exist
 		// if we've got an unresolved accidental fork, we need to consider all the branches
-		const dbs = this.dlt.store.get_deepest_blocks().map(node => this.dlt.build_db(node));
+		const dbs = this.dlt.store.get_deepest_blocks().map(async node => await this.dlt.build_db(node));
 		const has_utxo = dbs.some(db => db.has(utxo));
 
 		if (!has_utxo) {
