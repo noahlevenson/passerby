@@ -105,7 +105,7 @@ class Hpht {
 			return null;
 		}
 
-		const label_hash = this._get_label_hash(label);
+		const label_hash = await this._get_label_hash(label);
 		const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
 		// This assumes that dht lookups always return an Hkad_data type, which I *think* is true
@@ -121,12 +121,12 @@ class Hpht {
 	// Compute the hash of a PHT node label (the hash of a PHT node label is the key used to locate it in the DHT)
 	// We concatenate the index attribute and the PHT node's binary label at hash time, so supplying no arg will
 	// get you the label hash of the PHT root node
-	_get_label_hash(data = "") {
+	async _get_label_hash(data = "") {
 		if (typeof data !== "string") {
 			throw new TypeError("Argument 'data' must be string");
 		}
 
-		return new Hbigint(Hutil._sha1(`${this.index_attr}${data}`));
+		return new Hbigint(await Hid.sha1(`${this.index_attr}${data}`));
 	}
 
 	// Idempotently start the refresh interval and initialize a new PHT structure, indexing on 'index_attr'
@@ -160,7 +160,7 @@ class Hpht {
 						}
 
 						if (t1 > parent.get_created() + this.ttl) {
-							await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.get_label()), parent);
+							await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(parent.get_label()), parent);
 						} else {
 							break;
 						}
@@ -183,7 +183,7 @@ class Hpht {
 
 		Hlog.log(`[HPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
 		const root = new Hpht_node({label: ""});
-		const res = await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root);
+		const res = await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(), root);
 
 		if (!res) {
 			Hlog.log(`[HPHT] WARNING! COULD NOT CREATE NEW ROOT STRUCTURE FOR INDEX ATTR ${this.index_attr}!`);
@@ -242,7 +242,7 @@ class Hpht {
 
 		if (leaf.get(key) || leaf.size() < Hpht.B) {
 			leaf.put(key, val);
-			const label_hash = this._get_label_hash(leaf.label);
+			const label_hash = await this._get_label_hash(leaf.label);
 			await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
 			Hlog.log(`[HPHT] Inserted key ${key.toString()} >> ${this.index_attr} leaf ${leaf.label} (DHT key ${label_hash})`);
 		} else {
@@ -292,15 +292,17 @@ class Hpht {
 						const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
 						child_ref.put(pair[0], pair[1]);
 
-						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
+						this._get_label_hash(child_ref.label).then((res) => {
+							Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ${child_ref.label} (DHT key ${res})`);
+						});						
 					});
 				}
 
 				// PUT the new child leaf nodes and stomp the old leaf node, which is now an interior node
 				// TODO: Should we alert the caller if any of the PUTs failed? Either return false (bad pattern) or reject this whole promise (better?)
-				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
-				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
-				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(interior_node.label), interior_node);
+				await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(child0.label), child0);
+				await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(child1.label), child1);
+				await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(interior_node.label), interior_node);
 
 				// if we need to iterate, old leaf must be the child node from above that has the label that is equal to
 				// the longest common prefix of the keys (or just the last digit of the longest common prefix -- right?)
@@ -343,7 +345,8 @@ class Hpht {
 
 		if (leaf.size() + sibling_node.size() > Hpht.B) {
 			// Simple case: leaf + its sibling node contains more than B keys, so the invariant is maintained
-			Hlog.log(`[HPHT] Deleted key ${key.toString()} >> ${this.index_attr} leaf ${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
+			const lh = await this._get_label_hash(leaf.get_label());
+			Hlog.log(`[HPHT] Deleted key ${key.toString()} >> ${this.index_attr} leaf ${leaf.get_label()} (DHT key ${lh})`);
 		} else {
 			// Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
 			const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs());
@@ -415,20 +418,23 @@ class Hpht {
 				if (d - i === 1) {
 					pairs.forEach((pair, idx, arr) => {
 						parent_node.put(pair[0], pair[1]);
-						Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})`);
+			
+						this._get_label_hash(parent_node.get_label()).then((res) => {
+							Hlog.log(`[HPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ${parent_node.get_label()} (DHT key ${lh})`);
+						});
 					});
 				}
 
 				// PUT the new leaf node (the parent node) and its non-null right and left neighbors 
 				// TODO: Should we alert the caller if any of the PUTs failed? Either return false (bad pattern) or reject this whole promise (better?)
-				await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent_node.get_label()), parent_node);
+				await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(parent_node.get_label()), parent_node);
 
 				if (left_neighbor !== null) {
-					await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(left_neighbor.get_label()), left_neighbor);
+					await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(left_neighbor.get_label()), left_neighbor);
 				}
 
 				if (right_neighbor !== null) {
-					await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(right_neighbor.get_label()), right_neighbor);
+					await this.dht_node.put.bind(this.dht_node)(await this._get_label_hash(right_neighbor.get_label()), right_neighbor);
 				}
 
 				// If we need to iterate, old_leaf must be the parent

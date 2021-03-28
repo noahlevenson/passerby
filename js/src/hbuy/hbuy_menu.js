@@ -13,7 +13,7 @@ const { Hbuy_pment } = require("./pment/hbuy_pment.js");
 const { Hbuy_ffment } = require("./hbuy_ffment.js");
 const { Hntree } = require("../htypes/hntree/hntree.js");
 const { Hntree_node } = require("../htypes/hntree/hntree_node.js");
-const { Hutil } = require("../hutil/hutil.js");
+const { Hid } = require("../hid/hid.js");
 
 class Hbuy_menu {
 	static KEYWORDS = {
@@ -81,12 +81,12 @@ class Hbuy_menu {
 	}
 
 	// TODO: move me to an Hbuy_form class and make Hbuy_form_menu a subclass
-	static get_form_id(hbuy_menu) {
+	static async get_form_id(hbuy_menu) {
 		if (Hbuy_menu.is_frozen(hbuy_menu)) {
-			return Hutil._sha1(JSON.stringify(hbuy_menu.data));
+			return await Hid.sha1(JSON.stringify(hbuy_menu.data));
 		}
 
-		return Hutil._sha1(JSON.stringify(hbuy_menu.get_node_list()));
+		return await Hid.sha1(JSON.stringify(hbuy_menu.get_node_list()));
 	}
 
 	// For an unfrozen tree, get its menu node list flattened as an array

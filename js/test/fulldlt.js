@@ -40,7 +40,7 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
 
     const larosa_prv = new Hid_prv({privkey: privkey});
 
-    Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
+    await Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
 
     const decrypted = await Hid.decrypt_private_key(Buffer.from(privkey, "hex"), "mypassword");
 

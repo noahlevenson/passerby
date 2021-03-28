@@ -14,7 +14,6 @@ const { Hdlt } = require("../hdlt/hdlt.js");
 const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
 const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../hdlt/hdlt_vm.js");
-const { Hdlt_block } = require("../hdlt/hdlt_block.js");
 const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
 
@@ -41,11 +40,11 @@ class Hksrv {
 
 	// The application layer tx validation hook is where you specify any special validation logic for 
 	// transactions beyond what's applied by the Hdlt layer - should return true if valid, false if not
-	static TX_VALID_HOOK(tx_new, utxo_db) {
+	static async TX_VALID_HOOK(tx_new, utxo_db) {
 		// TODO: make sure that tx_new only has the scripts it's allowed to have
 
 		// If tx_new is spending SIG_TOK and it already exists in the db, that's a double signature spend
-		if (tx_new.utxo === Hksrv.SIG_TOK && utxo_db.has(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)))) {
+		if (tx_new.utxo === Hksrv.SIG_TOK && utxo_db.has(await Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)))) {
 			return false;
 		}
 
@@ -58,11 +57,11 @@ class Hksrv {
 	// The application layer UTXO DB hook is is expected to modify a utxo db Map as necessary when
 	// accepting a new valid transaction, including any special logic that's unique to this 
 	// application (the default behavior would be just to set tx_new)
-	static UTXO_DB_HOOK(tx_new, utxo_db) {
+	static async UTXO_DB_HOOK(tx_new, utxo_db) {
 		// Only add the new transaction to the db if it's a signature
 		// Only delete the unspent output from the db if it's not SIG_TOK
 		if (tx_new.utxo === Hksrv.SIG_TOK) {
-			utxo_db.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)), tx_new);
+			utxo_db.set(Hdlt_tsact.sha256(await Hdlt_tsact.serialize(tx_new)), tx_new);
 		} else {
 			utxo_db.delete(tx_new.utxo);
 		}

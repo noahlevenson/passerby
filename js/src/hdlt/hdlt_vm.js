@@ -147,7 +147,7 @@ class Hdlt_vm {
 		let nonce = this.STACK[this.SP].toString(16);
 		nonce = nonce.padStart(nonce.length + (nonce.length % 2), "0");
 
-		const h = Hid.hash_cert(pubkey.toString(16), nonce);
+		const h = await Hid.hash_cert(pubkey.toString(16), nonce);
 		const res = Hid.is_valid_pow(h, n) ? 1 : 0;
 
 		this.STACK[this.SP] = new Hbigint(res);
@@ -171,7 +171,7 @@ class Hdlt_vm {
 		this.SP -= 3;
 		const sig = this.STACK[this.SP];
 		
-		const h = Hid.hash_cert(pubkey.toString(16), nonce);
+		const h = await Hid.hash_cert(pubkey.toString(16), nonce);
 		const is_valid_pow = Hid.is_valid_pow(h, n);
 
 		const copy = new Hdlt_tsact({

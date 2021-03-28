@@ -11,7 +11,6 @@
 
 const net = require("net"); // TODO: We currently have no browser implementation for 'net'
 const { Happ_env } = require("../happ/happ_env.js");
-const crypto = Happ_env.ENV === Happ_env.ENV_TYPE.NODE ? require("crypto") : null;
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hutil {
@@ -35,20 +34,6 @@ class Hutil {
 		return new Map(deeply_parsed);
 	}
 
-	// Returns a hex string
-	static _sha1(data) {
-		const hash = crypto.createHash("SHA1"); // TODO: this encoding string is host dependent, 'openssl list -digest-algorithms'
-		hash.update(data);
-		return hash.digest("hex");
-	}
-
-	// Returns a hex string
-	static _sha256(data) {
-		const hash = crypto.createHash("SHA256");
-		hash.update(data);
-		return hash.digest("hex");
-	}
-    
     static _is_power2(n) {
         return (n & (n - 1)) === 0;
     }

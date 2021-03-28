@@ -23,7 +23,7 @@ class Hid_pub {
 	peer_id;
 	nonce;
 
-	constructor({pubkey = null, name = null, first = null, last = null, address = null, phone = null, lat = null, long = null}  = {}) {
+	constructor({pubkey = null, peer_id = null, name = null, first = null, last = null, address = null, phone = null, lat = null, long = null}  = {}) {
 		// TODO: validation, enforce primitive types
 
 		this.pubkey = pubkey;
@@ -34,7 +34,7 @@ class Hid_pub {
 		this.phone = phone;
 		this.lat = lat;
 		this.long = long;
-		this.peer_id = Hutil._sha1(this.pubkey);
+		this.peer_id = peer_id;
 		this.nonce = "00"; // Need two digits for Buffer to parse correctly
 	}
 
