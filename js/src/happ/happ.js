@@ -216,7 +216,7 @@ class Happ {
 	    	order: order,
 	        pment: pment,
 	        from: this.hid_pub, // TODO: How should we handle different addresses?
-	        id: Hbigint.unsafe_random(Hbuy_tsact.ID_LEN)
+	        id: Hbigint.unsafe_random(Hbuy_tsact.ID_LEN).toString(16)
     	});
 
 		// Set up the status listener before sending the transaction to avoid a race condition 
