@@ -149,7 +149,7 @@ class Htrans_udp extends Htrans {
 				});
 			}
 		});
-	});
+	}
 }
 
 module.exports.Htrans_udp = Htrans_udp;
