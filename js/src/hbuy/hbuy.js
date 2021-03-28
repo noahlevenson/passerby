@@ -11,7 +11,6 @@
 
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
-const { Hid } = require("../hid/hid.js");
 const { Hid_pub } = require("../hid/hid_pub.js");
 const { Hbuy_net } = require("./net/hbuy_net.js");
 const { Hbuy_msg } = require("./hbuy_msg.js");
@@ -137,16 +136,14 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		Hid.random_bytes(Hbuy_msg.ID_LEN).then((res) => {
-			const msg = new Hbuy_msg({
-				data: hbuy_transaction,
-				type: Hbuy_msg.TYPE.REQ,
-				flavor: Hbuy_msg.FLAVOR.TRANSACT,
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this._send(msg, addr, port, success, timeout);
+		const msg = new Hbuy_msg({
+			data: hbuy_transaction,
+			type: Hbuy_msg.TYPE.REQ,
+			flavor: Hbuy_msg.FLAVOR.TRANSACT,
+			id: Hbigint.unsafe_random(Hbuy_msg.ID_LEN)
 		});
+
+		this._send(msg, addr, port, success, timeout);
 	}
 
 	// TODO: this should be refactored to work like transact_req above -- don't construct the Hbuy_status, just send it
@@ -156,16 +153,14 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		Hid.random_bytes(Hbuy_msg.ID_LEN).then((res) => {
-			const msg = new Hbuy_msg({
-				data: hbuy_status,
-				type: Hbuy_msg.TYPE.REQ,
-				flavor: Hbuy_msg.FLAVOR.STATUS,
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this._send(msg, addr, port, success, timeout);
+		const msg = new Hbuy_msg({
+			data: hbuy_status,
+			type: Hbuy_msg.TYPE.REQ,
+			flavor: Hbuy_msg.FLAVOR.STATUS,
+			id: Hbigint.unsafe_random(Hbuy_msg.ID_LEN)
 		});
+
+		this._send(msg, addr, port, success, timeout);
 	}
 
 	sms_req({hbuy_sms = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
@@ -174,16 +169,14 @@ class Hbuy {
 			throw new TypeError("Arguments cannot be null");
 		}
 
-		Hid.random_bytes(Hbuy_msg.ID_LEN).then((res) => {
-			const msg = new Hbuy_msg({
-				data: hbuy_sms,
-				type: Hbuy_msg.TYPE.REQ,
-				flavor: Hbuy_msg.FLAVOR.SMS,
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this._send(msg, addr, port, success, timeout);
+		const msg = new Hbuy_msg({
+			data: hbuy_sms,
+			type: Hbuy_msg.TYPE.REQ,
+			flavor: Hbuy_msg.FLAVOR.SMS,
+			id: Hbigint.unsafe_random(Hbuy_msg.ID_LEN)
 		});
+
+		this._send(msg, addr, port, success, timeout);
 	}
 
 	start() {

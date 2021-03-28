@@ -49,6 +49,11 @@ class Hbigint extends Hbigint_base {
 		return val;
 	}
 
+	static unsafe_random(byte_len) {
+		const rnd_vals = Array(byte_len).fill().map(() => Math.floor(Math.random() * Hbigint.BYTE_SCALE_MAX));
+		return new Hbigint(Buffer.from(rnd_vals).toString("hex"));
+	}
+
 	get() {
 		return this.data;
 	}

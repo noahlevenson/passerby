@@ -12,10 +12,10 @@
 const EventEmitter = require("events");
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hlog } = require("../hlog/hlog.js");
-const { Hid } = require("../hid/hid.js"); 
 const { Hstun_msg } = require("./hstun_msg.js");
 const { Hstun_hdr } = require("./hstun_hdr.js");
 const { Hstun_attr } = require("./hstun_attr.js");
+const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
 
 class Hstun {
 	static REQ_TIMEOUT = 5000;
@@ -36,13 +36,15 @@ class Hstun {
 	// I'm not sure that a promise-based binding req that waits for and correlates a response is
 	// a function that should be part of HSTUN - maybe its really a layer of abstraction above the STUN protocol?
 	_binding_req(addr, port) {
-		return new Promise(async (resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			// TODO: the STUN RFC says that we SHOULD implement retransmissions, and the retransmission spec and algorithm is defined in the paper
 			// Since I think retransmission only applies to UDP, we should implement a "TRANSPORT TYPE" enum on HTRANS and check it here...
 
 			// TODO: We should have a function to generate IDs rather than just doing it ad hoc here
-			const id = await Hid.random_bytes(Hstun_hdr.K_ID_LEN);
-			const id_string = id.toString("hex");
+			const id_string = Hbigint.unsafe_random(Hstun_hdr.K_ID_LEN).toString(16)
+			const id = Buffer.from(id_string, "hex");
+
+			id.toString("hex");
 
 			const req_hdr = new Hstun_hdr({
 				type: Hstun_hdr.K_MSG_TYPE.BINDING_REQUEST,

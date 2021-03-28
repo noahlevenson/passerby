@@ -80,7 +80,8 @@ class Hid {
     //     return `${prefix}${der_buf.toString("base64").match(/.{0,64}/g).join("\n")}${postfix}`;
     // }
 
-    static async random_bytes(len) {
+    // TODO: this is not currently in use, right?
+    static async random_bytes_strong(len) {
         if (Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE) {
             const res = await Hid.NATIVE_CRYPTO.randomBytes(len);
 

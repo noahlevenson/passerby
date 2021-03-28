@@ -11,6 +11,7 @@
 
 class Hbigint_base {
 	static JSON_PREFIX = "__$!0x";
+	static BYTE_SCALE_MAX = 256;
 
 	data;
 
@@ -24,6 +25,10 @@ class Hbigint_base {
 
 	static _json_revive(key, val) {
 		throw new Error("Subclasses must implement the _json_revive() method");
+	}
+
+	static unsafe_random(byte_len) {
+		throw new Error("Subclasses must implement the unsafe_random() method");
 	}
 
 	get() {

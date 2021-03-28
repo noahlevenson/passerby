@@ -12,7 +12,6 @@
 
 const { Happ_env } = require("../happ/happ_env.js");
 const { Hlog } = require("../hlog/hlog.js");
-const { Hid } = require("../hid/hid.js");
 const { Hutil } = require("../hutil/hutil.js");
 const { Hkad_net } = require("./net/hkad_net.js");
 const { Hkad_eng } = require("./eng/hkad_eng.js");
@@ -340,58 +339,50 @@ class Hkad_node {
 	}
 
 	_req_ping(node_info, success, timeout) {
-		Hid.random_bytes(Hkad_node.ID_LEN).then((res) => {
-			const msg = new Hkad_msg({
-				rpc: Hkad_msg.RPC.PING,
-				from: new Hkad_node_info(this.node_info),
-				type: Hkad_msg.TYPE.REQ,
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this.eng._send(msg, node_info, success, timeout);
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.PING,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			id: Hbigint.unsafe_random(Hkad_node.ID_LEN)
 		});
+
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_store(key, val, node_info, success, timeout) {
-		Hid.random_bytes(Hkad_node.ID_LEN).then((res) => {
-			const msg = new Hkad_msg({
-				rpc: Hkad_msg.RPC.STORE,
-				from: new Hkad_node_info(this.node_info),
-				type: Hkad_msg.TYPE.REQ,
-				data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this.eng._send(msg, node_info, success, timeout);
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.STORE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			data: new Hkad_data({type: Hkad_data.TYPE.PAIR, payload: [key, val]}),
+			id: Hbigint.unsafe_random(Hkad_node.ID_LEN)
 		});
+
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_node(key, node_info, success, timeout) {
-		Hid.random_bytes(Hkad_node.ID_LEN).then((res) => {
-			const msg = new Hkad_msg({
-				rpc: Hkad_msg.RPC.FIND_NODE,
-				from: new Hkad_node_info(this.node_info),
-				type: Hkad_msg.TYPE.REQ,
-				data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this.eng._send(msg, node_info, success, timeout);
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.FIND_NODE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
+			id: Hbigint.unsafe_random(Hkad_node.ID_LEN)
 		});
+
+		this.eng._send(msg, node_info, success, timeout);
 	}
 
 	_req_find_value(key, node_info, success, timeout) {
-		Hid.random_bytes(Hkad_node.ID_LEN).then((res) => {
-			const msg = new Hkad_msg({
-				rpc: Hkad_msg.RPC.FIND_VALUE,
-				from: new Hkad_node_info(this.node_info),
-				type: Hkad_msg.TYPE.REQ,
-				data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
-				id: new Hbigint(res.toString("hex"))
-			});
-
-			this.eng._send(msg, node_info, success, timeout);
+		const msg = new Hkad_msg({
+			rpc: Hkad_msg.RPC.FIND_VALUE,
+			from: new Hkad_node_info(this.node_info),
+			type: Hkad_msg.TYPE.REQ,
+			data: new Hkad_data({type: Hkad_data.TYPE.KEY, payload: [key]}),
+			id: Hbigint.unsafe_random(Hkad_node.ID_LEN)
 		});
+
+		this.eng._send(msg, node_info, success, timeout);	
 	}
 
 	_res_ping(req) {

@@ -15,7 +15,6 @@ const { Happ_env } = require("../../happ/happ_env.js");
 const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
-const { Hid } = require("../../hid/hid.js"); 
 const { Hutil } = require("../../hutil/hutil.js");
 const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../../htypes/hbigint/hbigint_rn.js") : require("../../htypes/hbigint/hbigint_node.js");
 
@@ -115,49 +114,42 @@ class Htrans_udp extends Htrans {
 		if (htrans_msg.id !== null) {
 			throw new Error("Htrans_msg IDs should be null");
 		}
+	
+		if (Htrans_udp.RETRANSMIT) {
+			htrans_msg.id = Hbigint.unsafe_random(Htrans_msg.ID_LEN);
+		}
 
-		// TODO: we used to only generate an ID if retransmission is enabled, but when Hbigint.random turned async,
-		// we just started generating IDs all the time...
-		
-		// if (Htrans_udp.RETRANSMIT) {
-		// 	htrans_msg.id = Hbigint.random(Htrans_msg.ID_LEN);
-		// }
+		// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
+		const buf = Buffer.from(JSON.stringify(htrans_msg));
 
-		Hid.random_bytes(Htrans_msg.ID_LEN).then((res) => {
-			htrans_msg.id = new Hbigint(res.toString("hex"));
+		this._do_send(buf, addr, port, () => {
+			let timeout_id = null;
 
-			// htrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
-			const buf = Buffer.from(JSON.stringify(htrans_msg));
-
-			this._do_send(buf, addr, port, () => {
-				let timeout_id = null;
-
-				function _retry_runner(f, i, max_retries, delay, backoff_f, end_cb) {
-					if (i === max_retries) {
-						end_cb();
-						Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
-						return;
-					}
-
-					timeout_id = setTimeout(() => {
-						Hlog.log(`[HTRANS] No UDP ACK for msg # ${htrans_msg.id}, retransmitting ${i + 1}/${max_retries}`)
-						f();
-						_retry_runner(f, i + 1, max_retries, backoff_f(delay), backoff_f, end_cb);
-					}, delay);
+			function _retry_runner(f, i, max_retries, delay, backoff_f, end_cb) {
+				if (i === max_retries) {
+					end_cb();
+					Hlog.log(`[HTRANS] Retransmitted msg # ${htrans_msg.id.toString()} ${max_retries} times, giving up!`);
+					return;
 				}
 
-				if (Htrans_udp.RETRANSMIT) {
-					this.ack.once(htrans_msg.id.toString(), (res_msg) => {
-						clearTimeout(timeout_id);
-					});
+				timeout_id = setTimeout(() => {
+					Hlog.log(`[HTRANS] No UDP ACK for msg # ${htrans_msg.id}, retransmitting ${i + 1}/${max_retries}`)
+					f();
+					_retry_runner(f, i + 1, max_retries, backoff_f(delay), backoff_f, end_cb);
+				}, delay);
+			}
 
-					_retry_runner(this._do_send.bind(this, buf, addr, port), 0, Htrans_udp.MAX_RETRIES, Htrans_udp.DEFAULT_RTT_MS, Htrans_udp.BACKOFF_FUNC, () => {
-						this.ack.removeAllListeners(htrans_msg.id.toString());
-					});
-				}
-			});
+			if (Htrans_udp.RETRANSMIT) {
+				this.ack.once(htrans_msg.id.toString(), (res_msg) => {
+					clearTimeout(timeout_id);
+				});
+
+				_retry_runner(this._do_send.bind(this, buf, addr, port), 0, Htrans_udp.MAX_RETRIES, Htrans_udp.DEFAULT_RTT_MS, Htrans_udp.BACKOFF_FUNC, () => {
+					this.ack.removeAllListeners(htrans_msg.id.toString());
+				});
+			}
 		});
-	}
+	});
 }
 
 module.exports.Htrans_udp = Htrans_udp;
