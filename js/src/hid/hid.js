@@ -25,7 +25,7 @@ class Hid {
     static SYM_ADJ_B_BW = Hutil._is_power2(dict_adj_b.length) ? Math.log2(dict_adj_b.length) : Hid.dict_err();
     static SYM_NOUN_BW = Hutil._is_power2(dict_noun.length) ? Math.log2(dict_noun.length) : Hid.dict_err();
     static HASH_SZ = 256; // TODO: Remember to change this if we change the hash function in hash_cert!
-	static POW_LEAD_ZERO_BITS = 20; // TODO: set me to a nontrivial value
+	static POW_LEAD_ZERO_BITS = 3; // TODO: set me to a nontrivial value
     static SIG_ALGORITHM = "RSA-SHA256"; // Be careful, must work with KEY_TYPE
     static KEY_TYPE = "rsa"; // Only "rsa" is currently supported
 	static MODULUS_LEN = 2048; // Only applies if KEY_TYPE is "rsa"
