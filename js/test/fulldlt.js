@@ -72,5 +72,11 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
         const tx_new_3 = await network.hksrv.revoke(larosa, bs_bro);
         network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new_3)));
         network.hksrv.dlt.broadcast(network.hksrv.dlt.tx_req, {hdlt_tsact: tx_new_3}); 
+
+        console.log(network.hksrv.build_wot());
+
+        setTimeout(() => {
+            console.log(network.hksrv.build_wot());
+        }, 30000)
     }, 30000); 
 })();

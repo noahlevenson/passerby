@@ -9,12 +9,14 @@
 
 "use strict";
 
+const { Happ_env } = require("../happ/happ_env.js");
 const { Hid } = require("../hid/hid.js");
 const { Hdlt } = require("../hdlt/hdlt.js");
 const { Hdlt_net_solo } = require("../hdlt/net/hdlt_net_solo.js");
 const { Hdlt_tsact } = require("../hdlt/hdlt_tsact.js");
 const { Hdlt_vm } = require("../hdlt/hdlt_vm.js");
 const { Hdlt_block } = require("../hdlt/hdlt_block.js");
+const { Hgraph } = require("../htypes/hgraph/hgraph.js"); 
 const { Hlog } = require("../hlog/hlog.js");
 const { Hutil } = require("../hutil/hutil.js");
 
@@ -28,7 +30,7 @@ const { Hutil } = require("../hutil/hutil.js");
 // AND a valid proof of work for their identity, which is enforced with SCRIPT_IS_VALID_SIG_AND_POW.
 
 class Hksrv {
-	static REQ_POW_BITS = 20; // TODO: set to nontrivial value
+	static REQ_POW_BITS = Hid.POW_LEAD_ZERO_BITS;
 	static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
 	static SCRIPT_NO_UNLOCK = [Hdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
 	static SCRIPT_IS_VALID_SIG_AND_POW = [Hdlt_vm.OPCODE.OP_CHECKSIGPOW, Hksrv.REQ_POW_BITS];
@@ -176,6 +178,41 @@ class Hksrv {
 		const sig = await Hid.sign(Hdlt_vm.make_sig_preimage(prev_tsact, tsact), Buffer.from(privkey, "hex"));
 		tsact.lock = [Hdlt_vm.OPCODE.OP_PUSH2, ...Array.from(Hutil._int2Buf16(sig.length)), ...Array.from(sig)] // push1, len, sig
 		return tsact;
+	}
+
+	build_wot() {
+		// If there's an unresolved accidental fork, we arbitrarily select the 0th branch
+		// TODO: this is almost definitely the wrong behavior
+		const db = this.dlt.build_db(this.dlt.store.get_deepest_blocks()[0]);
+		const wot = new Hgraph();
+
+		Array.from(db.values()).forEach((tx) => {
+			// If 'utxo' = SIG_TOK, it's a signature that must be represented as an edge
+			if (tx.utxo === Hksrv.SIG_TOK) {
+				// The recpient's pubkey is the bytes specified by the 0th OP_PUSH2 instruction, which is the 0th byte of the script
+				const recip_len = (tx.lock[1] << Happ_env.SYS_BYTE_WIDTH) | tx.lock[2];
+				const recip = tx.lock.slice(3, 3 + recip_len);
+
+				// If we 0-index the OP_PUSH2 instructions in the script, the signer's pubkey is the bytes specified by the 3rd one
+				// Iteratively search the script starting from the front, striding over each push operand
+				let idx = 0;
+				let start = 0;
+				let count = 0;
+				
+				while (count < 4) {
+					idx = tx.lock.indexOf(Hdlt_vm.OPCODE.OP_PUSH2, idx + start);
+					start = (tx.lock[idx + 1] << Happ_env.SYS_BYTE_WIDTH) | tx.lock[idx + 2];
+					count += 1;
+				}
+
+				const signer_len = (tx.lock[idx + 1] << Happ_env.SYS_BYTE_WIDTH) | tx.lock[idx + 2];
+				const signer = tx.lock.slice(idx + 3, idx + 3 + signer_len);
+
+				wot.add_edge(Buffer.from(signer).toString("hex"), Buffer.from(recip).toString("hex"));
+			}
+		});
+
+		return wot;
 	}
 }
 
