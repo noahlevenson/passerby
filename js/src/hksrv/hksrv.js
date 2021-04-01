@@ -180,6 +180,15 @@ class Hksrv {
 		return tsact;
 	}
 
+	send(tx) {
+		if (!(tx instanceof Hdlt_tsact)) {
+			return;
+		}
+
+    	this.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx)));
+    	this.dlt.broadcast(this.dlt.tx_req, {hdlt_tsact: tx});
+	}
+
 	build_wot() {
 		// If there's an unresolved accidental fork, we arbitrarily select the 0th branch
 		// TODO: this is almost definitely the wrong behavior
