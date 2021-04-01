@@ -131,12 +131,12 @@ class Hdlt {
 		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
 		this.args.t_handle = setTimeout(async () => {
-			// Find the transactions in our tx_cache which have not yet been added to a block 
-			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
-			const branch = this.store.get_branch(pred_block_node);
-			const new_tx = new Map(this.tx_cache);
-			branch.forEach(node => node.data.tsacts.forEach(tx => new_tx.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx)))));
-			const tx_candidates = Array.from(new_tx.entries());
+			// TODO: since we don't have logic to prune the tx_cache yet, we just try to add every tx in the cache
+			// and let tx validation logic filter out whatever is a double spend or otherwise illegal
+			// this is why we regularly see some number of "invalid tx" reported at block creation time, increasing with peer uptime
+			// we can't rely on comparing the tx cache to the transactions in our blockchain, because our DLT, in the spirit
+			// of max flexibility, allows multiple transactions which hash to the same value as long as tx_valid_hook says they're OK
+			const tx_candidates = new Map(this.tx_cache);
 			
 			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
 			// TODO: This is selection sort O(n ^ 2), bad vibes bro
