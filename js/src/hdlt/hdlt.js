@@ -136,7 +136,7 @@ class Hdlt {
 			// this is why we regularly see some number of "invalid tx" reported at block creation time, increasing with peer uptime
 			// we can't rely on comparing the tx cache to the transactions in our blockchain, because our DLT, in the spirit
 			// of max flexibility, allows multiple transactions which hash to the same value as long as tx_valid_hook says they're OK
-			const tx_candidates = new Map(this.tx_cache);
+			const tx_candidates = Array.from(this.tx_cache.entries());
 			
 			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
 			// TODO: This is selection sort O(n ^ 2), bad vibes bro
