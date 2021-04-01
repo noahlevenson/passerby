@@ -156,13 +156,20 @@ class Hdlt {
 
 			// Filter out invalid transactions, validating them against an 
 			// initial utxo db computed up through our predecessor block
+			// TODO: this is noob central but it's hard to asynchronously wait
+			// for the result of _validate_tx and also iteratively update 
+			// the state of utxo_db while stepping through tx_candidates
 			let utxo_db = this.build_db(pred_block_node);
+			const valid_tx = [];
 
-			const valid_tx = tx_candidates.filter(async (pair) => {
+			for (const pair of tx_candidates) {
 				const res = await this._validate_tx({tx: pair[1], utxo_db: utxo_db});
 				utxo_db = res.utxo_db;
-				return res.valid;
-			}).map(pair => pair[1]);
+
+				if (res.valid) {
+					valid_tx.push(pair[1]);
+				}
+			}
 
 			// If we have no tx to put in a new block this time, and we didn't
 			// get interrupted by a new deepest block, then keep working on same predecessor
