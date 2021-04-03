@@ -24,7 +24,7 @@ class Hgraph {
 		}
 	}
 
-	// Idempotently an edge from vertex label v to vertex label u
+	// Idempotently add an edge from vertex label v to vertex label u
 	// assumes labels as strings
 	add_edge(v, u) {
 		this.add_vertex(v);
@@ -32,6 +32,16 @@ class Hgraph {
 
 		if (!e.includes(u)) {
 			e.push(u);
+		}
+	}
+
+	// Idempotently remove an edge from vertex label v to vertex label u
+	// assumes labels as strings
+	del_edge(v, u) {
+		const e = this.data.get(v);
+
+		if (e && e.includes(u)) {
+			e.splice(e.indexOf(u, 1));
 		}
 	}
 }
