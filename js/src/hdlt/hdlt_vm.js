@@ -179,7 +179,7 @@ class Hdlt_vm {
 			utxo: this.tx_new.utxo.slice(),
 			lock: [...this.tx_prev.unlock],
 			unlock: [...this.tx_new.unlock],
-			t: tx_new.t
+			t: this.tx_new.t
 		});
 
 		const is_valid_sig = await Hid.verify(
