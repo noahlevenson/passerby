@@ -121,7 +121,8 @@ class Hdlt_vm {
 		const copy = new Hdlt_tsact({
 			utxo: this.tx_new.utxo.slice(),
 			lock: [...this.tx_prev.unlock],
-			unlock: [...this.tx_new.unlock]
+			unlock: [...this.tx_new.unlock],
+			t: this.tx_new.t
 		});
 
 		const res = await Hid.verify(
@@ -177,7 +178,8 @@ class Hdlt_vm {
 		const copy = new Hdlt_tsact({
 			utxo: this.tx_new.utxo.slice(),
 			lock: [...this.tx_prev.unlock],
-			unlock: [...this.tx_new.unlock]
+			unlock: [...this.tx_new.unlock],
+			t: tx_new.t
 		});
 
 		const is_valid_sig = await Hid.verify(
