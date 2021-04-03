@@ -86,7 +86,8 @@ class Hdlt_vm {
 			return await this.exec();
 		}
 
-		return (this.SP - 1 >= 0 && [...this.STACK[this.SP - 1]].every(byte => byte === 0)) ? true : false
+		// A zeroed out buffer of any length is considered zero - any other buffer is nonzero
+		return (this.SP - 1 >= 0 && [...this.STACK[this.SP - 1]].every(byte => byte !== 0)) ? true : false
 	}
 
 	// No op
