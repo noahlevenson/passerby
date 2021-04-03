@@ -12,7 +12,8 @@
 const { Hdlt_tsact } = require("./hdlt_tsact.js");
 const { Hid } = require("../hid/hid.js");
 const { Happ_env } = require("../happ/happ_env.js");
-const { Hbigint } = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("../htypes/hbigint/hbigint_rn.js") : require("../htypes/hbigint/hbigint_node.js");
+
+// Be forewarned: the stack uses Buffers instead of Hbigints so as to preserve leading zeros
 
 class Hdlt_vm {
 	static STACK_SZ = 1024;
@@ -85,7 +86,7 @@ class Hdlt_vm {
 			return await this.exec();
 		}
 
-		return this.SP - 1 >= 0 && !this.STACK[this.SP - 1].equals(new Hbigint(0)) ? true : false;
+		return (this.SP - 1 >= 0 && [...this.STACK[this.SP - 1]].every(byte => byte === 0)) ? true : false
 	}
 
 	// No op
@@ -97,7 +98,7 @@ class Hdlt_vm {
 	async _op_push1() {
 		const n = this.program[this.PC + 1];
 		const start = this.PC + 2;
-		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
+		this.STACK[this.SP] = Buffer.from(this.program.slice(start, start + n));
 		this.SP += 1;
 		this.PC += 2 + n;
 	}
@@ -106,7 +107,7 @@ class Hdlt_vm {
 	async _op_push2() {
 		const n = (this.program[this.PC + 1] << Happ_env.SYS_BYTE_WIDTH) | this.program[this.PC + 2];
 		const start = this.PC + 3;
-		this.STACK[this.SP] = new Hbigint(`${this.program.slice(start, start + n).toString("hex")}`);
+		this.STACK[this.SP] = Buffer.from(this.program.slice(start, start + n));
 		this.SP += 1;
 		this.PC += 3 + n;
 	}
@@ -127,11 +128,11 @@ class Hdlt_vm {
 
 		const res = await Hid.verify(
 			Hdlt_tsact.serialize(copy), 
-			Buffer.from(pubkey.toString(16), "hex"), 
-			Buffer.from(sig.toString(16), "hex")
-		) ? 1 : 0;
+			pubkey, 
+			sig
+		) ? 0x01 : 0x00;
 
-		this.STACK[this.SP] = new Hbigint(res);
+		this.STACK[this.SP] = Buffer.from([res]);
 		this.SP += 1;
 		this.PC += 1;
 	}
@@ -144,14 +145,12 @@ class Hdlt_vm {
 		const pubkey = this.STACK[this.SP - 1];
 		this.SP -= 2;
 		
-		// TODO: this is pure noob but necessary to match the leading zero established in Hid_pub
-		let nonce = this.STACK[this.SP].toString(16);
-		nonce = nonce.padStart(nonce.length + (nonce.length % 2), "0");
+		let nonce = this.STACK[this.SP]
+	
+		const h = Hid.hash_cert(pubkey.toString("hex"), nonce.toString("hex"));
+		const res = Hid.is_valid_pow(h, n) ? 0x01 : 0x00;
 
-		const h = Hid.hash_cert(pubkey.toString(16), nonce);
-		const res = Hid.is_valid_pow(h, n) ? 1 : 0;
-
-		this.STACK[this.SP] = new Hbigint(res);
+		this.STACK[this.SP] = Buffer.from([res]);
 		this.SP += 1;
 		this.PC += 2;
 	}
@@ -165,14 +164,12 @@ class Hdlt_vm {
 		const n = this.program[this.PC + 1];
 		const pubkey = this.STACK[this.SP - 1];
 
-		// TODO: this is pure noob but necessary to match the leading zero established in Hid_pub
-		let nonce = this.STACK[this.SP - 2].toString(16);
-		nonce = nonce.padStart(nonce.length + (nonce.length % 2), "0");
+		let nonce = this.STACK[this.SP - 2];
 		
 		this.SP -= 3;
 		const sig = this.STACK[this.SP];
 		
-		const h = Hid.hash_cert(pubkey.toString(16), nonce);
+		const h = Hid.hash_cert(pubkey.toString("hex"), nonce.toString("hex"));
 		const is_valid_pow = Hid.is_valid_pow(h, n);
 
 		const copy = new Hdlt_tsact({
@@ -184,13 +181,13 @@ class Hdlt_vm {
 
 		const is_valid_sig = await Hid.verify(
 			Hdlt_tsact.serialize(copy), 
-			Buffer.from(pubkey.toString(16), "hex"), 
-			Buffer.from(sig.toString(16), "hex")
+			pubkey,
+			sig
 		);
 
-		const res = is_valid_pow && is_valid_sig ? 1 : 0;
+		const res = is_valid_pow && is_valid_sig ? 0x01 : 0x00;
 
-		this.STACK[this.SP] = new Hbigint(res);
+		this.STACK[this.SP] = Buffer.from([res]);
 		this.SP += 1;
 		this.PC += 2;
 	}
