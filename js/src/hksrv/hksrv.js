@@ -38,7 +38,8 @@ class Hksrv {
 	static SIG_TX = new Hdlt_tsact({
 		utxo: Hksrv.SIG_TOK.split("").reverse().join(""), 
 		lock: [Hdlt_vm.OPCODE.OP_NOOP], 
-		unlock: Hksrv.SCRIPT_IS_VALID_SIG_AND_POW
+		unlock: Hksrv.SCRIPT_IS_VALID_SIG_AND_POW,
+		t: 31337
 	})
 
 	// The application layer tx validation hook is where you specify any special validation logic for 
