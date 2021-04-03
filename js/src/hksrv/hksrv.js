@@ -217,10 +217,8 @@ class Hksrv {
 			const sender = _get_sender_pubkey(tx);
 
 			if (tx.utxo === Hksrv.SIG_TOK) {
-				// If 'utxo' = SIG_TOK, it's a signature that must be represented as an edge
 				wot.add_edge(Buffer.from(sender).toString("hex"), Buffer.from(recip).toString("hex"));
 			} else if (tx.utxo === Hksrv.REV_TOK) {
-				// If 'utxo' = REV_TOK, it's a revocation that must be represented by removing an edge
 				wot.del_edge(Buffer.from(sender).toString("hex"), Buffer.from(recip).toString("hex"));
 			}
 		});

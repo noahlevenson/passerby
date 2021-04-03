@@ -96,17 +96,6 @@ class Hdlt {
 		return utxo_db;
 	}
 
-	// This is a dumb way to prune the tx cache: just delete all the tx which are found in a given new block
-	// so what happens if there's an accidental fork and the specified new block is no longer part of the 
-	// canonical branch? we prob lose some tx, and users will just have to resubmit them...
-	// TODO: there's gotta be a better way to do this
-	prune_tx_cache(new_block) {
-		new_block.tsacts.forEach((tx) => {
-			const tx_hash = Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx));
-			this.tx_cache.delete(tx_hash);
-		});
-	}
-
 	// For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
 	// where block.nonce is replaced with the signer's public key
 	// TODO: handle error/bad passphrase etc
@@ -142,11 +131,12 @@ class Hdlt {
 		Hlog.log(`[HDLT] (${this.net.app_id}) Making successor to block ${Hdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
 		this.args.t_handle = setTimeout(async () => {
-			// TODO: we're currently pruning the tx_cache at new block time, deleting any tx which appear in the new block
-			// this can (probably) cause tx to get "lost" if there's an accidental fork, but it also makes it simple to 
-			// figure out what tx should go into the block - all tx in the cache are "fresh" - though you prob want
-			// to parameterize this with a max value
-			const tx_candidates = Array.from(this.tx_cache.entries());
+			// Find the transactions in our tx_cache which have not yet been added to a block 
+			// TODO: we add all eligible transactions to our new block - prob should parameterize this with a max
+			const branch = this.store.get_branch(pred_block_node);
+			const new_tx = new Map(this.tx_cache);
+			branch.forEach(node => node.data.tsacts.forEach(tx => new_tx.delete(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx)))));
+			const tx_candidates = Array.from(new_tx.entries());
 			
 			// simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
 			// TODO: This is selection sort O(n ^ 2), bad vibes bro
@@ -193,10 +183,9 @@ class Hdlt {
 					new_block.nonce = nonce;
 					const block_hash = Hdlt_block.sha256(new_block);
 
-					// Add the new block, prune our tx cache, rebuild the store index, broadcast it, and get to work on the next block
+					// Add the new block, rebuild the store index, broadcast it, and get to work on the next block
 					const new_node = new Hntree_node({data: new_block, parent: pred_block_node})
 					pred_block_node.add_child(new_node);
-					this.prune_tx_cache(new_block);
 					this.store.build_dict();
 					Hlog.log(`[HDLT] (${this.net.app_id}) Made block ${block_hash} (${valid_tx.length} tx, ${tx_candidates.length - valid_tx.length} invalid) ${this.store.size()} blocks total`);
 					this.broadcast(this.block_req, {hdlt_block: new_block});
@@ -337,24 +326,25 @@ class Hdlt {
 		if (parent && Hdlt_block.sha256(parent.data) === req.data.hash_prev && await this.verify_nonce(req.data)) {
 			// We'll validate transactions in this new block against the state of the utxo db as 
 			// computed from the genesis block through its parent block
+			// TODO: this is noob central but it's hard to asynchronously wait
+			// for the result of _validate_tx and also iteratively update 
+			// the state of utxo_db while stepping through tx_candidates
 			let utxo_db = this.build_db(parent);
-			
-			const valid_tsacts = req.data.tsacts.every(async (tx) => {
+			const valid_tx = [];
+
+			for (const tx of req.data.tsacts) {
 				const res = await this._validate_tx({tx: tx, utxo_db: utxo_db});
 				utxo_db = res.utxo_db;
-				return res.valid;
-			});
-
-			if (valid_tsacts) {
+				valid_tx.push(res.valid);
+			}
+			
+			if (valid_tx.every(res => res)) {
 				// Add the new block, rebuild the store index, and rebroadcast it
 				const new_node = new Hntree_node({data: req.data, parent: parent})
 				parent.add_child(new_node);
 				this.store.build_dict();
 				Hlog.log(`[HDLT] (${this.net.app_id}) Added new block ${block_hash}, ${this.store.size()} blocks total`);
 				this.broadcast(this.block_req, {hdlt_block: req.data});
-
-				// Prune the tx cache based on the tx that showed up in this new block
-				this.prune_tx_cache(req.data);
 
 				// If I'm a validator and the new block is the first block at a 
 				// new height, then it's time to throw out my work and start a new block
