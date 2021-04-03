@@ -59,7 +59,8 @@ class Hdlt_vm {
 		const tsact = new Hdlt_tsact({
 			utxo: tx_new.utxo.slice(),
 			lock: [...tx_prev.unlock],
-			unlock: [...tx_new.unlock]
+			unlock: [...tx_new.unlock],
+			t: tx_new.t
 		});
 
 		return Hdlt_tsact.serialize(tsact);
