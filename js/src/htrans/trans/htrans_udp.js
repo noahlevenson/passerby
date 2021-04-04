@@ -9,9 +9,9 @@
 
 "use strict";
 
-const dgram = require("dgram");
-const EventEmitter = require("events");
 const { Happ_env } = require("../../happ/happ_env.js");
+const dgram = Happ_env.ENV === Happ_env.ENV_TYPE.REACT_NATIVE ? require("react-native-udp").default : require("dgram");
+const EventEmitter = require("events");
 const { Hlog } = require("../../hlog/hlog.js");
 const { Htrans } = require("./htrans.js");
 const { Htrans_msg } = require("../htrans_msg.js");
