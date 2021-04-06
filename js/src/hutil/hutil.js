@@ -53,6 +53,11 @@ class Hutil {
         return (n & (n - 1)) === 0;
     }
 
+    static _is_hex_str(str) {
+    	const reg = /[0-9A-Fa-f]{6}/g;
+    	return reg.test(str);
+    }
+
 	// Get the integral part of the log2 of a Hbigint
 	// Works on Number types too, but pointlessly slow
 	static _log2(n) {
