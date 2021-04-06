@@ -56,13 +56,13 @@ class Hdlt_tsact {
 		const utxo_buf = Buffer.from(tsact.utxo, "hex");
 
 		const utxo_buf_len = Buffer.alloc(2);
-		utxo_buf_len.writeUint16LE(utxo_buf.length, 0);
+		utxo_buf_len.writeUInt16LE(utxo_buf.length, 0);
 
 		const lock_len = Buffer.alloc(2);
-		lock_len.writeUint16LE(tsact.lock.length, 0);
+		lock_len.writeUInt16LE(tsact.lock.length, 0);
 
 		const unlock_len = Buffer.alloc(2);
-		unlock_len.writeUint16LE(tsact.unlock.length, 0);
+		unlock_len.writeUInt16LE(tsact.unlock.length, 0);
 
 		const t_buf = Buffer.alloc(8);
 		t_buf.writeDoubleLE(tsact.t, 0);
@@ -80,12 +80,12 @@ class Hdlt_tsact {
 	}
 
 	static _decoder_v1(buf) {
-		const utxo_len = buf.readUint16LE(1);
+		const utxo_len = buf.readUInt16LE(1);
 		const utxo_offset = 3;
-		const lock_len = buf.readUint16LE(utxo_offset + utxo_len);
-		const lock_offset = utxo_offset + 1 + utxo_len + 1; // Extra + 1 here because readUint16LE uses "skipped bytes," not offset
-		const unlock_len = buf.readUint16LE(lock_offset + lock_len);
-		const unlock_offset = lock_offset + 1 + lock_len + 1; // Extra + 1 here because readUint16LE uses "skipped bytes," not offset
+		const lock_len = buf.readUInt16LE(utxo_offset + utxo_len);
+		const lock_offset = utxo_offset + 1 + utxo_len + 1; // Extra + 1 here because readUInt16LE uses "skipped bytes," not offset
+		const unlock_len = buf.readUInt16LE(lock_offset + lock_len);
+		const unlock_offset = lock_offset + 1 + lock_len + 1; // Extra + 1 here because readUInt16LE uses "skipped bytes," not offset
 		const t_offset = unlock_offset + unlock_len;
 		
 		return new Hdlt_tsact({
