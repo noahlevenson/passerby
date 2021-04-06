@@ -54,7 +54,7 @@ class Hutil {
     }
 
     static _is_hex_str(str) {
-    	const reg = /[0-9A-Fa-f]/g;
+    	const reg = /^[A-Fa-f0-9]+$/;
     	return reg.test(str);
     }
 
