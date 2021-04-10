@@ -1,18 +1,18 @@
-const { Happ } = require("../src/happ/happ.js");
-const { Happ_bboard } = require("../src/happ/happ_bboard.js");
-const { Hid_pub } = require("../src/hid/hid_pub.js");
-const { Happ_env } = require("../src/happ/happ_env.js");
-const { Hgeo } = require("../src/hgeo/hgeo.js");
-const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
-const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
-const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
-const { Hbuy_menu } = require("../src/hbuy/hbuy_menu.js");
-const { Hlog } = require("../src/hlog/hlog.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_browser.js") : require("../src/htypes/hbigint/hbigint_node.js");
+const { Fapp } = require("../src/fapp/fapp.js");
+const { Fapp_bboard } = require("../src/fapp/fapp_bboard.js");
+const { Fid_pub } = require("../src/fid/fid_pub.js");
+const { Fapp_env } = require("../src/fapp/fapp_env.js");
+const { Fgeo } = require("../src/fgeo/fgeo.js");
+const { Fgeo_rect } = require("../src/fgeo/fgeo_rect.js");
+const { Fgeo_coord } = require("../src/fgeo/fgeo_coord.js");
+const { Fbuy_status } = require("../src/fbuy/fbuy_status.js");
+const { Fbuy_menu } = require("../src/fbuy/fbuy_menu.js");
+const { Flog } = require("../src/flog/flog.js");
+const { Fbigint } = Fapp_env.BROWSER ? require("../src/ftypes/fbigint/fbigint_browser.js") : require("../src/ftypes/fbigint/fbigint_node.js");
 const { Larosa_menu } = require("./menu.js");
 
 (async function run() {
-    const larosa = new Hid_pub({
+    const larosa = new Fid_pub({
         public_key: "debug_la_rosa_public_key",
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
@@ -21,32 +21,32 @@ const { Larosa_menu } = require("./menu.js");
         long: -73.7912739
     });
 
-    const network = new Happ({hid_pub: larosa});
+    const network = new Fapp({fid_pub: larosa});
     await network.start();
-    // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu}));
+    // await network.put(new Fapp_bboard({cred: "La Rosa CERT", form: Larosa_menu}));
     
-    // const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
+    // const westchester = new Fgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     
-    // const search_window = Hgeo.get_exts(network.get_location(), Happ.SEARCH_DIST_MILES);
+    // const search_window = Fgeo.get_exts(network.get_location(), Fapp.SEARCH_DIST_MILES);
     
     // *** non-API functions -- PUTting menu data not associated with our geolocation...
-    // const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    // await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: "L&B Spumoni CERT", form: null}));
+    // const spumoni_gardens = new Fgeo_coord({lat: 40.5947235, long: -73.98131332751743});
+    // await network.fpht.insert(spumoni_gardens.linearize(), new Fapp_bboard({cred: "L&B Spumoni CERT", form: null}));
 
-    // const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    // await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: "Pino's La Forchetta CERT", form: null}));
+    // const pinos = new Fgeo_coord({lat: 40.6713257, long: -73.9776937});
+    // await network.fpht.insert(pinos.linearize(), new Fapp_bboard({cred: "Pino's La Forchetta CERT", form: null}));
 
-    // const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    // await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: "Modern Pizza CERT", form: null}));
+    // const modern_pizza = new Fgeo_coord({lat: 40.9089094, long: -73.7842226});
+    // await network.fpht.insert(modern_pizza.linearize(), new Fapp_bboard({cred: "Modern Pizza CERT", form: null}));
     
-    // const fourbros = new Hgeo_coord({lat: 40.9074648, long: -73.7844935});
-    // await network.hpht.insert(fourbros.linearize(), new Happ_bboard({cred: "4 Bros Pizza CERT", form: null}));
+    // const fourbros = new Fgeo_coord({lat: 40.9074648, long: -73.7844935});
+    // await network.fpht.insert(fourbros.linearize(), new Fapp_bboard({cred: "4 Bros Pizza CERT", form: null}));
 
 
-    // const test = new Hgeo_coord({lat: 40, long: 70});
+    // const test = new Fgeo_coord({lat: 40, long: 70});
     // console.log(test.linearize())
 
-    // const test2 = new Hgeo_coord({lat: 41, long: 71});
+    // const test2 = new Fgeo_coord({lat: 41, long: 71});
     // console.log(test2.linearize());
 
     // ***
@@ -63,22 +63,22 @@ const { Larosa_menu } = require("./menu.js");
     // console.log(res);
 
 
-    // const rehydrated = new Hbuy_menu(search_res[0][1].form);
+    // const rehydrated = new Fbuy_menu(search_res[0][1].form);
 
     // console.log(rehydrated.get_full_list());
 
 
-    //network.hpht._debug_print_stats();
+    //network.fpht._debug_print_stats();
     //network.node._debug_print_routing_table();
 
-    // network.hbuy.transact_req({
+    // network.fbuy.transact_req({
     //     order: "debug",
     //     payment: "debug",
-    //     hid_pub: larosa,
+    //     fid_pub: larosa,
     //     addr: "66.228.34.29",
     //     port: 27500,
     //     success: (res, ctx) => {
-    //         network.hbuy.on_status(res.data.id, Hbuy_status.CODE.CONFIRMED, (req) => {
+    //         network.fbuy.on_status(res.data.id, Fbuy_status.CODE.CONFIRMED, (req) => {
     //             console.log(`Received confirmation for transaction # ${req.data.id.toString()}`);
     //         });
     //     },

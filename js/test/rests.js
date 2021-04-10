@@ -1,27 +1,27 @@
-const { Happ } = require("../src/happ/happ.js");
-const { Happ_bboard } = require("../src/happ/happ_bboard.js");
-const { Hid } = require("../src/hid/hid.js");
-const { Hid_pub } = require("../src/hid/hid_pub.js");
-const { Happ_env } = require("../src/happ/happ_env.js");
-const { Hgeo } = require("../src/hgeo/hgeo.js");
-const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
-const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
-const { Hbuy_status } = require("../src/hbuy/hbuy_status.js");
-const { Hbuy_menu } = require("../src/hbuy/hbuy_menu.js");
-const { Hlog } = require("../src/hlog/hlog.js");
-const { Hbigint } = Happ_env.BROWSER ? require("../src/htypes/hbigint/hbigint_browser.js") : require("../src/htypes/hbigint/hbigint_node.js");
+const { Fapp } = require("../src/fapp/fapp.js");
+const { Fapp_bboard } = require("../src/fapp/fapp_bboard.js");
+const { Fid } = require("../src/fid/fid.js");
+const { Fid_pub } = require("../src/fid/fid_pub.js");
+const { Fapp_env } = require("../src/fapp/fapp_env.js");
+const { Fgeo } = require("../src/fgeo/fgeo.js");
+const { Fgeo_rect } = require("../src/fgeo/fgeo_rect.js");
+const { Fgeo_coord } = require("../src/fgeo/fgeo_coord.js");
+const { Fbuy_status } = require("../src/fbuy/fbuy_status.js");
+const { Fbuy_menu } = require("../src/fbuy/fbuy_menu.js");
+const { Flog } = require("../src/flog/flog.js");
+const { Fbigint } = Fapp_env.BROWSER ? require("../src/ftypes/fbigint/fbigint_browser.js") : require("../src/ftypes/fbigint/fbigint_node.js");
 const { Larosa_menu } = require("./menu.js");
 const { Toms_hot_dogs_menu } = require("./toms_hot_dogs_menu.js");
 const { Cantina_dinner_menu } = require("./cantina_dinner_menu.js");
 const { Alvin_friends_dinner_menu } = require("./alvin_friends_dinner_menu.js");
 const { Rocnramen_menu } = require("./rocnramen_menu.js");
-const { Hdlt } = require("../src/hdlt/hdlt.js");
-const { Hdlt_msg } = require("../src/hdlt/hdlt_msg.js")
-const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
-const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
+const { Fdlt } = require("../src/fdlt/fdlt.js");
+const { Fdlt_msg } = require("../src/fdlt/fdlt_msg.js")
+const { Fdlt_tsact } = require("../src/fdlt/fdlt_tsact.js");
+const { Fdlt_block } = require("../src/fdlt/fdlt_block.js");
 
 (async function run() {
-    const larosa = new Hid_pub({
+    const larosa = new Fid_pub({
         pubkey: "3056301006072a8648ce3d020106052b8104000a034200044a8338487fd885fe91435de1b5f78bb14a4bbedd38caa467ec86715e4073d8cba6f02b6d63e2cd9981fc560579d96adbe6edd832b1d0bd0c73841704234cee9f",
         name: "Pizzeria La Rosa",
         address: "12 Russell Ave. New Rochelle NY 10801",
@@ -38,92 +38,92 @@ const { Hdlt_block } = require("../src/hdlt/hdlt_block.js");
     'tYXJIRLxrOt8EwZciAy1S31dPnIyFvXX7sPQsIF0wCfQ+40FReKzwJJ2bvkLmDA=\n' +
     '-----END ENCRYPTED PRIVATE KEY-----\n'
 
-    Hid.find_partial_preimage(larosa, Hid_pub.inc_nonce, 20);
+    Fid.find_partial_preimage(larosa, Fid_pub.inc_nonce, 20);
 
     // Lil hack to make us one of the AUTH nodes
-    Happ.AUTHORITIES = [larosa.pubkey];
+    Fapp.AUTHORITIES = [larosa.pubkey];
 
-    Hid.set_passphrase_func(() => {
+    Fid.set_passphrase_func(() => {
         return new Promise((resolve, reject) => {
             resolve("mypassword");
         });
     });
 
-    const network = new Happ({hid_pub: larosa});
+    const network = new Fapp({fid_pub: larosa});
     await network.start();
 
-    const last_known_block = network.hksrv.dlt.store.tree.get_root().data;
+    const last_known_block = network.fksrv.dlt.store.tree.get_root().data;
 
-    const tx_new = network.hksrv.sign(larosa, larosa);
+    const tx_new = network.fksrv.sign(larosa, larosa);
 
-    network.hksrv.dlt.tx_cache.set(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
+    network.fksrv.dlt.tx_cache.set(Fdlt_tsact.sha256(Fdlt_tsact.serialize(tx_new)));
 
-    // network.hksrv.dlt.broadcast(
-    //     network.hksrv.dlt.tx_req,
-    //     {hdlt_tsact: tx_new}
+    // network.fksrv.dlt.broadcast(
+    //     network.fksrv.dlt.tx_req,
+    //     {fdlt_tsact: tx_new}
     // );
 
-    const block = new Hdlt_block({
-        prev_block: network.hksrv.dlt.store.tree.get_root().data,
+    const block = new Fdlt_block({
+        prev_block: network.fksrv.dlt.store.tree.get_root().data,
         tsacts: [tx_new]
     });
 
-    block.nonce = await Hdlt.make_nonce_auth(block, larosa.pubkey, privkey);
+    block.nonce = await Fdlt.make_nonce_auth(block, larosa.pubkey, privkey);
     
-    network.hksrv.dlt.broadcast(
-        network.hksrv.dlt.block_req,
-        {hdlt_block: block}
+    network.fksrv.dlt.broadcast(
+        network.fksrv.dlt.block_req,
+        {fdlt_block: block}
     );
     
     // *** here comes the next block:
 
-    const new_block = new Hdlt_block({
+    const new_block = new Fdlt_block({
         prev_block: block,
         tsacts: [tx_new]
     });
 
-    new_block.nonce = await Hdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
+    new_block.nonce = await Fdlt.make_nonce_auth(new_block, larosa.pubkey, privkey);
 
-    network.hksrv.dlt.broadcast(
-        network.hksrv.dlt.block_req,
-        {hdlt_block: new_block}
+    network.fksrv.dlt.broadcast(
+        network.fksrv.dlt.block_req,
+        {fdlt_block: new_block}
     );
     
 
-    // console.log(network.hksrv.dlt.store.get_deepest_blocks());
+    // console.log(network.fksrv.dlt.store.get_deepest_blocks());
 
-    // await network.put(new Happ_bboard({cred: "La Rosa CERT", form: Larosa_menu.freeze()}));
+    // await network.put(new Fapp_bboard({cred: "La Rosa CERT", form: Larosa_menu.freeze()}));
     
-    // const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    // await network.hpht.insert(spumoni_gardens.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "spum", name: "L&B Spumoni Gardens", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const spumoni_gardens = new Fgeo_coord({lat: 40.5947235, long: -73.98131332751743});
+    // await network.fpht.insert(spumoni_gardens.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "spum", name: "L&B Spumoni Gardens", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
 
-    // const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    // await network.hpht.insert(pinos.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "pinos", name: "Pino's La Forchetta", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const pinos = new Fgeo_coord({lat: 40.6713257, long: -73.9776937});
+    // await network.fpht.insert(pinos.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "pinos", name: "Pino's La Forchetta", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
 
-    // const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    // await network.hpht.insert(modern_pizza.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "modern", name: "Modern Pizza and Restaurant", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const modern_pizza = new Fgeo_coord({lat: 40.9089094, long: -73.7842226});
+    // await network.fpht.insert(modern_pizza.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "modern", name: "Modern Pizza and Restaurant", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
     
-    // const ajs_burgers = new Hgeo_coord({lat: 40.9225513, long: -73.7880021});
-    // await network.hpht.insert(ajs_burgers.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "ajs", name: "AJ's Burgers", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const ajs_burgers = new Fgeo_coord({lat: 40.9225513, long: -73.7880021});
+    // await network.fpht.insert(ajs_burgers.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "ajs", name: "AJ's Burgers", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
 
-    // const fourbros = new Hgeo_coord({lat: 40.9074648, long: -73.7844935});
-    // await network.hpht.insert(fourbros.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "4bros", name: "4 Bros", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const fourbros = new Fgeo_coord({lat: 40.9074648, long: -73.7844935});
+    // await network.fpht.insert(fourbros.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "4bros", name: "4 Bros", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
 
-    // const dubrovnik = new Hgeo_coord({lat: 40.9036258, long: -73.7913645});
-    // await network.hpht.insert(dubrovnik.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "dubrovnik", name: "Dubrovnik", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const dubrovnik = new Fgeo_coord({lat: 40.9036258, long: -73.7913645});
+    // await network.fpht.insert(dubrovnik.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "dubrovnik", name: "Dubrovnik", address: "unknown address", phone: "unknown phone"}), form: Toms_hot_dogs_menu.freeze()}));
     
 
-    // const cantina = new Hgeo_coord({lat: 40.9064583, long: -73.8114695});
-    // await network.hpht.insert(cantina.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "cantinalobos", name: "Cantina Lobos", address: "217 Wolf's Lane Pelham NY 10803", phone: "(914) 380-8644"}), form: Cantina_dinner_menu.freeze()}));
+    // const cantina = new Fgeo_coord({lat: 40.9064583, long: -73.8114695});
+    // await network.fpht.insert(cantina.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "cantinalobos", name: "Cantina Lobos", address: "217 Wolf's Lane Pelham NY 10803", phone: "(914) 380-8644"}), form: Cantina_dinner_menu.freeze()}));
 
-    // const toms_hot_dogs = new Hgeo_coord({lat: 40.9072767, long: -73.806507});
-    // await network.hpht.insert(toms_hot_dogs.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "toms_hot_dogs", name: "Tom's Hot Dogs", address: "722 Main Street New Rochelle NY 10801", phone: "(914) 777-6677"}), form: Toms_hot_dogs_menu.freeze()}));
+    // const toms_hot_dogs = new Fgeo_coord({lat: 40.9072767, long: -73.806507});
+    // await network.fpht.insert(toms_hot_dogs.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "toms_hot_dogs", name: "Tom's Hot Dogs", address: "722 Main Street New Rochelle NY 10801", phone: "(914) 777-6677"}), form: Toms_hot_dogs_menu.freeze()}));
 
-    // const alvin = new Hgeo_coord({lat: 40.9088532, long: -73.7848351});
-    // await network.hpht.insert(alvin.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "alvinandfriends", name: "Alvin & Friends", address: "14 Memorial Highway New Rochelle NY 10801", phone: "(914) 654-6549"}), form: Alvin_friends_dinner_menu.freeze()}));
+    // const alvin = new Fgeo_coord({lat: 40.9088532, long: -73.7848351});
+    // await network.fpht.insert(alvin.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "alvinandfriends", name: "Alvin & Friends", address: "14 Memorial Highway New Rochelle NY 10801", phone: "(914) 654-6549"}), form: Alvin_friends_dinner_menu.freeze()}));
 
-    // const rocnramen = new Hgeo_coord({lat: 40.9111487, long: -73.7832296});
-    // await network.hpht.insert(rocnramen.linearize(), new Happ_bboard({cred: new Hid_pub({pubkey: "rocnramen", name: "Roc N Ramen", address: "19 Anderson St. New Rochelle NY 10801", phone: "(914) 365-2267"}), form: Rocnramen_menu.freeze()}));
+    // const rocnramen = new Fgeo_coord({lat: 40.9111487, long: -73.7832296});
+    // await network.fpht.insert(rocnramen.linearize(), new Fapp_bboard({cred: new Fid_pub({pubkey: "rocnramen", name: "Roc N Ramen", address: "19 Anderson St. New Rochelle NY 10801", phone: "(914) 365-2267"}), form: Rocnramen_menu.freeze()}));
 
     // console.log("Done!")
 })();

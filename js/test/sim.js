@@ -1,12 +1,12 @@
-const { Hid } = require("../src/hid/hid.js");
-const { Happ } = require("../src/happ/happ.js");
-const { Hgeo_rect } = require("../src/hgeo/hgeo_rect.js");
-const { Hgeo_coord } = require("../src/hgeo/hgeo_coord.js");
-const { Hkad_net_sim } = require("../src/hkad/net/hkad_net_sim.js");
-const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
+const { Fid } = require("../src/fid/fid.js");
+const { Fapp } = require("../src/fapp/fapp.js");
+const { Fgeo_rect } = require("../src/fgeo/fgeo_rect.js");
+const { Fgeo_coord } = require("../src/fgeo/fgeo_coord.js");
+const { Fkad_net_sim } = require("../src/fkad/net/fkad_net_sim.js");
+const { Fbigint } = require("../src/ftypes/fbigint/fbigint_node.js");
 
 (async function run() {
-    const bootstrap_node_hid = new Hid({
+    const bootstrap_node_fid = new Fid({
         public_key: "debug_bootstrap_node_public_key",
         private_key: "debug_bootstrap_node_private_key",
         name: "",
@@ -16,12 +16,12 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
         long: 0
     });
 
-    const bootstrap_node = new Happ({lat: 0, long: 0});
-    const local_sim = new Hkad_net_sim();
+    const bootstrap_node = new Fapp({lat: 0, long: 0});
+    const local_sim = new Fkad_net_sim();
     await bootstrap_node._debug_sim_start({local_sim: local_sim});
     
     for (let i = 0; i < 300; i += 1) {
-        const node_hid = new Hid({
+        const node_fid = new Fid({
             public_key: i.toString(),
             private_key: i.toString(),
             name: "",
@@ -31,11 +31,11 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
             long: 0
         });
         
-        const node = new Happ({hid: node_hid});
+        const node = new Fapp({fid: node_fid});
         await node._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim});
     }
     
-    const larosa = new Hid({
+    const larosa = new Fid({
         public_key: "debug_la_rosa_public_key",
         private_key: "debug_la_rosa_private_key",
         name: "Pizzeria La Rosa",
@@ -45,18 +45,18 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
         long: -73.7912739
     });
 
-    const me = new Happ({hid: larosa});
+    const me = new Fapp({fid: larosa});
     await me._debug_sim_start({bootstrap_node: bootstrap_node, local_sim: local_sim, use_local_sim: true, random_id: false});
     
     for (let i = 0; i < 500; i += 1) {
-        await me.hpht.insert(new Hbigint(i), i);
+        await me.fpht.insert(new Fbigint(i), i);
     }
 
     for (let i = 0; i < 500; i += 1) {
-        await me.hpht.delete(new Hbigint(i));
+        await me.fpht.delete(new Fbigint(i));
     }
 
-    await me.hpht._debug_print_stats();
+    await me.fpht._debug_print_stats();
     local_sim._debug_dump_network_state();
 
     me.node._debug_print_routing_table();
@@ -65,17 +65,17 @@ const { Hbigint } = require("../src/htypes/hbigint/hbigint_node.js");
     await network.start();
     await network.put("Pizzeria La Rosa MENU DATA");
     
-    const westchester = new Hgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
+    const westchester = new Fgeo_rect({bottom: 40.86956, left: -73.86881, top: 40.93391, right: -73.70985});
     
     // *** non-API functions -- PUTting menu data not associated with our geolocation...
-    const spumoni_gardens = new Hgeo_coord({lat: 40.5947235, long: -73.98131332751743});
-    await network.hpht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
+    const spumoni_gardens = new Fgeo_coord({lat: 40.5947235, long: -73.98131332751743});
+    await network.fpht.insert(spumoni_gardens.linearize(), "L&B Spumoni Gardens");
 
-    const pinos = new Hgeo_coord({lat: 40.6713257, long: -73.9776937});
-    await network.hpht.insert(pinos.linearize(), "Pino's La Forchetta");
+    const pinos = new Fgeo_coord({lat: 40.6713257, long: -73.9776937});
+    await network.fpht.insert(pinos.linearize(), "Pino's La Forchetta");
 
-    const modern_pizza = new Hgeo_coord({lat: 40.9089094, long: -73.7842226});
-    await network.hpht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
+    const modern_pizza = new Fgeo_coord({lat: 40.9089094, long: -73.7842226});
+    await network.fpht.insert(modern_pizza.linearize(), "Modern Pizza & Restaurant");
     // ***
 
     const search_res = await network.geosearch(westchester);

@@ -1,1 +1,0 @@
-// Stub for Hbuy_net_multi - an HBUY network module that supports multiple HTRANS transports simultaneously

@@ -1,0 +1,1 @@
+// Stub for Fkad_net_multi - an FKAD network module that supports multiple FTRANS transports simultaneously

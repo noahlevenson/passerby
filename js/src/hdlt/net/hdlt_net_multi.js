@@ -1,1 +1,0 @@
-// Stub for Hdlt_net_multi - an HDLT network module that supports multiple HTRANS transports simultaneously

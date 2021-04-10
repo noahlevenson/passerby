@@ -1,12 +1,12 @@
-const { Happ } = require("../src/happ/happ.js");
-const { Hdlt_tsact } = require("../src/hdlt/hdlt_tsact.js");
-const { Hdlt_vm } = require("../src/hdlt/hdlt_vm.js");
+const { Fapp } = require("../src/fapp/fapp.js");
+const { Fdlt_tsact } = require("../src/fdlt/fdlt_tsact.js");
+const { Fdlt_vm } = require("../src/fdlt/fdlt_vm.js");
 
-const my_key_pair = Happ.generate_key_pair();
+const my_key_pair = Fapp.generate_key_pair();
 
 const my_pubkey = Array.from(Buffer.from(my_key_pair.publicKey, "hex"));
 
-const payee_key_pair = Happ.generate_key_pair();
+const payee_key_pair = Fapp.generate_key_pair();
 
 const payee_pubkey = Array.from(Buffer.from(payee_key_pair.publicKey, "hex"));
 
@@ -25,15 +25,15 @@ const payee_pubkey = Array.from(Buffer.from(payee_key_pair.publicKey, "hex"));
 const prev_unlock = [0x64].concat(my_pubkey.length, my_pubkey, 0xAC);
 
 // Temp is just used so we can create an image of our new transaction but with the previous unlock script in place of what will become the lock script
-const temp = new Hdlt_tsact({
+const temp = new Fdlt_tsact({
 	utxo: "dead",
 	lock: [...prev_unlock],
 	unlock: [0x64].concat(payee_pubkey.length, payee_pubkey, 0xAC)
 });
 
-const sig = Happ.sign(Hdlt_tsact.serialize(temp), my_key_pair.privateKey);
+const sig = Fapp.sign(Fdlt_tsact.serialize(temp), my_key_pair.privateKey);
 
-const tx_new = new Hdlt_tsact({
+const tx_new = new Fdlt_tsact({
 	utxo: "dead",
 	lock: [0x64].concat(sig.length, Array.from(sig)), // push1, len, sig
 	unlock: [0x64].concat(payee_pubkey.length, payee_pubkey, 0xAC) // push1, len, payee pubkey, checksig
@@ -41,13 +41,13 @@ const tx_new = new Hdlt_tsact({
 
 // In the case of the dead token, since there's no tx_prev on record, it will be supplied by the API layer, as a constant
 
-const tx_prev = new Hdlt_tsact({
+const tx_prev = new Fdlt_tsact({
 	utxo: "beef",
 	lock: [], // We just use a null lock script since this is the genesis of the token?
 	unlock: [...prev_unlock]
 });
 
-const vm = new Hdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
+const vm = new Fdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
 
 // console.log(vm);
 
@@ -55,12 +55,12 @@ console.log(vm.exec())
 
 // console.log(tx_new)
 
-// console.log(Hdlt_tsact.serialize(tx_new))
+// console.log(Fdlt_tsact.serialize(tx_new))
 
-// console.log(Hdlt_tsact.from(Hdlt_tsact.serialize(tx_new)))
+// console.log(Fdlt_tsact.from(Fdlt_tsact.serialize(tx_new)))
 
-// const vm = new Hdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
+// const vm = new Fdlt_vm({tx_prev: tx_prev, tx_new: tx_new});
 
-/// console.log(Hdlt_tsact.sha256(Hdlt_tsact.serialize(tx_new)));
+/// console.log(Fdlt_tsact.sha256(Fdlt_tsact.serialize(tx_new)));
 
 //console.log(vm);
