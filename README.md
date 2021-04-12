@@ -1,13 +1,13 @@
 # libfood
 
-<img src="https://github.com/noahlevenson/libfood/blob/master/order_detail.jpg" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/menu_editor.jpg" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/chat.jpg" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/trust_network.jpg" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/console.jpg" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/rest_list.png" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/add_item.jpg" height="200">
-<img src="https://github.com/noahlevenson/libfood/blob/master/checkout.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/order_detail.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/menu_editor.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/chat.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/trust_network.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/console.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/rest_list.png" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/add_item.jpg" height="200">
+<img src="https://github.com/noahlevenson/libfood/screens/blob/master/checkout.jpg" height="200">
 
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
 
