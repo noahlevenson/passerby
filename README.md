@@ -1,7 +1,7 @@
 # libfood
 
 <p float="left">
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
+	<img style="margin-left: 30px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
 	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
 	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200" />
 	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200" />
