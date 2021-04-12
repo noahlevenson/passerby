@@ -1,14 +1,15 @@
 # libfood
 
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/console.jpg" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/rest_list.png" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200">
-<img style="display: inline;" src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200">
-
+<p float="left">
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200" />
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200" />
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/console.jpg" height="200" />
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/rest_list.png" height="200">
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200" />
+	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
+</p>
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
 
 **libfood is in active development. There will be bugs, security issues, missing features, etc.**
@@ -17,6 +18,7 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 Portable across JS runtimes: Node.js, browsers, React Native (Android only)
 
 Zero dependencies under Node.js and the browser, ~3 shims required under React Native
+
 
 Native crypto under React Native
 
