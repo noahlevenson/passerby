@@ -17,6 +17,8 @@ For clients which operationalize libfood for end users, see Free Food Battlestat
 
 **libfood is in active development. There will be bugs, security issues, missing features, etc.**
 
+Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by "Hacker in Residence" (and co-owner of [Pizzeria La Rosa](https://www.youtube.com/watch?v=9bz1Ko5ZDzQ&t=266s) in New Rochelle, NY) [Noah Levenson](https://noahlevenson.com).
+
 ### :brain: Features
 Portable across JS runtimes: Node.js, browsers, React Native (Android only)
 
