@@ -1,14 +1,14 @@
 # libfood
 
 <p float="left">
-	<img style="margin-left: 30px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200" />
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200" />
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/console.jpg" height="200" />
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/rest_list.png" height="200">
-	<!-- <img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200" /> -->
-	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200" />
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200" />
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/console.jpg" height="200" />
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/rest_list.png" height="200">
+	<!-- <img src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200" /> -->
+	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
 </p>
 
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
