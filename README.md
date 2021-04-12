@@ -10,6 +10,7 @@
 	<!-- <img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200" /> -->
 	<img style="margin-left: 20px;" src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
 </p>
+
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
 
 **libfood is in active development. There will be bugs, security issues, missing features, etc.**
