@@ -13,6 +13,8 @@
 
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
 
+For clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline.
+
 **libfood is in active development. There will be bugs, security issues, missing features, etc.**
 
 ### :brain: Features
@@ -23,13 +25,15 @@ Zero dependencies under Node.js and the browser, ~3 shims required under React N
 
 Native crypto under React Native
 
-### :question: Why libfood
-As the Wall Street Journal and others have reported, [the largest centralized food delivery platforms in the world are planning to stop providing delivery services](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is to merely relay each customer's order to the restaurant which must fulfill it, corporations like Grubhub charge restaurants 30% per order. This far exceeds the profit margins of a typical restaurant.
+### :question: Why Free Food
+As the Wall Street Journal and others have reported, [the largest centralized food delivery platforms are planning to stop providing delivery services](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is to merely relay each customer's order to the restaurant that must fulfill it, corporations like Grubhub charge restaurants 30% per order. This far exceeds the profit margins of a typical restaurant.
 
-The goal of Free Food is to provide this function as a protocol rather than a platform, eliminating the middleman by enabling the world's restaurants to effortlessly self-organize as a decentralized marketplace. In other words: **Free Food lets you search for nearby restaurants, view their menus, and place an order with one click -- but without paying fees to a parasitic third party delivery platform.**
+The goal of Free Food is to provide this function as a protocol rather than a platform, eliminating the middleman by enabling the world's restaurants to effortlessly self-organize as a decentralized marketplace. 
+
+In other words: **Free Food lets you search for nearby restaurants, view their menus, and place an order with one click -- but without paying fees to a parasitic third party delivery platform.**
 
 ### :floppy_disk: Technology overview
-Location-aware peer discovery is accomplished primarily through the use of a [Morton-order curve](https://en.wikipedia.org/wiki/Z-order_curve) and a [prefix hash tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), a distributed data structure which enables efficient range queries of a distributed hash table.
+Location-aware peer discovery is accomplished primarily through the use of a [Morton-order curve](https://en.wikipedia.org/wiki/Z-order_curve) and a [prefix hash tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), a distributed data structure which enables efficient range queries over a distributed hash table.
 
 The network is secured using several mechanisms: Resource providers participate in a distributed system of peer-signed certificates -- i.e., a "[web of trust](https://en.wikipedia.org/wiki/Web_of_trust)." A restaurant's trustworthiness is based on the number of signatures it has received from other restaurants and other features of the trust graph topology. This system exploits the simple observation that restaurant owners tend to know and cooperate with other local restaurant owners.
 
