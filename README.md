@@ -13,22 +13,23 @@
 
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
 
-For clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline.
+For software clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline.
 
-**libfood is in active development. There will be bugs, security issues, missing features, etc.**
+**libfood is pre-alpha and in active development. There will be bugs, security issues, missing features, etc.**
 
 Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by "Hacker in Residence" (and co-owner of [Pizzeria La Rosa](https://www.youtube.com/watch?v=9bz1Ko5ZDzQ&t=266s) in New Rochelle, NY) [Noah Levenson](https://noahlevenson.com).
 
-### :brain: Features
+### :monocle_face: Features
 Portable across JS runtimes: Node.js, browsers, React Native (Android only)
 
 Zero dependencies under Node.js and the browser, ~3 shims required under React Native
 
-
-Native crypto under React Native
+Native optimizations under React Native
 
 ### :question: Why Free Food
-As the Wall Street Journal and others have reported, [the largest centralized food delivery platforms are planning to stop providing delivery services](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is to merely relay each customer's order to the restaurant that must fulfill it, corporations like Grubhub charge restaurants 30% per order. This far exceeds the profit margins of a typical restaurant.
+Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates) companies which are entirely the product of Silicon Valley speculation.
+
+Consequently, as the Wall Street Journal and others have reported, [some of these platforms are planning to stop providing delivery logistics](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is merely to broker local restaurant orders, middlemen like Grubhub charge restaurants 30% per transaction. This far exceeds the profit margins of a typical restaurant.
 
 The goal of Free Food is to provide this function as a protocol rather than a platform, eliminating the middleman by enabling the world's restaurants to effortlessly self-organize as a decentralized marketplace. 
 
@@ -44,3 +45,16 @@ Free Food has a distributed keyserver built atop a distributed ledger; the proto
 Identity creation for resource providers is made costly with a computational proof-of-work mechanism based on the [partial preimage discovery first employed by Hashcash](https://en.wikipedia.org/wiki/Hashcash). Taking inspiration from systems used to verify real world identities on messageboards like Reddit -- as well as the anti-catfishing systems employed by Tinder and Bumble -- Free Food requires resource providers to supply a photographic proof of identity which includes a unique symbol which is mathematically bound to the proof-of-work associated with their public key.
 
 Free Food implements [STUN](https://tools.ietf.org/html/rfc5389) for NAT traversal.
+
+At identity creation time, Free Food uses OpenStreetMap's [Nominatim](https://github.com/osm-search/Nominatim) open source geocoder to convert street address to latitude and longitude. OpenStreetMap data is © OpenStreetMap contributors, available under the [Open Database License](https://www.openstreetmap.org/copyright).
+
+### :brain: Active research
+1. An improved trust metric based on a deep learning approach to network community detection
+
+2. Star rating reputation system built atop the distributed ledger
+
+3. Scalability to ~300k total restaurant peers and ~20M total diner peers
+
+4. Fully decentralize the distributed ledger - currently proof of authority, switch to proof of stake/proof of reputation/proof of work
+
+5. Decentralized delivery logistics 
