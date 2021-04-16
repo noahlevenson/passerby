@@ -38,7 +38,7 @@ class Ftrans_udp extends Ftrans {
 	constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
 		super();
 		this.port = port;
-		this.pubkey = pubkey;
+		this.pubkey = Buffer.from(pubkey, "hex");
 		this.udp4 = udp4;
 		this.udp6 = udp6;
 		this.ack = new EventEmitter();
@@ -89,7 +89,7 @@ class Ftrans_udp extends Ftrans {
 			const privkey = await Fid.get_privkey();
 			const one_time_key = await Fid.private_decrypt(Buffer.from(in_msg.key.data), privkey);
 			const decrypted_msg = await Fid.symmetric_decrypt(Buffer.from(in_msg.msg.data), one_time_key, Buffer.from(in_msg.iv.data));
-			const valid_sig = await Fid.verify(decrypted_msg, in_msg.pubkey, Buffer.from(in_msg.sig.data));
+			const valid_sig = await Fid.verify(decrypted_msg, Buffer.from(in_msg.pubkey), Buffer.from(in_msg.sig.data));
 
 			if (!valid_sig) {
 				throw new Error();
