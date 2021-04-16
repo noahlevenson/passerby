@@ -84,11 +84,12 @@ class Ftrans_udp extends Ftrans {
 
 		// *** DECRYPTION
 		// Decrypt it and verify the sender's sig - if no good, silently ignore it
-		try {
+		try {	
+			// TODO: Add a reviver for Buffers so we don't have to do this nooblife Buffer rehydration here
 			const privkey = await Fid.get_privkey();
-			const one_time_key = await Fid.private_decrypt(in_msg.key, privkey);
-			const decrypted_msg = await Fid.symmetric_decrypt(in_msg.msg, one_time_key, in_msg.iv);
-			const valid_sig = await Fid.verify(decrypted_msg, in_msg.pubkey, in_msg.sig);
+			const one_time_key = await Fid.private_decrypt(Buffer.from(in_msg.key.data), privkey);
+			const decrypted_msg = await Fid.symmetric_decrypt(Buffer.from(in_msg.msg.data), one_time_key, Buffer.from(in_msg.iv.data));
+			const valid_sig = await Fid.verify(decrypted_msg, in_msg.pubkey, Buffer.from(in_msg.sig.data));
 
 			if (!valid_sig) {
 				throw new Error();
