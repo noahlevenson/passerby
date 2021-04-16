@@ -138,11 +138,11 @@ class Ftrans_udp extends Ftrans {
 			ftrans_msg.id = Fbigint.unsafe_random(Ftrans_msg.ID_LEN);
 		}
 
-		// ftrans_msg is delivered from any module, and it's assumed that its msg field is a buffer
+		// ftrans_msg is delivered from any module - its msg field is an object
 		// We need to sign the msg and add the sig to the ftrans_msg, encrypt the msg for its recipient and add our pubkey
 		const privkey = await Fid.get_privkey();
 		ftrans_msg.sig = await Fid.sign(ftrans_msg.msg, privkey);
-		ftrans_msg.msg = await Fid.public_encrypt(ftrans_msg.msg, ftrans_rinfo.pubkey);
+		ftrans_msg.msg = await Fid.public_encrypt(Buffer.from(JSON.stringify(ftrans_msg.msg)), ftrans_rinfo.pubkey);
 		ftrans_msg.pubkey = this.pubkey;
 		const buf = Buffer.from(JSON.stringify(ftrans_msg));
 
