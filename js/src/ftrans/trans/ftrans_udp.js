@@ -82,8 +82,23 @@ class Ftrans_udp extends Ftrans {
 		// TODO: Discern between a valid Ftrans_msg and some garbage/malicious data!
 		const in_msg = new Ftrans_msg(JSON.parse(msg.toString()));
 
+		// We're in retransmit mode and the incoming msg is an ACK, so just fire the event to announce this ACK and be done
+		if (Ftrans_udp.RETRANSMIT && in_msg.type === Ftrans_msg.TYPE.ACK) {
+			this.ack.emit(in_msg.id.toString(), in_msg);
+			return;
+		}
+
+		// We're in retransmit mode and someone sent us a regular msg, so send them an ACK (with no possibility of retransmitting the ACK!) and continue to process their message
+		if (Ftrans_udp.RETRANSMIT) {
+			const ack = new Ftrans_msg({
+				type: Ftrans_msg.TYPE.ACK,
+				id: in_msg.id
+			});
+
+			this._do_send(Buffer.from(JSON.stringify(ack)), rinfo.address, rinfo.port);
+		}
+
 		// *** DECRYPTION
-		// Decrypt it and verify the sender's sig - if no good, silently ignore it
 		try {	
 			// TODO: Add a reviver for Buffers so we don't have to do this nooblife Buffer rehydration here
 			const privkey = await Fid.get_privkey();
@@ -100,22 +115,6 @@ class Ftrans_udp extends Ftrans {
 			return;
 		}
 		// *** END DECRYPTION
-
-		// We're in retransmit mode and the incoming msg is an ACK, so just fire the event to announce this ACK and be done
-		if (Ftrans_udp.RETRANSMIT && in_msg.type === Ftrans_msg.TYPE.ACK) {
-			this.ack.emit(in_msg.id.toString(), in_msg);
-			return;
-		} 
-
-		// We're in retransmit mode and someone sent us a regular msg, so send them an ACK (with no possibility of retransmitting the ACK!) and continue to process their message
-		if (Ftrans_udp.RETRANSMIT) {
-			const ack = new Ftrans_msg({
-				type: Ftrans_msg.TYPE.ACK,
-				id: in_msg.id
-			});
-
-			this._do_send(Buffer.from(JSON.stringify(ack)), rinfo.address, rinfo.port);
-		}
 
 		this.network.emit("message", in_msg, new Ftrans_rinfo({address: rinfo.address, port: rinfo.port, family: rinfo.family, pubkey: in_msg.pubkey}));
 	}
