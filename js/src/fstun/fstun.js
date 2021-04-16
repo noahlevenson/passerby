@@ -15,6 +15,7 @@ const { Flog } = require("../flog/flog.js");
 const { Fstun_msg } = require("./fstun_msg.js");
 const { Fstun_hdr } = require("./fstun_hdr.js");
 const { Fstun_attr } = require("./fstun_attr.js");
+const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 
 class Fstun {
@@ -35,7 +36,7 @@ class Fstun {
 	// This is our one and only client function: send a binding request to some address and port
 	// I'm not sure that a promise-based binding req that waits for and correlates a response is
 	// a function that should be part of FSTUN - maybe its really a layer of abstraction above the STUN protocol?
-	_binding_req(addr, port) {
+	_binding_req(addr, port, pubkey) {
 		return new Promise((resolve, reject) => {
 			// TODO: the STUN RFC says that we SHOULD implement retransmissions, and the retransmission spec and algorithm is defined in the paper
 			// Since I think retransmission only applies to UDP, we should implement a "TRANSPORT TYPE" enum on FTRANS and check it here...
@@ -56,7 +57,7 @@ class Fstun {
 				hdr: req_hdr
 			});
 
-			this._send(req_msg, {address: addr, port: port});
+			this._send(req_msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}));
 
 			const timeout_id = setTimeout(() => {
 				this.res.removeAllListeners(id_string);
