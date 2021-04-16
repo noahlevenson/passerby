@@ -80,7 +80,9 @@ class Ftrans_udp extends Ftrans {
 	async _on_message(msg, rinfo) {
 		// The message here is a Buffer representing an Ftrans_msg, delivered raw from the UDP socket
 		// TODO: Discern between a valid Ftrans_msg and some garbage/malicious data!
-		const in_msg = new Ftrans_msg(JSON.parse(msg.toString()));
+		const in_msg = new Ftrans_msg(JSON.parse(msg.toString(), Fbigint._json_revive));
+
+		// TODO: since we handle the ACK before we decrypt the msg, we'll send ACKs for malicious messages - no bueno chief
 
 		// We're in retransmit mode and the incoming msg is an ACK, so just fire the event to announce this ACK and be done
 		if (Ftrans_udp.RETRANSMIT && in_msg.type === Ftrans_msg.TYPE.ACK) {
