@@ -179,6 +179,28 @@ class Fid {
         }
     }
 
+    // Assumes pubkey key as DER buffer, data as buffer
+    static async public_encrypt(data, key) {
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+            // TODO: write me
+        }
+
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+            return crypto.publicEncrypt({key: key, format: Fid.PUBKEY_FORMAT, type: Fid.PUBKEY_TYPE}, data);
+        }
+    }
+
+    // Assumes UNENCRYPTED privkey key as DER buffer, data as buffer
+    static async private_decrypt(data, key) {
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+            // TODO: write me
+        }
+
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+            return crypto.privateDecrypt({key: key, format: Fid.PUBKEY_FORMAT, type: Fid.PUBKEY_TYPE}, data);
+        }
+    }
+
     // Hashing a cert means hashing the concatenation of its pubkey and its nonce
 	static hash_cert(pubkey, nonce, str = false) {
         const h = Futil._sha256(`${pubkey}${nonce}`);

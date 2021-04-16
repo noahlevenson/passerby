@@ -13,6 +13,7 @@ const { Fkad_net } = require("./fkad_net.js");
 const { Fkad_msg } = require("../fkad_msg.js");
 const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 const { Ftrans_msg } = require("../../ftrans/ftrans_msg.js");
+const { Ftrans_rinfo } = require("../../ftrans/ftrans_rinfo.js");
 
 class Fkad_net_solo extends Fkad_net {
 	trans;
@@ -53,7 +54,7 @@ class Fkad_net_solo extends Fkad_net {
 			type: Ftrans_msg.TYPE.FKAD
 		});
 
-		this.trans._send(ftrans_msg, node_info.addr, node_info.port);
+		this.trans._send(ftrans_msg, new Ftrans_rinfo({address: node_info.addr, port: node_info.port, pubkey: Buffer.from(node_info.pubkey, "hex")}));
 	}
 }
 

@@ -22,9 +22,11 @@ class Ftrans_msg {
 
 	msg;
 	type;
+	pubkey;
+	sig;
 	id;
 
-	constructor({msg = null, type = null, id = null} = {}) {
+	constructor({msg = null, type = null, pubkey = null, sig = null, id = null} = {}) {
 		// TODO: Validation
 		// Since this is our over-the-wire format, we want to have checks in the constructor
 		// to discern between a valid dehydrated Ftrans_msg and what might be some other garbage packet of information that may
@@ -32,6 +34,8 @@ class Ftrans_msg {
 		
 		this.msg = msg;
 		this.type = type;
+		this.pubkey = pubkey;
+		this.sig = sig;
 		this.id = id;
 	}
 }

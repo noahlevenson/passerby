@@ -55,7 +55,7 @@ class Fkad_node {
 	// addr and port must be the values that the outside world needs to contact this node
 	// (if this isn't meant to be a bootstrap node, you probably want to do NAT traversal first)
 	// WARNING: nothing prevents you from creating an ID collision! Don't create an ID collision.
-	constructor({net = null, eng = null, addr = null, port = null, id = null} = {}) {
+	constructor({net = null, eng = null, addr = null, port = null, id = null, pubkey = null} = {}) {
 		if (!(net instanceof Fkad_net)) {
 			throw new TypeError("Argument 'net' must be instance of Fkad_net");
 		}
@@ -74,7 +74,7 @@ class Fkad_node {
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
 		// but for our first one-machine network tests, we'll just manually supply a port...
-		this.node_info = new Fkad_node_info({addr: addr, port: port, node_id: new Fbigint(this.node_id)});
+		this.node_info = new Fkad_node_info({addr: addr, port: port, node_id: new Fbigint(this.node_id), pubkey: pubkey.toString("hex")});
 
 		// Here's the new bro
 		this.routing_table = new Fbintree(new Fbintree_node({
@@ -547,19 +547,23 @@ class Fkad_node {
 	// **** PUBLIC API ****
 
 	// Supply an addr + port (real world) or just a node_id (local simulation)
-	async bootstrap({addr = null, port = null, node_id = null} = {}) {
+	async bootstrap({addr = null, port = null, pubkey = null, node_id = null} = {}) {
+		// TODO: the excessive complexity here is a legacy from before we had transport layer encryption
+		// and needed to know the pubkeys of bootstrap nodes - it's likely we can skip the ping step by deriving
+		// the bootstrap node's node_id from its pubkey
+
 		let node_info;
 
 		if (addr && port) {
 			node_info = await new Promise((resolve, reject) => {
-				this._req_ping({addr: addr, port: port, node_id: new Fbigint(-1)}, (res, ctx) => { // node_id of -1 because we must always supply a value
+				this._req_ping({addr: addr, port: port, pubkey: pubkey, node_id: new Fbigint(-1)}, (res, ctx) => { // node_id of -1 because we must always supply a value
 					resolve(res.from);
 				}, () => {
 					resolve(null);
 				});
 			});
 		} else if (node_id instanceof Fbigint) {
-			node_info = new Fkad_node_info({addr: addr, port: port, node_id: node_id});
+			node_info = new Fkad_node_info({addr: addr, port: port, pubkey: pubkey, node_id: node_id});
 		} else {
 			throw new TypeError("Argument error");
 		}

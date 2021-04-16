@@ -51,7 +51,7 @@ class Fstun_net_solo extends Fstun_net {
 			type: Ftrans_msg.TYPE.FSTUN
 		});
 
-		this.trans._send(ftrans_msg, rinfo.address, rinfo.port);
+		this.trans._send(ftrans_msg, rinfo);
 	}
 }
 

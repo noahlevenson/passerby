@@ -49,7 +49,7 @@ class Fbuy_net_solo extends Fbuy_net {
 			type: Ftrans_msg.TYPE.FBUY
 		});
 
-		this.trans._send(ftrans_msg, rinfo.address, rinfo.port);
+		this.trans._send(ftrans_msg, rinfo);
 	}
 }
 

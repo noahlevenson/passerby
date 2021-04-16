@@ -13,14 +13,14 @@ class Fkad_node_info {
 	addr;
 	port;
 	node_id;
+	pubkey;
 
-	constructor({addr = null, port = null, node_id = null} = {}) {
+	constructor({addr = null, port = null, node_id = null, pubkey = null} = {}) {
 		this.addr = addr;
 		this.port = port;
 		this.node_id = node_id;
+		this.pubkey = pubkey;
 	}
-
-	// TODO: add getters?
 }
 
 module.exports.Fkad_node_info = Fkad_node_info;

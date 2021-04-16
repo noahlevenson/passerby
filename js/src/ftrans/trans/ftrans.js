@@ -18,11 +18,11 @@ class Ftrans {
 		this.network = new EventEmitter();
 	}
 	
-	_on_message() {
+	async _on_message() {
 		throw new Error("Subclasses must implement the _on_message() method");
 	}
 
-	_send() {
+	async _send() {
 		throw new Error("Subclasses must implement the _send() method");
 	}
 }

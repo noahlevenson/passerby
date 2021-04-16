@@ -11,6 +11,7 @@
 
 const { Fapp_env } = require("./fapp_env.js");
 const { Fapp_bboard } = require("./fapp_bboard.js");
+const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 const { Ftrans_udp } = require("../ftrans/trans/ftrans_udp.js");
 const { Fkad_node } = require("../fkad/fkad_node.js");
 const { Fkad_eng_alpha } = require("../fkad/eng/fkad_eng_alpha.js");
@@ -62,7 +63,11 @@ class Fapp {
 	]);
 
 	static BOOTSTRAP_NODES = [
-		["66.228.34.29", 27500]
+		new Ftrans_rinfo({
+			address: "66.228.34.29",
+			port: 27500,
+			pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100ae76dbab80b72039d8c3c31ccc39b8331b36b12cc41587180251d184a1c33de27c1213270eafb584f43d2bb734eca91054e23fd99be6be28c2eaf9e354b4c1a81f10673092a49d8c7d60a5eac7ac50be55a077ad0fae0364b21fb0ae2737e388c2b8c5b1c19ccfa197aceae3070be8152d763d0b80631733db824953e332743ae3c79c3299cd7edf9c362fd9f48fff53ab162a43196bdad5654a7045068c7ac3ca76efe5ebcd88fecac0ad2bd4406ff2452a5d50340e9b94302ea58918f2de9380eec4e0e249ab86cfe2ecbd87fd126494da7ee53cdb8ed9701aef22994cd875e007bb64f124e19d00cfb56e1f15e9e114b083188f5a7aefd01fb3f71dcc34170203010001'
+		})
 	];
 
 	static AUTHORITIES = [
@@ -387,7 +392,7 @@ class Fapp {
 	// To boot as a bootstrap node, pass addr and port
 	async start({addr = null, port = null} = {}) {
 		// Create and boot a UDP transport module
-		const fapp_udp_trans = new Ftrans_udp({port: this.port});
+		const fapp_udp_trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
 		await fapp_udp_trans._start();
         
         this.trans = fapp_udp_trans;
@@ -403,7 +408,7 @@ class Fapp {
 		} else {
 			// Try all of our known bootstrap nodes' STUN servers to resolve our external addr and port (we only need one response)
 			for (let i = 0; i < Fapp.BOOTSTRAP_NODES.length && addr_port === null; i += 1) {
-				addr_port = await fapp_stun_service._binding_req(Fapp.BOOTSTRAP_NODES[i][0], Fapp.BOOTSTRAP_NODES[i][1]);
+				addr_port = await fapp_stun_service._binding_req(Fapp.BOOTSTRAP_NODES[i].address, Fapp.BOOTSTRAP_NODES[i].port);
 			}
 		}
 
@@ -417,7 +422,8 @@ class Fapp {
 			net: new Fkad_net_solo(fapp_udp_trans), 
 			addr: addr_port[0],
 			port: addr_port[1],
-			id: this.my_id()
+			id: this.my_id(),
+			pubkey: this.fid_pub.pubkey
 		});
 
 		this.node = peer_node;
@@ -426,7 +432,7 @@ class Fapp {
 		let bootstrap_res = false;
 
 		for (let i = 0; i < Fapp.BOOTSTRAP_NODES.length && bootstrap_res === false; i += 1) {
-			bootstrap_res = await peer_node.bootstrap({addr: Fapp.BOOTSTRAP_NODES[i][0], port: Fapp.BOOTSTRAP_NODES[i][1]});
+			bootstrap_res = await peer_node.bootstrap({addr: Fapp.BOOTSTRAP_NODES[i].address, port: Fapp.BOOTSTRAP_NODES[i].port, pubkey: Fapp.BOOTSTRAP_NODES[i].pubkey});
 		}
 
 		if (!bootstrap_res) {
@@ -439,7 +445,7 @@ class Fapp {
 				let res = null;
 
 				for (let i = 0; i < Fapp.BOOTSTRAP_NODES.length && res === null; i += 1) {
-					res = await fapp_stun_service._binding_req(Fapp.BOOTSTRAP_NODES[i][0], Fapp.BOOTSTRAP_NODES[i][1]);
+					res = await fapp_stun_service._binding_req(Fapp.BOOTSTRAP_NODES[i].address, Fapp.BOOTSTRAP_NODES[i].port);
 				}
 			}, Fapp.T_NAT_KEEPALIVE);
 
@@ -502,6 +508,7 @@ class Fapp {
 	}
 
 	// Perform a network test by pinging all our bootstrap nodes in a random sequence - returns IP addr of first PONG, null if network failure
+	// TODO: this may have broken when we added transport layer encryption
 	async net_test() {
 		if (!this.node) {
 			return null;
@@ -513,7 +520,7 @@ class Fapp {
 			const peer = bstrap.splice(Math.floor(Math.random() * bstrap.length), 1);
 
 			const res = await new Promise((resolve, reject) => {
-				this.node._req_ping({addr: peer[0][0], port: peer[0][1], node_id: new Fbigint(-1)}, (res, ctx) => { 
+				this.node._req_ping({addr: peer[0].address, port: peer[0].port, node_id: new Fbigint(-1)}, (res, ctx) => { 
 					resolve(peer[0][0]);
 				}, () => {
 					resolve(null);
