@@ -11,6 +11,7 @@
 
 const EventEmitter = require("events");
 const { Fapp_env } = require("../fapp/fapp_env.js");
+const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 const { Fid } = require("../fid/fid.js");
 const { Fdlt_net } = require("./net/fdlt_net.js");
 const { Fdlt_msg } = require("./fdlt_msg.js");
@@ -416,10 +417,10 @@ class Fdlt {
 	async _on_req(msg, rinfo) {
 		Flog.log(`[FDLT] (${this.net.app_id}) Inbound ${Object.keys(Fdlt_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
 		const res = await this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
-		this._send(res, rinfo.address, rinfo.port);
+		this._send(res, rinfo);
 	}
 
-	_send(msg, addr, port, success, timeout) {
+	_send(msg, ftrans_rinfo, success, timeout) {
 		if (msg.type === Fdlt_msg.TYPE.REQ) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
@@ -431,7 +432,7 @@ class Fdlt {
 					clearTimeout(timeout_id);
 
 					if (typeof success === "function") {
-						success(res_msg, addr, port, this);
+						success(res_msg, ftrans_rinfo.address, ftrans_rinfo.port, this);
 					}
 
 					resolve();
@@ -443,8 +444,8 @@ class Fdlt {
 			});
 		}	
 
-		Flog.log(`[FDLT] (${this.net.app_id}) Outbound ${Object.keys(Fdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Fdlt_msg.TYPE)[msg.type]} # ${msg.id.toString()} to ${addr}:${port}`);
-		this.net._out(msg, {address: addr, port: port});	
+		Flog.log(`[FDLT] (${this.net.app_id}) Outbound ${Object.keys(Fdlt_msg.FLAVOR)[msg.flavor]} ${Object.keys(Fdlt_msg.TYPE)[msg.type]} # ${msg.id.toString()} to ${ftrans_rinfo.address}:${ftrans_rinfo.port}`);
+		this.net._out(msg, ftrans_rinfo);	
 	}
 
 	// TODO: for neighbors, we currently use FKAD to select the K_SIZE peers closest 
@@ -459,14 +460,15 @@ class Fdlt {
 		neighbors.forEach((n) => {
 			const arg = Object.assign({}, config_obj, {
 				addr: n.addr, 
-				port: n.port
+				port: n.port,
+				pubkey: n.pubkey
 			});
 
 			msg_func.bind(this, arg)();
 		});
 	}
 
-	tx_req({fdlt_tsact = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	tx_req({fdlt_tsact = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (fdlt_tsact === null || addr === null || port === null) {
 			throw new Error("Arguments cannot be null");
@@ -480,10 +482,10 @@ class Fdlt {
 			id: Fbigint.unsafe_random(Fdlt_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 
-	block_req({fdlt_block = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	block_req({fdlt_block = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (fdlt_block === null || addr === null || port === null) {
 			throw new Error("Arguments cannot be null");
@@ -497,10 +499,10 @@ class Fdlt {
 			id: Fbigint.unsafe_random(Fdlt_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 
-	getblocks_req({block_hash = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	getblocks_req({block_hash = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (block_hash === null || addr === null || port === null) {
 			throw new Error("Arguments cannot be null");
@@ -514,10 +516,10 @@ class Fdlt {
 			id: Fbigint.unsafe_random(Fdlt_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 
-	getdata_req({block_hash = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	getdata_req({block_hash = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (block_hash === null || addr === null || port === null) {
 			throw new Error("Arguments cannot be null");
@@ -531,7 +533,7 @@ class Fdlt {
 			id: Fbigint.unsafe_random(Fdlt_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 }
 
