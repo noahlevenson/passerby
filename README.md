@@ -26,6 +26,10 @@ Zero dependencies under Node.js and the browser, ~3 shims required under React N
 
 Native optimizations under React Native
 
+Hybrid transport layer cryptosystem (currently RSA 2048-bit for key exchange)
+
+Maybe it's even PCI compliant!
+
 ### :question: Why Free Food
 Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates) companies which are entirely the product of Silicon Valley speculation.
 
