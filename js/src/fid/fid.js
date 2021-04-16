@@ -247,7 +247,7 @@ class Fid {
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            return crypto.privateDecrypt({key: key, format: Fid.PUBKEY_FORMAT, type: Fid.PUBKEY_TYPE}, data);
+            return crypto.privateDecrypt({key: key, format: Fid.PRIVKEY_FORMAT, type: Fid.PRIVKEY_TYPE}, data);
         }
     }
 
