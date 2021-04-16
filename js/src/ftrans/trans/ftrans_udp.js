@@ -118,7 +118,7 @@ class Ftrans_udp extends Ftrans {
 		}
 		// *** END DECRYPTION
 
-		this.network.emit("message", in_msg, new Ftrans_rinfo({address: rinfo.address, port: rinfo.port, family: rinfo.family, pubkey: in_msg.pubkey}));
+		this.network.emit("message", in_msg, new Ftrans_rinfo({address: rinfo.address, port: rinfo.port, family: rinfo.family, pubkey: Buffer.from(in_msg.pubkey)})); // TODO: More sus Buffer rehydration
 	}
 
 	_do_send(buf, addr, port, cb = () => {}) {
