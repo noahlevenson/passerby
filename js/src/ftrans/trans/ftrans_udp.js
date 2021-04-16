@@ -102,7 +102,7 @@ class Ftrans_udp extends Ftrans {
 
 		// *** DECRYPTION
 		try {	
-			// TODO: Add a reviver for Buffers so we don't have to do this nooblife Buffer rehydration here
+			// TODO: Add a reviver for Buffers so we don't have to do this nooblife Buffer rehydration here... or just make the wire format use strings
 			const privkey = await Fid.get_privkey();
 			const one_time_key = await Fid.private_decrypt(Buffer.from(in_msg.key.data), privkey);
 			const decrypted_msg = await Fid.symmetric_decrypt(Buffer.from(in_msg.msg.data), one_time_key, Buffer.from(in_msg.iv.data));
@@ -118,7 +118,7 @@ class Ftrans_udp extends Ftrans {
 		}
 		// *** END DECRYPTION
 
-		this.network.emit("message", in_msg, new Ftrans_rinfo({address: rinfo.address, port: rinfo.port, family: rinfo.family, pubkey: Buffer.from(in_msg.pubkey)})); // TODO: More sus Buffer rehydration
+		this.network.emit("message", in_msg, new Ftrans_rinfo({address: rinfo.address, port: rinfo.port, family: rinfo.family, pubkey: Buffer.from(in_msg.pubkey, "hex")})); // TODO: More sus Buffer rehydration
 	}
 
 	_do_send(buf, addr, port, cb = () => {}) {
@@ -153,7 +153,7 @@ class Ftrans_udp extends Ftrans {
 		const one_time_key = await Fid.generate_one_time_key();
 		ftrans_msg.iv = await Fid.generate_one_time_iv();
 		ftrans_msg.msg = await Fid.symmetric_encrypt(msg_buf, one_time_key, ftrans_msg.iv);
-		ftrans_msg.key = await Fid.public_encrypt(one_time_key, ftrans_rinfo.pubkey);
+		ftrans_msg.key = await Fid.public_encrypt(one_time_key, Buffer.from(ftrans_rinfo.pubkey, "hex"));
 		ftrans_msg.pubkey = this.pubkey;
 		const buf = Buffer.from(JSON.stringify(ftrans_msg));
 		// *** END ENCRYPTION
