@@ -23,6 +23,16 @@ const { Fdlt_tsact } = require("../src/fdlt/fdlt_tsact.js");
 const { Fdlt_block } = require("../src/fdlt/fdlt_block.js");
 
 (async function run() {
+    // const key = await Fid.generate_one_time_key();
+    // const iv = await Fid.generate_one_time_iv();
+
+    // const encrypted = await Fid.symmetric_encrypt(Buffer.from([3, 1, 3, 3, 7]), key, iv);
+
+    // console.log(encrypted);
+
+    // console.log(await Fid.symmetric_decrypt(encrypted, key, iv));
+
+
     const larosa = new Fid_pub({
         pubkey: '30820122300d06092a864886f70d01010105000382010f003082010a0282010100a6108c362961ff79246467b1b0c8505aac91fde23daa711e297f4601b053acb18c2e90defbaba60bdfee93fbab3c1d0d0559a50dfb5d0356bee484814a786f7b9e679e6ed822ff77bfc2c4fcc232e418aa5ebddcbbaa27d63939108a3bd91694c0f347fc1038d151306eecd0630719809aa4187c0d1dab1bb132ff0df29cbd5342ed32d51d1db053ecb6eacc7c998a19d3f46534d0d9b70d706ef8f90d75431a8a192f772170b7c97e1f97e651d7ec5ca00a8bf2f5a896e232750f0ecf9007bfdd51550c6a0da554c79a64dc4164c71885682d75e278c0fc27db1942b4d15d48c9ff9c2aa8f1e9b77d211a4ae8aa56927cf9393dc71121d97eadb52c555bba310203010001',
         name: "Pizzeria La Rosa",

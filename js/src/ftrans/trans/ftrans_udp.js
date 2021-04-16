@@ -82,10 +82,12 @@ class Ftrans_udp extends Ftrans {
 		// TODO: Discern between a valid Ftrans_msg and some garbage/malicious data!
 		const in_msg = new Ftrans_msg(JSON.parse(msg.toString()));
 
+		// *** DECRYPTION
 		// Decrypt it and verify the sender's sig - if no good, silently ignore it
 		try {
 			const privkey = await Fid.get_privkey();
-			const decrypted_msg = await Fid.private_decrypt(in_msg.msg, privkey);
+			const one_time_key = await Fid.private_decrypt(in_msg.key, privkey);
+			const decrypted_msg = await Fid.symmetric_decrypt(in_msg.msg, one_time_key, in_msg.iv);
 			const valid_sig = await Fid.verify(decrypted_msg, in_msg.pubkey, in_msg.sig);
 
 			if (!valid_sig) {
@@ -96,6 +98,7 @@ class Ftrans_udp extends Ftrans {
 		} catch(err) {
 			return;
 		}
+		// *** END DECRYPTION
 
 		// We're in retransmit mode and the incoming msg is an ACK, so just fire the event to announce this ACK and be done
 		if (Ftrans_udp.RETRANSMIT && in_msg.type === Ftrans_msg.TYPE.ACK) {
@@ -138,14 +141,20 @@ class Ftrans_udp extends Ftrans {
 			ftrans_msg.id = Fbigint.unsafe_random(Ftrans_msg.ID_LEN);
 		}
 
+		// *** ENCRYPTION
 		// ftrans_msg is delivered from any module - its msg field is an object
-		// We need to sign the msg and add the sig to the ftrans_msg, encrypt the msg for its recipient and add our pubkey
+		// We need to sign the msg, add the sig to the ftrans_msg, generate a one-time symmetric key and one-time iv, 
+		// encrypt the msg and one time key for its recipient and add our pubkey and the iv
 		const privkey = await Fid.get_privkey();
 		const msg_buf = Buffer.from(JSON.stringify(ftrans_msg.msg));
 		ftrans_msg.sig = await Fid.sign(msg_buf, privkey);
-		ftrans_msg.msg = await Fid.public_encrypt(msg_buf, ftrans_rinfo.pubkey);
+		const one_time_key = await Fid.generate_one_time_key();
+		ftrans_msg.iv = await Fid.generate_one_time_iv();
+		ftrans_msg.msg = await Fid.symmetric_encrypt(msg_buf, one_time_key, ftrans_msg.iv);
+		ftrans_msg.key = await Fid.public_encrypt(one_time_key, ftrans_rinfo.pubkey);
 		ftrans_msg.pubkey = this.pubkey;
 		const buf = Buffer.from(JSON.stringify(ftrans_msg));
+		// *** END ENCRYPTION
 
 		this._do_send(buf, ftrans_rinfo.address, ftrans_rinfo.port, () => {
 			let timeout_id = null;

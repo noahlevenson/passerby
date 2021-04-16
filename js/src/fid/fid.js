@@ -36,6 +36,8 @@ class Fid {
     static PRIVKEY_TYPE = "pkcs8";
     static PRIVKEY_FORMAT = "der";
     static PRIVKEY_CIPHER = "aes-256-cbc"; // This must comport with what's available in our native crypto implementations and account for several known bugs in Java - see HNativeCrypto
+    static ONE_TIME_KEY_LEN = 16;
+    static ONE_TIME_KEY_CIPHER = "aes128";
     static NATIVE_CRYPTO = null;
 
     static GET_PRIVKEY_F = () => {
@@ -128,6 +130,28 @@ class Fid {
         }
 	}
 
+    // Returns key as buffer
+    static async generate_one_time_key() {
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+            // TODO: write me
+        }
+
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+            return crypto.randomBytes(Fid.ONE_TIME_KEY_LEN);
+        }
+    }
+
+    // Returns IV as buffer
+    static async generate_one_time_iv() {
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+            // TODO: write me
+        }
+
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+            return crypto.randomBytes(Fid.ONE_TIME_KEY_LEN);
+        }
+    }
+
     // Assumes encrypted privkey key as DER buffer
     // Returns unencrypted key as DER buffer
     static async decrypt_private_key(key, passphrase) {
@@ -176,6 +200,32 @@ class Fid {
             verify.update(data);
             verify.end();
             return verify.verify({key: key, format: Fid.PUBKEY_FORMAT, type: Fid.PUBKEY_TYPE}, sig);
+        }
+    }
+
+    // Assumes symmetric key one_time_key as buffer, iv as buffer
+    static async symmetric_encrypt(data, one_time_key, iv) {
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+            // TODO: write me
+        }
+
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+            const cipher = crypto.createCipheriv(Fid.ONE_TIME_KEY_CIPHER, one_time_key, iv);
+            const encrypted = cipher.update(data);
+            return Buffer.concat([encrypted, cipher.final()]);
+        }
+    }
+
+    // Assumes symmetric key one_time_key as buffer, iv as buffer
+    static async symmetric_decrypt(data, one_time_key, iv) {
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+            // TODO: write me
+        }
+
+        if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+            const cipher = crypto.createDecipheriv(Fid.ONE_TIME_KEY_CIPHER, one_time_key, iv);
+            const decrypted = cipher.update(data);
+            return Buffer.concat([decrypted, cipher.final()]);
         }
     }
 
