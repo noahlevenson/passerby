@@ -18,6 +18,7 @@ const { Fbuy_sms } = require("./fbuy_sms.js");
 const { Fbuy_tsact } = require("./fbuy_tsact.js");
 const { Fbuy_status } = require("./fbuy_status.js");
 const { Flog } = require("../flog/flog.js");
+const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 
 class Fbuy {
@@ -98,10 +99,10 @@ class Fbuy {
 	_on_req(msg, rinfo) {
 		Flog.log(`[FBUY] Inbound ${Object.keys(Fbuy_msg.FLAVOR)[msg.flavor]} REQ from ${rinfo.address}:${rinfo.port}`)
 		const res = this.FLAVOR_RES_EXEC.get(msg.flavor).bind(this)(msg, rinfo);
-		this._send(res, rinfo.address, rinfo.port);
+		this._send(res, rinfo);
 	}
 
-	_send(msg, addr, port, success, timeout) {
+	_send(msg, ftrans_rinfo, success, timeout) {
 		if (msg.type === Fbuy_msg.TYPE.REQ) {
 			const outgoing = new Promise((resolve, reject) => {
 				const timeout_id = setTimeout(() => {
@@ -125,12 +126,12 @@ class Fbuy {
 			});
 		}	
 
-		Flog.log(`[FBUY] Outbound ${Object.keys(Fbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Fbuy_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} to ${addr}:${port}`);
-		this.net._out(msg, {address: addr, port: port});	
+		Flog.log(`[FBUY] Outbound ${Object.keys(Fbuy_msg.FLAVOR)[msg.flavor]} ${Object.keys(Fbuy_msg.TYPE)[msg.type]} # ${msg.data.id ? msg.data.id.toString() : msg.id.toString()} to ${ftrans_rinfo.address}:${ftrans_rinfo.port}`);
+		this.net._out(msg, ftrans_rinfo);	
 	}
 
 	// Create and send a transaction request, return the transaction ID
-	transact_req({fbuy_transaction = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	transact_req({fbuy_transaction = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (fbuy_transaction === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
@@ -143,11 +144,11 @@ class Fbuy {
 			id: Fbigint.unsafe_random(Fbuy_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 
 	// TODO: this should be refactored to work like transact_req above -- don't construct the Fbuy_status, just send it
-	status_req({fbuy_status = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	status_req({fbuy_status = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (fbuy_status === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
@@ -160,10 +161,10 @@ class Fbuy {
 			id: Fbigint.unsafe_random(Fbuy_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 
-	sms_req({fbuy_sms = null, addr = null, port = null, success = () => {}, timeout = () => {}} = {}) {
+	sms_req({fbuy_sms = null, addr = null, port = null, pubkey = null, success = () => {}, timeout = () => {}} = {}) {
 		// For sanity during development, explicitly require arguments
 		if (fbuy_sms === null || addr === null || port === null) {
 			throw new TypeError("Arguments cannot be null");
@@ -176,7 +177,7 @@ class Fbuy {
 			id: Fbigint.unsafe_random(Fbuy_msg.ID_LEN)
 		});
 
-		this._send(msg, addr, port, success, timeout);
+		this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
 	}
 
 	start() {
