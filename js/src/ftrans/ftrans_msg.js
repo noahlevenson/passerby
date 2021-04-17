@@ -75,13 +75,13 @@ class Ftrans_msg {
 	}
 
 	// Construct an encrypted Ftrans_msg
-	static async encrypted_from({msg = null, pubkey = null, id = null} = {}) {
+	static async encrypted_from({msg = null, sender_pubkey = null, recip_pubkey = null, id = null} = {}) {
 		const ftrans_msg = new Ftrans_msg({id: id});
 
 		if (msg instanceof Fkad_msg) {
 			ftrans_msg.type = Ftrans_msg.TYPE.FKAD;
 		} else if (Buffer.isBuffer(msg)) {
-			// TODO: FSTUN breaks the pattern by delivering messages as Buffers, this is brittle
+			// TODO: FSTUN breaks the pattern by delivering messages as Buffers, this is brittle n sketchy
 			ftrans_msg.type = Ftrans_msg.TYPE.FSTUN;
 		} else if (msg instanceof Fbuy_msg) {
 			ftrans_msg.type = Ftrans_msg.TYPE.FBUY;
@@ -91,8 +91,8 @@ class Ftrans_msg {
 			throw new Error("msg must be instance of Fkad_msg, Fbuy_msg, Fdlt_msg, or Buffer");
 		}
 
-		if (typeof pubkey !== "string") {
-			throw new Error("pubkey must be string");
+		if (typeof sender_pubkey !== "string" || typeof recip_pubkey !== "string") {
+			throw new Error("both pubkeys must be strings");
 		}
 
 		const privkey = await Fid.get_privkey();
@@ -101,13 +101,13 @@ class Ftrans_msg {
 		const one_time_key = await Fid.generate_one_time_key();
 		const iv = await Fid.generate_one_time_iv();
 		const encrypted_msg = await Fid.symmetric_encrypt(msg_buf, one_time_key, iv);
-		const encrypted_key = await Fid.public_encrypt(one_time_key, Buffer.from(pubkey, "hex"))
+		const encrypted_key = await Fid.public_encrypt(one_time_key, Buffer.from(recip_pubkey, "hex"))
 
 		ftrans_msg.sig = sig.toString("hex");
 		ftrans_msg.iv = iv.toString("hex");
 		ftrans_msg.msg = encrypted_msg.toString("hex");
 		ftrans_msg.key = encrypted_key.toString("hex");
-		ftrans_msg.pubkey = pubkey;
+		ftrans_msg.pubkey = sender_pubkey;
 		return ftrans_msg;
 	}
 }
