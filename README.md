@@ -19,16 +19,14 @@ For software clients which operationalize libfood for end users, see Free Food B
 
 Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by "Hacker in Residence" (and co-owner of [Pizzeria La Rosa](https://www.youtube.com/watch?v=9bz1Ko5ZDzQ&t=266s) in New Rochelle, NY) [Noah Levenson](https://noahlevenson.com).
 
-### :monocle_face: Features
-Portable across JS runtimes: Node.js, browsers, React Native (Android only)
+### :handbag: Portability as a first class feature
+Restaurant owners are accustomed to using order management apps, such as those provided by Grubhub and DoorDash, on mobile devices. But hungry people shouldn't be expected to download a mobile app to place an order. Thus, a mandatory objective of this implementation is to ensure portability across a variety of JS runtimes.
 
-Zero dependencies under Node.js and the browser, ~3 shims required under React Native
-
-Native optimizations under React Native
-
-Hybrid transport layer cryptosystem (currently RSA 2048-bit for key exchange)
-
-Maybe it's even PCI compliant!
+|JS Runtime  |Compatible?|Dependencies?|
+|------------|-----------|-------------|
+|Node.js     |yes        |none         |
+|browsers    |soon       |none         |
+|React Native|yes        |~3 shims     |
 
 ### :question: Why Free Food
 Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates) companies which are entirely the product of Silicon Valley speculation.
