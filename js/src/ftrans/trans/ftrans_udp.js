@@ -125,7 +125,7 @@ class Ftrans_udp extends Ftrans {
 	}
 
 	async _send(msg, ftrans_rinfo) {
-		const ftrans_msg = await Ftrans_msg.encrypted_from(msg, this.pubkey);
+		const ftrans_msg = await Ftrans_msg.encrypted_from({msg: msg, pubkey: this.pubkey});
 		
 		// Add an ID if we're in retransmit mode
 		if (Ftrans_udp.RETRANSMIT) {
