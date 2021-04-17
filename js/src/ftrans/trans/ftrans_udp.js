@@ -108,7 +108,7 @@ class Ftrans_udp extends Ftrans {
 				address: rinfo.address, 
 				port: rinfo.port, 
 				family: rinfo.family, 
-				pubkey: Buffer.from(decrypted_msg.pubkey, "hex")
+				pubkey: decrypted_msg.pubkey
 			}));
 		}
 	}
