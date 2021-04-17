@@ -45,13 +45,7 @@ class Fstun_net_solo extends Fstun_net {
 	}
 
 	_out(msg, rinfo) {
-		// msg is a STUN message delivered from FSTUN
-		const ftrans_msg = new Ftrans_msg({
-			msg: msg,
-			type: Ftrans_msg.TYPE.FSTUN
-		});
-
-		this.trans._send(ftrans_msg, rinfo);
+		this.trans._send(msg, rinfo);
 	}
 }
 

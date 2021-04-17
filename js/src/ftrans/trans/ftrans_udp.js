@@ -78,7 +78,7 @@ class Ftrans_udp extends Ftrans {
 	}
 
 	async _on_message(msg, rinfo) {
-		// The message here is a Buffer representing an Ftrans_msg, delivered raw from the UDP socket
+		// msg is a Buffer representing an Ftrans_msg, delivered raw from the UDP socket
 		// TODO: Discern between a valid Ftrans_msg and some garbage/malicious data!
 		const in_msg = new Ftrans_msg(JSON.parse(msg.toString(), Fbigint._json_revive));
 
@@ -90,7 +90,8 @@ class Ftrans_udp extends Ftrans {
 			return;
 		}
 
-		// We're in retransmit mode and someone sent us a regular msg, so send them an ACK (with no possibility of retransmitting the ACK!) and continue to process their message
+		// We're in retransmit mode and someone sent us a regular msg, so send them an ACK (with no possibility of 
+		// retransmitting the ACK! and continue to process their message
 		if (Ftrans_udp.RETRANSMIT) {
 			const ack = new Ftrans_msg({
 				type: Ftrans_msg.TYPE.ACK,
@@ -100,25 +101,16 @@ class Ftrans_udp extends Ftrans {
 			this._do_send(Buffer.from(JSON.stringify(ack)), rinfo.address, rinfo.port);
 		}
 
-		// *** DECRYPTION
-		try {	
-			// TODO: Add a reviver for Buffers so we don't have to do this nooblife Buffer rehydration here... or just make the wire format use strings
-			const privkey = await Fid.get_privkey();
-			const one_time_key = await Fid.private_decrypt(Buffer.from(in_msg.key.data), privkey);
-			const decrypted_msg = await Fid.symmetric_decrypt(Buffer.from(in_msg.msg.data), one_time_key, Buffer.from(in_msg.iv.data));
-			const valid_sig = await Fid.verify(decrypted_msg, Buffer.from(in_msg.pubkey), Buffer.from(in_msg.sig.data));
+		const decrypted_msg = await Ftrans_msg.decrypted_from(in_msg);
 
-			if (!valid_sig) {
-				throw new Error();
-			} 
-
-			in_msg.msg = JSON.parse(decrypted_msg.toString(), Fbigint._json_revive);
-		} catch(err) {
-			return;
+		if (decrypted_msg !== null) {
+			this.network.emit("message", decrypted_msg, new Ftrans_rinfo({
+				address: rinfo.address, 
+				port: rinfo.port, 
+				family: rinfo.family, 
+				pubkey: Buffer.from(decrypted_msg.pubkey, "hex")
+			}));
 		}
-		// *** END DECRYPTION
-
-		this.network.emit("message", in_msg, new Ftrans_rinfo({address: rinfo.address, port: rinfo.port, family: rinfo.family, pubkey: Buffer.from(in_msg.pubkey, "hex")})); // TODO: More sus Buffer rehydration
 	}
 
 	_do_send(buf, addr, port, cb = () => {}) {
@@ -132,31 +124,15 @@ class Ftrans_udp extends Ftrans {
 		});
 	}
 
-	async _send(ftrans_msg, ftrans_rinfo) {
-		// The Ftrans_msg 'id' property isn't used by default, though Ftrans subclasses may optionally utilize it
-		// Ftrans_udp uses it for UDP retransmission, so let's ensure that higher level modules aren't populating that field
-		if (ftrans_msg.id !== null) {
-			throw new Error("Ftrans_msg IDs should be null");
-		}
-	
+	async _send(msg, ftrans_rinfo) {
+		const ftrans_msg = await Ftrans_msg.encrypted_from(msg, this.pubkey);
+		
+		// Add an ID if we're in retransmit mode
 		if (Ftrans_udp.RETRANSMIT) {
 			ftrans_msg.id = Fbigint.unsafe_random(Ftrans_msg.ID_LEN);
 		}
 
-		// *** ENCRYPTION
-		// ftrans_msg is delivered from any module - its msg field is an object
-		// We need to sign the msg, add the sig to the ftrans_msg, generate a one-time symmetric key and one-time iv, 
-		// encrypt the msg and one time key for its recipient and add our pubkey and the iv
-		const privkey = await Fid.get_privkey();
-		const msg_buf = Buffer.from(JSON.stringify(ftrans_msg.msg));
-		ftrans_msg.sig = await Fid.sign(msg_buf, privkey);
-		const one_time_key = await Fid.generate_one_time_key();
-		ftrans_msg.iv = await Fid.generate_one_time_iv();
-		ftrans_msg.msg = await Fid.symmetric_encrypt(msg_buf, one_time_key, ftrans_msg.iv);
-		ftrans_msg.key = await Fid.public_encrypt(one_time_key, Buffer.from(ftrans_rinfo.pubkey, "hex"));
-		ftrans_msg.pubkey = this.pubkey;
 		const buf = Buffer.from(JSON.stringify(ftrans_msg));
-		// *** END ENCRYPTION
 
 		this._do_send(buf, ftrans_rinfo.address, ftrans_rinfo.port, () => {
 			let timeout_id = null;

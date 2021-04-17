@@ -11,8 +11,8 @@
 
 const { Fdlt_net } = require("./fdlt_net.js");
 const { Fdlt_msg } = require("../fdlt_msg.js");
-const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 const { Ftrans_msg } = require("../../ftrans/ftrans_msg.js");
+const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 
 class Fdlt_net_solo extends Fdlt_net {
 	trans;
@@ -53,12 +53,7 @@ class Fdlt_net_solo extends Fdlt_net {
 	}
 
 	_out(fdlt_msg, rinfo) {
-		const ftrans_msg = new Ftrans_msg({
-			msg: fdlt_msg,
-			type: Ftrans_msg.TYPE.FDLT
-		});
-
-		this.trans._send(ftrans_msg, rinfo);
+		this.trans._send(fdlt_msg, rinfo);
 	}
 }
 
