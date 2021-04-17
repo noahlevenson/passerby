@@ -38,7 +38,7 @@ class Ftrans_udp extends Ftrans {
 	constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
 		super();
 		this.port = port;
-		this.pubkey = Buffer.from(pubkey, "hex");
+		this.pubkey = pubkey;
 		this.udp4 = udp4;
 		this.udp6 = udp6;
 		this.ack = new EventEmitter();
