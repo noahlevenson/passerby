@@ -74,7 +74,7 @@ class Fkad_node {
 		// SO! Your node info actually should be set first thing during bootstrapping -- the boostrap process should go like this:
 		// first send a STUN request, set our node_info with our external IP and port, and then initiate the Kademlia bootstrap process
 		// but for our first one-machine network tests, we'll just manually supply a port...
-		this.node_info = new Fkad_node_info({addr: addr, port: port, node_id: new Fbigint(this.node_id), pubkey: pubkey.toString("hex")});
+		this.node_info = new Fkad_node_info({addr: addr, port: port, node_id: new Fbigint(this.node_id), pubkey: pubkey});
 
 		// Here's the new bro
 		this.routing_table = new Fbintree(new Fbintree_node({

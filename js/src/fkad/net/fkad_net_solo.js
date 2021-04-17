@@ -49,7 +49,11 @@ class Fkad_net_solo extends Fkad_net {
 			return;
 		}
 
-		this.trans._send(fkad_msg, new Ftrans_rinfo({address: node_info.addr, port: node_info.port, pubkey: Buffer.from(node_info.pubkey, "hex")}));
+		this.trans._send(fkad_msg, new Ftrans_rinfo({
+			address: node_info.addr, 
+			port: node_info.port, 
+			pubkey: node_info.pubkey
+		}));
 	}
 }
 
