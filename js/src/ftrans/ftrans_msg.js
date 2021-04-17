@@ -80,14 +80,15 @@ class Ftrans_msg {
 
 		if (msg instanceof Fkad_msg) {
 			ftrans_msg.type = Ftrans_msg.TYPE.FKAD;
-		} else if (msg instanceof Fstun_msg) {
+		} else if (Buffer.isBuffer(msg)) {
+			// TODO: FSTUN breaks the pattern by delivering messages as Buffers, this is brittle
 			ftrans_msg.type = Ftrans_msg.TYPE.FSTUN;
 		} else if (msg instanceof Fbuy_msg) {
 			ftrans_msg.type = Ftrans_msg.TYPE.FBUY;
 		} else if (msg instanceof Fdlt_msg) {
 			ftrans_msg.type = Ftrans_msg.TYPE.FDLT;
 		} else {
-			throw new Error("msg must be instance of Fkad_msg, Fstun_msg, Fbuy_msg, or Fdlt_msg");
+			throw new Error("msg must be instance of Fkad_msg, Fbuy_msg, Fdlt_msg, or Buffer");
 		}
 
 		if (typeof pubkey !== "string") {
