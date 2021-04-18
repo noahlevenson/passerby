@@ -259,7 +259,6 @@ class Fdlt {
 			success: (res, addr, port, pubkey, ctx) => {
 				res.data.forEach((block_hash) => {
 					if (!this.store.get_node(block_hash)) {
-						console.log(pubkey);
 						this.getdata_req({
 							block_hash: block_hash, 
 							addr: addr, 
