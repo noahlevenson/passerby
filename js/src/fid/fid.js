@@ -36,8 +36,8 @@ class Fid {
     static PRIVKEY_TYPE = "pkcs8";
     static PRIVKEY_FORMAT = "der";
     static PRIVKEY_CIPHER = "aes-256-cbc"; // This must comport with what's available in our native crypto implementations and account for several known bugs in Java - see HNativeCrypto
-    static ONE_TIME_KEY_LEN = 16;
-    static ONE_TIME_KEY_CIPHER = "aes128"; // TODO: bump me to 256
+    static ONE_TIME_KEY_LEN = 32;
+    static ONE_TIME_KEY_CIPHER = "aes-256-cbc";
     static NATIVE_CRYPTO = null;
 
     static GET_PRIVKEY_F = () => {
