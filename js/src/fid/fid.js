@@ -237,7 +237,7 @@ class Fid {
     // Assumes pubkey key as DER buffer, data as buffer
     static async public_encrypt(data, key) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.publicEncryptRSA(data.toString("hex", key.toString("hex")));
+            const res = await Fid.NATIVE_CRYPTO.publicEncryptRSA(data.toString("hex"), key.toString("hex"));
             return Buffer.from(res);
         }
 
