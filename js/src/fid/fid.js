@@ -37,7 +37,8 @@ class Fid {
     static PRIVKEY_FORMAT = "der";
     static PRIVKEY_CIPHER = "aes-256-cbc"; // This must comport with what's available in our native crypto implementations and account for several known bugs in Java - see HNativeCrypto
     static ONE_TIME_KEY_LEN = 32;
-    static ONE_TIME_KEY_CIPHER = "aes256";
+    static ONE_TIME_IV_LEN = 16;
+    static ONE_TIME_KEY_CIPHER = "aes-256-cbc";
     static NATIVE_CRYPTO = null;
 
     static GET_PRIVKEY_F = () => {
@@ -148,7 +149,7 @@ class Fid {
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            return crypto.randomBytes(Fid.ONE_TIME_KEY_LEN);
+            return crypto.randomBytes(Fid.ONE_TIME_IV_LEN);
         }
     }
 
