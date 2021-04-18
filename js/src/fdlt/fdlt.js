@@ -259,6 +259,7 @@ class Fdlt {
 			success: (res, addr, port, pubkey, ctx) => {
 				res.data.forEach((block_hash) => {
 					if (!this.store.get_node(block_hash)) {
+						console.log(pubkey);
 						this.getdata_req({
 							block_hash: block_hash, 
 							addr: addr, 
@@ -403,6 +404,7 @@ class Fdlt {
 				fdlt_block: block_node.data, 
 				addr: rinfo.address, 
 				port: rinfo.port,
+				pubkey: rinfo.pubkey
 			});
 		}
 
