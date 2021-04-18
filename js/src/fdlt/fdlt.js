@@ -256,13 +256,14 @@ class Fdlt {
 		// also: since we don't wait for blocks to arrive in order, we could kick off a lot of _res_block case 3's,
 		this.broadcast(this.getblocks_req, {
 			block_hash: last_hash, 
-			success: (res, addr, port, ctx) => {
+			success: (res, addr, port, pubkey, ctx) => {
 				res.data.forEach((block_hash) => {
 					if (!this.store.get_node(block_hash)) {
 						this.getdata_req({
 							block_hash: block_hash, 
 							addr: addr, 
-							port: port
+							port: port,
+							pubkey: pubkey
 						});
 					}
 				});
@@ -432,7 +433,7 @@ class Fdlt {
 					clearTimeout(timeout_id);
 
 					if (typeof success === "function") {
-						success(res_msg, ftrans_rinfo.address, ftrans_rinfo.port, this);
+						success(res_msg, ftrans_rinfo.address, ftrans_rinfo.port, ftrans_rinfo.pubkey, this);
 					}
 
 					resolve();
