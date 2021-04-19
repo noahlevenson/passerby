@@ -14,7 +14,10 @@ const { Fkad_eng } = require("./fkad_eng.js");
 const { Fkad_msg } = require("../fkad_msg.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
-	static TIMEOUT = 1000;
+	// TODO: a small value like 1000 makes node lookups nice and snappy, but you should set this higher when evaluating debug builds of clients:
+	// a sluggish debug build can fail to process queries within 1000ms, and the result is that node lookups will fail to find peers on the 
+	// network, your sms/status/whatever won't send, and you'll think you've had a catastrophic FKAD regression (but you haven't)
+	static TIMEOUT = 2000;
 	static RES_EVENT_PREFIX = "r+";
 	
 	res;
