@@ -234,6 +234,7 @@ class Fapp {
 		  		fbuy_transaction: transaction,
 		        addr: res.addr,
 		        port: res.port,
+		        pubkey: res.pubkey,
 		        success: success,
 		        timeout: timeout
 	    	});
@@ -260,6 +261,7 @@ class Fapp {
 				fbuy_sms: sms,
 				addr: res.addr,
 				port: res.port,
+				pubkey: res.pubkey,
 				success: success,
 				timeout: timeout
 			});
@@ -284,6 +286,7 @@ class Fapp {
 				fbuy_status: status,
 				addr: res.addr,
 				port: res.port,
+				pubkey: res.pubkey,
 				success: success,
 				timeout: timeout
 			});
