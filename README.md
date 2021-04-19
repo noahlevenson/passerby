@@ -32,7 +32,7 @@ Restaurant owners are accustomed to using marketplace order management apps, suc
 libfood is a layered API:
 
 |Module |Description                                                                    |
-|---------------------------------------------------------------------------------------|
+|-------|-------------------------------------------------------------------------------|
 |fkad   |distributed hash table                                                         |
 |fpht   |prefix hash tree                                                               |
 |fgeo   |math for transforming and interpreting geographic data                         |
