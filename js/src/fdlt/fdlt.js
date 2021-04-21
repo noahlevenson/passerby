@@ -12,7 +12,7 @@
 const EventEmitter = require("events");
 const { Fapp_env } = require("../fapp/fapp_env.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
-const { Fid } = require("../fid/fid.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fdlt_net } = require("./net/fdlt_net.js");
 const { Fdlt_msg } = require("./fdlt_msg.js");
 const { Fdlt_tsact } = require("./fdlt_tsact.js");

@@ -10,6 +10,7 @@
 "use strict";
 
 const { Fapp_env } = require("../fapp/fapp_env.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
 const { Fdlt } = require("../fdlt/fdlt.js");
 const { Fdlt_net_solo } = require("../fdlt/net/fdlt_net_solo.js");

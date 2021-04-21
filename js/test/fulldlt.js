@@ -1,6 +1,7 @@
 const { Fapp } = require("../src/fapp/fapp.js");
 const { Fapp_bboard } = require("../src/fapp/fapp_bboard.js");
 const { Futil } = require("../src/futil/futil.js");
+const { Fcrypto } = require("../src/fcrypto/fcrypto.js");
 const { Fid } = require("../src/fid/fid.js");
 const { Fid_pub } = require("../src/fid/fid_pub.js");
 const { Fid_prv } = require("../src/fid/fid_prv.js");

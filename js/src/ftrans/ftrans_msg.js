@@ -14,7 +14,7 @@ const { Fkad_msg } = require("../fkad/fkad_msg.js");
 const { Fstun_msg } = require("../fstun/fstun_msg.js"); 
 const { Fbuy_msg } = require("../fbuy/fbuy_msg.js");
 const { Fdlt_msg } = require("../fdlt/fdlt_msg.js");
-const { Fid } = require("../fid/fid.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 
 class Ftrans_msg {

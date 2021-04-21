@@ -10,6 +10,7 @@
 "use strict";
 
 const { Fdlt_tsact } = require("./fdlt_tsact.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
 const { Fapp_env } = require("../fapp/fapp_env.js");
 
