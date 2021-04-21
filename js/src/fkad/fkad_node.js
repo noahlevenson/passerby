@@ -213,6 +213,7 @@ class Fkad_node {
 		}
 	}
 
+	// Congratulations, you have achieved 100% code complexity
 	async _node_lookup(key, rpc = this._req_find_node) {
 		// BST comparator function for inserting a node_info object: compare both its XOR distance from the key and the lexicographical distance 
 		// of its concatenated and stringified address/port... i.e., we want to keep our node_info BST sorted by XOR distance from the key,

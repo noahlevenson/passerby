@@ -112,8 +112,8 @@ class Fksrv {
 			unlock: Fksrv.SCRIPT_NO_UNLOCK
 		});	
 
-		const privkey = await Fid.get_privkey();
-		const sig = await Fid.sign(Fdlt_vm.make_sig_preimage(Fksrv.SIG_TX, tsact), Buffer.from(privkey, "hex"));
+		const privkey = await Fcrypto.get_privkey();
+		const sig = await Fcrypto.sign(Fdlt_vm.make_sig_preimage(Fksrv.SIG_TX, tsact), Buffer.from(privkey, "hex"));
 
 		// lock script: push2, len, recip pubkey, push2, len, sig, push2, len, nonce, push2, len, my pubkey
 		// (we ineffectually push the recipient's pubkey to the stack just so the recipient's pubkey is in the script)
@@ -150,8 +150,8 @@ class Fksrv {
 			unlock: Fksrv.SCRIPT_NO_UNLOCK
 		});
 
-		const privkey = await Fid.get_privkey();
-		const sig = await Fid.sign(Fdlt_vm.make_sig_preimage(Fksrv.REV_TX, tsact), Buffer.from(privkey, "hex"));
+		const privkey = await Fcrypto.get_privkey();
+		const sig = await Fcrypto.sign(Fdlt_vm.make_sig_preimage(Fksrv.REV_TX, tsact), Buffer.from(privkey, "hex"));
 
 		// lock script: push2, len, recip pubkey, push2, len, sig, push2, len, nonce, push2, len, my pubkey
 		// (we ineffectually push the recipient's pubkey to the stack just so the recipient's pubkey is in the script)

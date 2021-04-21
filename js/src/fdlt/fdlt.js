@@ -102,8 +102,8 @@ class Fdlt {
 	// TODO: handle error/bad passphrase etc
 	static async make_nonce_auth(block, pubkey) {
 		const data = Buffer.from(Fdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
-		const privkey = await Fid.get_privkey();
-		return await Fid.sign(data, Buffer.from(privkey, "hex")).toString("hex");
+		const privkey = await Fcrypto.get_privkey();
+		return await Fcrypto.sign(data, Buffer.from(privkey, "hex")).toString("hex");
 	}
 
 	async verify_nonce(block) {
@@ -114,7 +114,7 @@ class Fdlt {
 	async _verify_nonce_auth(block) {
 		return this.args.auth.some(async (arg) => {
 			const data = Buffer.from(Fdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
-			return await Fid.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
+			return await Fcrypto.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
 		});
 	}
 

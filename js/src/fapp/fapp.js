@@ -116,17 +116,17 @@ class Fapp {
 
 	// Convenience method to generate a public/private key pair
 	static generate_key_pair(passphrase) {
-		return Fid.generate_key_pair(passphrase);
+		return Fcrypto.generate_key_pair(passphrase);
 	}
 
 	// Convenience method to cryptographically sign some data
 	static async sign(data, key) {
-		return await Fid.sign(data, key);
+		return await Fcrypto.sign(data, key);
 	}
 
 	// Convenience method to verify a cryptographic signature
 	static async verify(data, key, sig) {
-		return await Fid.verify(data, key, sig);
+		return await Fcrypto.verify(data, key, sig);
 	}
     
 	// Compute the peer ID derived from input 'data'

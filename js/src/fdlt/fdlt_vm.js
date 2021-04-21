@@ -127,7 +127,7 @@ class Fdlt_vm {
 			t: this.tx_new.t
 		});
 
-		const res = await Fid.verify(
+		const res = await Fcrypto.verify(
 			Fdlt_tsact.serialize(copy), 
 			pubkey, 
 			sig
@@ -180,7 +180,7 @@ class Fdlt_vm {
 			t: this.tx_new.t
 		});
 
-		const is_valid_sig = await Fid.verify(
+		const is_valid_sig = await Fcrypto.verify(
 			Fdlt_tsact.serialize(copy), 
 			pubkey,
 			sig
