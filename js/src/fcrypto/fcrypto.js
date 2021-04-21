@@ -49,13 +49,13 @@ class Fcrypto {
     // Set the interface for native crypto functions
     // This must be set when ENV is REACT_NATIVE
     static set_native_crypto(ref) {
-        Fid.NATIVE_CRYPTO = ref;
+        Fcrypto.NATIVE_CRYPTO = ref;
     }
 
     // TODO: this is not currently in use, right?
     static async random_bytes_strong(len) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.randomBytes(len);
+            const res = await Fcrypto.NATIVE_CRYPTO.randomBytes(len);
 
             // TODO: handle error
 
@@ -69,7 +69,7 @@ class Fcrypto {
 
 	static async generate_key_pair(passphrase) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.generateRSAKeyPair(Fid.MODULUS_LEN, passphrase);
+            const res = await Fcrypto.NATIVE_CRYPTO.generateRSAKeyPair(Fcrypto.MODULUS_LEN, passphrase);
 
             // TODO: handle error
 
@@ -80,16 +80,16 @@ class Fcrypto {
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            const pair = crypto.generateKeyPairSync(Fid.KEY_TYPE, {
-                modulusLength: Fid.MODULUS_LEN,
+            const pair = crypto.generateKeyPairSync(Fcrypto.KEY_TYPE, {
+                modulusLength: Fcrypto.MODULUS_LEN,
                 publicKeyEncoding: {
-                    type: Fid.PUBKEY_TYPE,
-                    format: Fid.PUBKEY_FORMAT
+                    type: Fcrypto.PUBKEY_TYPE,
+                    format: Fcrypto.PUBKEY_FORMAT
                 },
                 privateKeyEncoding: {
-                    type: Fid.PRIVKEY_TYPE,
-                    format: Fid.PRIVKEY_FORMAT,
-                    cipher: Fid.PRIVKEY_CIPHER, 
+                    type: Fcrypto.PRIVKEY_TYPE,
+                    format: Fcrypto.PRIVKEY_FORMAT,
+                    cipher: Fcrypto.PRIVKEY_CIPHER, 
                     passphrase: passphrase
                 }
             });
@@ -103,24 +103,24 @@ class Fcrypto {
     // Returns key as buffer
     static async generate_one_time_key() {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.randomBytes(Fid.ONE_TIME_KEY_LEN);
+            const res = await Fcrypto.NATIVE_CRYPTO.randomBytes(Fcrypto.ONE_TIME_KEY_LEN);
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            return crypto.randomBytes(Fid.ONE_TIME_KEY_LEN);
+            return crypto.randomBytes(Fcrypto.ONE_TIME_KEY_LEN);
         }
     }
 
     // Returns IV as buffer
     static async generate_one_time_iv() {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.randomBytes(Fid.ONE_TIME_IV_LEN);
+            const res = await Fcrypto.NATIVE_CRYPTO.randomBytes(Fcrypto.ONE_TIME_IV_LEN);
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            return crypto.randomBytes(Fid.ONE_TIME_IV_LEN);
+            return crypto.randomBytes(Fcrypto.ONE_TIME_IV_LEN);
         }
     }
 
@@ -128,19 +128,19 @@ class Fcrypto {
     // Returns unencrypted key as DER buffer
     static async decrypt_private_key(key, passphrase) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.decryptPrivateKeyRSA(key.toString("hex"), passphrase);
+            const res = await Fcrypto.NATIVE_CRYPTO.decryptPrivateKeyRSA(key.toString("hex"), passphrase);
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
             return crypto.createPrivateKey({
                 key: key, 
-                format: Fid.PRIVKEY_FORMAT, 
-                type: Fid.PRIVKEY_TYPE, 
+                format: Fcrypto.PRIVKEY_FORMAT, 
+                type: Fcrypto.PRIVKEY_TYPE, 
                 passphrase: passphrase
             }).export({
-                format: Fid.PRIVKEY_FORMAT,
-                type: Fid.PRIVKEY_TYPE
+                format: Fcrypto.PRIVKEY_FORMAT,
+                type: Fcrypto.PRIVKEY_TYPE
             });
         } 
     }
@@ -148,42 +148,42 @@ class Fcrypto {
     // Assumes UNENCRYPTED privkey key as DER buffer
     static async sign(data, key) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.signRSA(data.toString("hex"), key.toString("hex"));
+            const res = await Fcrypto.NATIVE_CRYPTO.signRSA(data.toString("hex"), key.toString("hex"));
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            const sign = crypto.createSign(Fid.SIG_ALGORITHM);
+            const sign = crypto.createSign(Fcrypto.SIG_ALGORITHM);
             sign.update(data);
             sign.end();
-            return sign.sign({key: key, format: Fid.PRIVKEY_FORMAT, type: Fid.PRIVKEY_TYPE});
+            return sign.sign({key: key, format: Fcrypto.PRIVKEY_FORMAT, type: Fcrypto.PRIVKEY_TYPE});
         }
     }
 
     // Assumes pubkey key as DER buffer
     static async verify(data, key, sig) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.verifyRSA(data.toString("hex"), key.toString("hex"), sig.toString("hex"));
+            const res = await Fcrypto.NATIVE_CRYPTO.verifyRSA(data.toString("hex"), key.toString("hex"), sig.toString("hex"));
             return res;
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            const verify = crypto.createVerify(Fid.SIG_ALGORITHM);
+            const verify = crypto.createVerify(Fcrypto.SIG_ALGORITHM);
             verify.update(data);
             verify.end();
-            return verify.verify({key: key, format: Fid.PUBKEY_FORMAT, type: Fid.PUBKEY_TYPE}, sig);
+            return verify.verify({key: key, format: Fcrypto.PUBKEY_FORMAT, type: Fcrypto.PUBKEY_TYPE}, sig);
         }
     }
 
     // Assumes symmetric key one_time_key as buffer, iv as buffer
     static async symmetric_encrypt(data, one_time_key, iv) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.symmetricEncrypt(data.toString("hex"), one_time_key.toString("hex"), iv.toString("hex"));
+            const res = await Fcrypto.NATIVE_CRYPTO.symmetricEncrypt(data.toString("hex"), one_time_key.toString("hex"), iv.toString("hex"));
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            const cipher = crypto.createCipheriv(Fid.ONE_TIME_KEY_CIPHER, one_time_key, iv);
+            const cipher = crypto.createCipheriv(Fcrypto.ONE_TIME_KEY_CIPHER, one_time_key, iv);
             const encrypted = cipher.update(data);
             return Buffer.concat([encrypted, cipher.final()]);
         }
@@ -192,12 +192,12 @@ class Fcrypto {
     // Assumes symmetric key one_time_key as buffer, iv as buffer
     static async symmetric_decrypt(data, one_time_key, iv) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.symmetricDecrypt(data.toString("hex"), one_time_key.toString("hex"), iv.toString("hex"));
+            const res = await Fcrypto.NATIVE_CRYPTO.symmetricDecrypt(data.toString("hex"), one_time_key.toString("hex"), iv.toString("hex"));
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            const cipher = crypto.createDecipheriv(Fid.ONE_TIME_KEY_CIPHER, one_time_key, iv);
+            const cipher = crypto.createDecipheriv(Fcrypto.ONE_TIME_KEY_CIPHER, one_time_key, iv);
             const decrypted = cipher.update(data);
             return Buffer.concat([decrypted, cipher.final()]);
         }
@@ -206,24 +206,24 @@ class Fcrypto {
     // Assumes pubkey key as DER buffer, data as buffer
     static async public_encrypt(data, key) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.publicEncryptRSA(data.toString("hex"), key.toString("hex"));
+            const res = await Fcrypto.NATIVE_CRYPTO.publicEncryptRSA(data.toString("hex"), key.toString("hex"));
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            return crypto.publicEncrypt({key: key, format: Fid.PUBKEY_FORMAT, type: Fid.PUBKEY_TYPE}, data);
+            return crypto.publicEncrypt({key: key, format: Fcrypto.PUBKEY_FORMAT, type: Fcrypto.PUBKEY_TYPE}, data);
         }
     }
 
     // Assumes UNENCRYPTED privkey key as DER buffer, data as buffer
     static async private_decrypt(data, key) {
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
-            const res = await Fid.NATIVE_CRYPTO.privateDecryptRSA(data.toString("hex"), key.toString("hex"));
+            const res = await Fcrypto.NATIVE_CRYPTO.privateDecryptRSA(data.toString("hex"), key.toString("hex"));
             return Buffer.from(res);
         }
 
         if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
-            return crypto.privateDecrypt({key: key, format: Fid.PRIVKEY_FORMAT, type: Fid.PRIVKEY_TYPE}, data);
+            return crypto.privateDecrypt({key: key, format: Fcrypto.PRIVKEY_FORMAT, type: Fcrypto.PRIVKEY_TYPE}, data);
         }
     }
 }
