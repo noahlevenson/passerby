@@ -12,7 +12,7 @@
 const { Fntree_node } = require("./fntree_node.js");
 
 class Fntree {
-	static LABELS = {
+	static COLOR = {
 		BLACK: 0,
 		WHITE: 1
 	};
@@ -85,11 +85,11 @@ class Fntree {
 		const label_list = [];
 
 		for (let i = 0; i < node_list.length; i += 1) {
-			label_list.push({label: Fntree.LABELS.WHITE, d: Number.POSITIVE_INFINITY});
+			label_list.push({label: Fntree.COLOR.WHITE, d: Number.POSITIVE_INFINITY});
 		}
 
 		const q = [];
-		label_list[node_list.indexOf(node)] = {label: Fntree.LABELS.BLACK, d: 0};
+		label_list[node_list.indexOf(node)] = {label: Fntree.COLOR.BLACK, d: 0};
 		q.push(node);
 
 		while (q.length > 0) {
@@ -98,8 +98,8 @@ class Fntree {
 			const parent = undirected && v.parent !== null ? [v.parent] : [];
 
 			v.get_all_children().concat(parent).forEach((w) => {
-				if (label_list[node_list.indexOf(w)].label === Fntree.LABELS.WHITE) {
-					label_list[node_list.indexOf(w)] = {label: Fntree.LABELS.BLACK, d: label_list[node_list.indexOf(v)].d + 1};
+				if (label_list[node_list.indexOf(w)].label === Fntree.COLOR.WHITE) {
+					label_list[node_list.indexOf(w)] = {label: Fntree.COLOR.BLACK, d: label_list[node_list.indexOf(v)].d + 1};
 					q.push(w);
 				}
 			});
