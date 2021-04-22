@@ -241,6 +241,8 @@ class Fksrv {
 	compute_strong_set() {
 		const scc = this.build_wot().scc();
 
+		// TODO: surely there's a way to do this that isn't O(n ^ 2)
+
 		for (let i = 0; i < scc.length; i += 1) {
 			if (scc[i].includes(Fksrv.ROOT_KEY)) {
 				return scc[i];
