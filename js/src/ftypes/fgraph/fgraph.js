@@ -26,7 +26,17 @@ class Fgraph {
 		}
 	}
 
+	// Delete a vertex with label v and clean up dangling edges
+	// assumes v as string
+	del_vertex(v) {
+		if (this.data.has(v)) {
+			this.data.delete(v);
+			Array.from(this.data.keys()).forEach(u => this.del_edge(u, v));
+		}
+	}
+
 	// Idempotently add an edge from vertex label v to vertex label u
+	// this will create vertices v and u if they don't already exist
 	// assumes labels as strings
 	add_edge(v, u) {
 		this.add_vertex(v);
@@ -38,7 +48,7 @@ class Fgraph {
 		}
 	}
 
-	// Idempotently remove an edge from vertex label v to vertex label u
+	// Idempotently remove an edge from vertex label v to vertex label u,
 	// assumes labels as strings
 	del_edge(v, u) {
 		const e = this.data.get(v);
@@ -85,7 +95,12 @@ class Fgraph {
 	// Compute the transpose of this Fgraph and return it as a new Fgraph
 	t() {
 		const gt = new Fgraph();
-		Array.from(this.data.entries()).forEach(pair => pair[1].forEach(e => gt.add_edge(e, pair[0])));
+
+		Array.from(this.data.entries()).forEach((pair) => {
+			pair[1].forEach(e => gt.add_edge(e, pair[0]));
+			gt.add_vertex(pair[0]); // If there's a vertex in this Fgraph with no inedges we still want it to appear in the transpose
+		});
+
 		return gt;
 	}
 

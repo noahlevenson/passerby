@@ -88,6 +88,7 @@ const { Fdlt_block } = require("../src/fdlt/fdlt_block.js");
 
         setTimeout(() => {
             console.log(network.fksrv.build_wot());
+            console.log(network.fksrv.compute_strong_set());
         }, 30000)
     }, 30000); 
 })();
