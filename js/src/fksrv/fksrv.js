@@ -191,7 +191,7 @@ class Fksrv {
 			return;
 		}
 
-    	this.dlt.tx_cache.set(Fdlt_tsact.sha256(Fdlt_tsact.serialize(tx)));
+    	this.dlt.tx_cache.set(Fdlt_tsact.sha256(Fdlt_tsact.serialize(tx)), tx);
     	this.dlt.broadcast(this.dlt.tx_req, {fdlt_tsact: tx});
 	}
 
