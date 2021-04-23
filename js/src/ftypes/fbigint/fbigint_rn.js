@@ -42,7 +42,7 @@ class Fbigint extends Fbigint_base {
 	}
 
 	static _json_revive(key, val) {
-		if (typeof val === "object" && val.type === Fbigint_base.JSON_TYPE) {
+		if (typeof val === "object" && val !== "null" && val.type === Fbigint_base.JSON_TYPE) {
 			return new Fbigint(val.data);
 		}
 
