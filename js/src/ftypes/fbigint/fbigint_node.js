@@ -40,8 +40,8 @@ class Fbigint extends Fbigint_base {
 	}
 
 	static _json_revive(key, val) {
-		if (typeof val === "string" && val.substring(0, Fbigint.JSON_PREFIX.length) === Fbigint.JSON_PREFIX) {
-			return new Fbigint(val.substring(Fbigint.JSON_PREFIX.length, val.length));
+		if (typeof val === "object" && val.type === Fbigint_base.JSON_TYPE) {
+			return new Fbigint(val.data);
 		}
 
 		return val;
@@ -128,7 +128,10 @@ class Fbigint extends Fbigint_base {
 	}
 
 	toJSON() {
-		return `${Fbigint.JSON_PREFIX}${this.data.toString(16)}`;
+		return {
+			type: Fbigint_base.JSON_TYPE,
+			data: this.data.toString(16)
+		};
 	}
 }
 

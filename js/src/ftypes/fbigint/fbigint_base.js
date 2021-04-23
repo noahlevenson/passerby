@@ -10,7 +10,7 @@
 "use strict";
 
 class Fbigint_base {
-	static JSON_PREFIX = "__$!0x";
+	static JSON_TYPE = "Fbigint";
 	static BYTE_SCALE_MAX = 256;
 
 	data;
