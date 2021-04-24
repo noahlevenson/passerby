@@ -9,11 +9,14 @@
 
 "use strict";
 
+const { Fapp_env } = require("../../fapp/fapp_env.js");
 const { Fkad_net } = require("./fkad_net.js");
 const { Fkad_msg } = require("../fkad_msg.js");
 const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 const { Ftrans_msg } = require("../../ftrans/ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans/ftrans_rinfo.js");
+const { Futil } = require("../../futil/futil.js");
+const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? require("../../ftypes/fbigint/fbigint_rn.js") : require("../../ftypes/fbigint/fbigint_node.js");
 
 class Fkad_net_solo extends Fkad_net {
 	trans;
@@ -29,11 +32,16 @@ class Fkad_net_solo extends Fkad_net {
 		this.trans.network.on("message", this._on_message.bind(this));
 	}
 
-	_on_message(ftrans_msg) {
+	_on_message(ftrans_msg, rinfo) {
 		try {
 			if (ftrans_msg.type === Ftrans_msg.TYPE.FKAD) {
 				const msg = new Fkad_msg(ftrans_msg.msg);
-				this._in(msg);
+
+				// Sender's node ID must equal the hash of their pubkey, we know they're
+				// the true owner of this pubkey bc we validated their sig at Ftrans layer
+				if (msg.from.node_id.equals(new Fbigint(Hutil._sha1(rinfo.pubkey)))) {
+					this._in(msg);
+				}
 			}
 		} catch(err) {
 			// Do nothing?
