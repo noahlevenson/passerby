@@ -17,7 +17,7 @@ For software clients which operationalize libfood for end users, see Free Food B
 
 **libfood is pre-alpha and in active development. There will be bugs, security issues, missing features, etc.**
 
-Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by "Hacker in Residence" (and co-owner of [Pizzeria La Rosa](https://www.youtube.com/watch?v=9bz1Ko5ZDzQ&t=266s) in New Rochelle, NY) [Noah Levenson](https://noahlevenson.com).
+Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by Hacker in Residence (and co-owner of [Pizzeria La Rosa](https://www.youtube.com/watch?v=9bz1Ko5ZDzQ&t=266s) in New Rochelle, NY) [Noah Levenson](https://noahlevenson.com).
 
 ### :handbag: Portability as a design requirement
 Restaurant owners are accustomed to using marketplace order management apps, such as those provided by Grubhub and DoorDash, on mobile devices. But hungry people shouldn't be expected to download a mobile app to order food. Thus, a mandatory objective of this implementation is to ensure portability across a variety of JS runtimes.
@@ -63,13 +63,15 @@ Free Food implements [STUN](https://tools.ietf.org/html/rfc5389) for NAT travers
 At identity creation time, Free Food uses OpenStreetMap's [Nominatim](https://github.com/osm-search/Nominatim) open source geocoder to convert street address to latitude and longitude. OpenStreetMap data is © OpenStreetMap contributors, available under the [Open Database License](https://www.openstreetmap.org/copyright).
 
 ### :question: Why Free Food
-Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates) companies which are entirely the product of Silicon Valley speculation.
+Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.barrons.com/articles/demand-soars-for-food-delivery-companies-theyre-still-not-profitable-51590183967) companies which are entirely the product of Silicon Valley speculation.
 
-Consequently, as the Wall Street Journal and others have reported, [some of these platforms are planning to stop providing delivery logistics](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is merely to broker local restaurant orders, middlemen like Grubhub charge restaurants 30% per transaction. This far exceeds the profit margins of a typical restaurant.
+As the Wall Street Journal and others have reported, [some of these platforms have recognized that offering third party delivery services as a centralized middleman is a failed business model](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates). Consequently, [there is a push to abandon delivery logistics entirely](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is merely to broker local restaurant orders, middlemen like Grubhub charge restaurants 30% per transaction. This far exceeds the profit margins of a typical restaurant.
 
 The goal of Free Food is to provide this function as a protocol rather than a platform, eliminating the middleman by enabling the world's restaurants to effortlessly self-organize as a decentralized marketplace. 
 
 In other words: **Free Food lets you search for nearby restaurants, view their menus, and place an order with one click -- but without paying fees to a parasitic third party delivery platform.**
+
+Free Food is not meant to replace restaurant e-commerce tools like Toast, Square, or Bentobox. Rather, Free Food aims to provide an aggregated marketplace "frontend" which can integrate with these platforms: Customers use Free Food for convenient restaurant discovery, and at checkout time, orders are processed using each restaurant's payment gateway of choice.
 
 ### :brain: Active research
 1. An improved trust metric based on a deep learning approach to network community detection
