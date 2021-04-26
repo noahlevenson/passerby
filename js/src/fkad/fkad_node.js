@@ -99,51 +99,60 @@ class Fkad_node {
 	// which are full of signed [location_key, Fapp_bboard] pairs published by 
 	// authorized restaurant peers
 	static async _is_valid_storable(data) {
-		// We only store PHT nodes to our DHT
-		if (!(data instanceof Fpht_node) || !Fpht_node.valid_magic(data)) {
+		try {
+			// We only store PHT nodes to our DHT
+			if (!Fpht_node.valid_magic(data)) {
+				return false;
+			}
+
+			// TODO: there should be a Fpht_node static method for this,
+			// and Fpht_nodes shouldn't have any instance methods at all
+			const pairs = Array.from(data.data.entries());
+
+			for (let i = 0; i < pairs.length; i += 1) {
+				const location_key = pairs[i][0];
+				const bboard = pairs[i][1];
+
+				// location_key must be an n-bit location key and
+				// bboard must be a valid Fapp_bboard object
+				// TODO: write me
+
+				// The data must be published by a peer with a valid proof of work
+				// TODO: this is insecure until we replace Fid.hash_cert with a new 
+				// system which hashes over the entire Fid_pub
+				const pow = Fid.is_valid_pow(
+					Fid.hash_cert(bboard.cred.pubkey, bboard.cred.nonce), 
+					Fid.POW_LEAD_ZERO_BITS
+				);
+
+				if (!pow) {
+					return false;
+				}
+
+				// The data must be published by a peer who's in the strong set
+				// TODO: write me
+
+				// The data must be signed by the genuine owner of the named keypair
+				const valid_sig = await Fapp_bboard.verify(bboard, bboard.cred.pubkey);
+
+				if (!valid_sig) {
+					return false;
+				}
+
+				// The location_key matches the lat/long found in the signed data
+				// TODO: this is also insecure until we replace Fid.hash_cert as above
+				const coord = new Fgeo_coord({lat: bboard.cred.lat, long: bboard.cred.long});
+				const valid_lk = location_key.equals(coord.linearize());
+
+				if (valid_lk) {
+					return false;
+				}
+			}
+
+			return true;
+		} catch (err) {
 			return false;
-		}
-
-		const pairs = data.get_all_pairs();
-
-		for (let i = 0; i < pairs.length; i += 1) {
-			const location_key = pairs[i][0];
-			const bboard = pairs[i][1];
-
-			// location_key must be an n-bit location key and
-			// bboard must be a valid Fapp_bboard object
-			// TODO: write me
-
-			// The data must be published by a peer with a valid proof of work
-			// TODO: this is insecure until we replace Fid.hash_cert with a new 
-			// system which hashes over the entire Fid_pub
-			const pow = Fid.is_valid_pow(Fid.hash_cert(bboard.cred.pubkey, bboard.cred.nonce), Fid.POW_LEAD_ZERO_BITS);
-
-			if (!pow) {
-				return false;
-			}
-
-			// The data must be published by a peer who's in the strong set
-			// TODO: write me
-
-			// The data must be signed by the genuine owner of the named keypair
-			const valid_sig = await Fapp_bboard.verify(bboard, bboard.cred.pubkey);
-
-			if (!valid_sig) {
-				return false;
-			}
-
-			// The location_key matches the lat/long found in the signed data
-			// TODO: this is also insecure until we replace Fid.hash_cert as above
-			const coord = new Fgeo_coord({lat: bboard.cred.lat, long: bboard.cred.long});
-			const valid_lk = location_key.equals(coord.linearize());
-
-			if (valid_lk) {
-				return false;
-			}
-		}
-
-		return true;
+		}	
 	}
 	
 	// Get XOR "distance" between two Fbigint values
