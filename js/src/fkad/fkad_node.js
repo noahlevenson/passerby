@@ -24,6 +24,7 @@ const { Fkad_data } = require("./fkad_data.js");
 const { Fbintree } = require("../ftypes/fbintree/fbintree.js");
 const { Fbintree_node } = require("../ftypes/fbintree/fbintree_node.js");
 const { Fid } = require("../fid/fid.js");
+const { Fgeo } = require("../fgeo/fgeo.js");
 const { Fpht_node } = require("../fpht/fpht_node.js");
 const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 
@@ -143,7 +144,7 @@ class Fkad_node {
 				// The location_key matches the lat/long found in the signed data
 				// TODO: this is also insecure until we replace Fid.hash_cert as above
 				const coord = new Fgeo_coord({lat: bboard.cred.lat, long: bboard.cred.long});
-				const valid_lk = location_key.equals(coord.linearize());
+				const valid_lk = new Fbigint(location_key).equals(coord.linearize());
 
 				if (valid_lk) {
 					return false;
