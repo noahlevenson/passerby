@@ -453,7 +453,7 @@ class Fkad_node {
 	}
 
 	_res_store(req) {
-		this._is_valid_storable(req.data.payload[1]).then((res) => {
+		Fkad_node._is_valid_storable(req.data.payload[1]).then((res) => {
 			if (!res) {
 				return;
 			}
