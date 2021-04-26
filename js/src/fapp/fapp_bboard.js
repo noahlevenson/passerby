@@ -9,12 +9,15 @@
 
 "use strict";
 
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
+
 class Fapp_bboard {
 	cred;
 	img_cred_base64;
 	form;
+	sig;
 	
-	constructor({cred = null, img_cred_base64 = null, form = null}  = {}) {
+	constructor({cred = null, img_cred_base64 = null, form = null, sig = null}  = {}) {
 		if (!Array.isArray(form.data)) {
 			throw new Error("form.data doesn't seem to be an array - are you sure you're publishing a frozen form?");
 		}
@@ -25,9 +28,24 @@ class Fapp_bboard {
 		this.img_cred_base64 = img_cred_base64; 
 		// Generalization of a food menu
 		this.form = form;
+		// Cryptographic signature
+		this.sig = sig;
 	}
 
 	// TODO: write a static method to safely validate size (in bytes) and dimensions of img_cred_base64
+
+	static async sign(fapp_bboard) {
+		fapp_bboard.sig = null;
+		const privkey = await Fcrypto.get_privkey();
+		fapp_bboard.sig = await Fcrypto.sign(Buffer.from(JSON.stringify(fapp_bboard)), privkey);
+		return fapp_bboard;
+	}
+
+	static async verify(fapp_bboard, pubkey) {
+		const copy = new Fapp_bboard(JSON.parse(JSON.stringify(fapp_bboard)));
+		copy.sig = null;
+		return await Fcrypto.verify(Buffer.from(JSON.stringify(copy)), pubkey, fapp_bboard.sig);
+	}
 }
 
 module.exports.Fapp_bboard = Fapp_bboard;

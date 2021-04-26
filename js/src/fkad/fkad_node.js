@@ -11,6 +11,7 @@
 
 
 const { Fapp_env } = require("../fapp/fapp_env.js");
+const { Fapp_bboard } = require("../fapp/fapp_bboard.js");
 const { Flog } = require("../flog/flog.js");
 const { Futil } = require("../futil/futil.js");
 const { Fkad_net } = require("./net/fkad_net.js");
@@ -22,6 +23,8 @@ const { Fkad_ds } = require("./fkad_ds.js");
 const { Fkad_data } = require("./fkad_data.js");
 const { Fbintree } = require("../ftypes/fbintree/fbintree.js");
 const { Fbintree_node } = require("../ftypes/fbintree/fbintree_node.js");
+const { Fid } = require("../fid/fid.js");
+const { Fpht_node } = require("../fpht/fpht_node.js");
 const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 
 class Fkad_node {
@@ -33,7 +36,7 @@ class Fkad_node {
 	static T_DATA_TTL = (1000 * 60 * 60 * 24) + (1000 * 20); // How long does data live on this network? Include grace period to prevent race condition with T_REPUBLISH
 	static T_REPUBLISH = 1000 * 60 * 60 * 24; // How often do we republish data that we are the original publishers of? (We must republish before T_DATA_TTL or our data will get wiped)
 	static T_REPLICATE = 1000 * 60 * 60; // How often do we republish our entire data store?
-	
+
 	net;
 	eng;
 	node_id;
@@ -90,6 +93,59 @@ class Fkad_node {
 		this.net.network.on("message", this.eng._on_message.bind(this.eng)) // TODO: move this to boostrap - don't want to handle messages until we've decided to join the network
 	}
 
+	// This function is where we enforce certain aspects of security and data 
+	// integrity on the DHT (which is obv just a view into the PHT)
+	// In short: the only kind of data we allow on our DHT is PHT nodes
+	// which are full of signed [location_key, Fapp_bboard] pairs published by 
+	// authorized restaurant peers
+	static async _is_valid_storable(data) {
+		// We only store PHT nodes to our DHT
+		if (!(data instanceof Fpht_node) || !Fpht_node.valid_magic(data)) {
+			return false;
+		}
+
+		const pairs = data.get_all_pairs();
+
+		for (let i = 0; i < pairs.length; i += 1) {
+			const location_key = pairs[i][0];
+			const bboard = pairs[i][1];
+
+			// location_key must be an n-bit location key and
+			// bboard must be a valid Fapp_bboard object
+			// TODO: write me
+
+			// The data must be published by a peer with a valid proof of work
+			// TODO: this is insecure until we replace Fid.hash_cert with a new 
+			// system which hashes over the entire Fid_pub
+			const pow = Fid.is_valid_pow(Fid.hash_cert(bboard.cred.pubkey, bboard.cred.nonce), Fid.POW_LEAD_ZERO_BITS);
+
+			if (!pow) {
+				return false;
+			}
+
+			// The data must be published by a peer who's in the strong set
+			// TODO: write me
+
+			// The data must be signed by the genuine owner of the named keypair
+			const valid_sig = await Fapp_bboard.verify(bboard, bboard.cred.pubkey);
+
+			if (!valid_sig) {
+				return false;
+			}
+
+			// The location_key matches the lat/long found in the signed data
+			// TODO: this is also insecure until we replace Fid.hash_cert as above
+			const coord = new Fgeo_coord({lat: bboard.cred.lat, long: bboard.cred.long});
+			const valid_lk = location_key.equals(coord.linearize());
+
+			if (valid_lk) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+	
 	// Get XOR "distance" between two Fbigint values
 	static _get_distance(key1, key2) {
 		return key1.xor(key2);
@@ -397,17 +453,23 @@ class Fkad_node {
 	}
 
 	_res_store(req) {
-		// # of nodes between us and the key is approximated from the tree depth of their respective buckets
-		const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
-		const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
-		const ttl = Fkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
+		this._is_valid_storable(req.data.payload[1]).then((res) => {
+			if (!res) {
+				return;
+			}
 
-		this.network_data.put({
-			key: req.data.payload[0].toString(),
-			val: req.data.payload[1],
-			ttl: ttl
+			// # of nodes between us and the key is approximated from the tree depth of their respective buckets
+			const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
+			const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
+			const ttl = Fkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
+
+			this.network_data.put({
+				key: req.data.payload[0].toString(),
+				val: req.data.payload[1],
+				ttl: ttl
+			});
 		});
-
+		
 		return new Fkad_msg({
 			rpc: Fkad_msg.RPC.STORE,
 			from: new Fkad_node_info(this.node_info),
