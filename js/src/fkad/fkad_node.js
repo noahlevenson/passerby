@@ -107,7 +107,8 @@ class Fkad_node {
 
 			// TODO: there should be a Fpht_node static method for this,
 			// and Fpht_nodes shouldn't have any instance methods at all
-			const pairs = Array.from(data.data.entries());
+			const pht_node = new Fpht_node(data);
+			const pairs = pht_node.get_all_pairs();
 
 			for (let i = 0; i < pairs.length; i += 1) {
 				const location_key = pairs[i][0];
