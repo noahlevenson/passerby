@@ -37,14 +37,16 @@ class Fapp_bboard {
 	static async sign(fapp_bboard) {
 		fapp_bboard.sig = null;
 		const privkey = await Fcrypto.get_privkey();
-		fapp_bboard.sig = await Fcrypto.sign(Buffer.from(JSON.stringify(fapp_bboard)), privkey);
+		const sig = await Fcrypto.sign(Buffer.from(JSON.stringify(fapp_bboard)), privkey);
+		fapp_bboard.sig = sig.toString("hex");
 		return fapp_bboard;
 	}
 
+	// pubkey as hex string
 	static async verify(fapp_bboard, pubkey) {
 		const copy = new Fapp_bboard(JSON.parse(JSON.stringify(fapp_bboard)));
 		copy.sig = null;
-		return await Fcrypto.verify(Buffer.from(JSON.stringify(copy)), pubkey, fapp_bboard.sig);
+		return await Fcrypto.verify(Buffer.from(JSON.stringify(copy)), Buffer.from(pubkey, "hex"), Buffer.from(fapp_bboard.sig, "hex"));
 	}
 }
 
