@@ -96,7 +96,9 @@ class Fkad_node {
 
 	// This function is where we enforce certain aspects of security and data 
 	// integrity on the DHT (which is obv just a view into the PHT)
-	// In short: the only kind of data we allow on our DHT is PHT nodes
+	// Execute over any data we receive in response to a value lookup and
+	// also any data a peer requests for us to store
+	// The only kind of data we allow on our DHT is PHT nodes
 	// which are full of signed [location_key, Fapp_bboard] pairs published by 
 	// authorized restaurant peers
 	static async _is_valid_storable(data) {
@@ -330,9 +332,16 @@ class Fkad_node {
 			
 			contacts.forEach((node) => {
 				res.push(new Promise((resolve, reject) => {
-					rpc.bind(this)(key, node.get_data(), (res, ctx) => {
+					rpc.bind(this)(key, node.get_data(), async (res, ctx) => {
 						if (res.data.type === Fkad_data.TYPE.VAL) {
-							resolve([res.data.payload, active.bst_min()]);
+							const is_valid = await Fkad_node._is_valid_storable(res.data.payload);
+
+							if (!is_valid) {
+								resolve(null);
+							} else {
+								resolve([res.data.payload, active.bst_min()]);
+							}
+
 							return;
 						}	
 
