@@ -34,10 +34,10 @@ class Fapp_bboard {
 
 	// TODO: write a static method to safely validate size (in bytes) and dimensions of img_cred_base64
 
-	static async sign(fapp_bboard) {
+	// privkey as hex string
+	static async sign(fapp_bboard, privkey) {
 		fapp_bboard.sig = null;
-		const privkey = await Fcrypto.get_privkey();
-		const sig = await Fcrypto.sign(Buffer.from(JSON.stringify(fapp_bboard)), privkey);
+		const sig = await Fcrypto.sign(Buffer.from(JSON.stringify(fapp_bboard)), Buffer.from(privkey, "hex"));
 		fapp_bboard.sig = sig.toString("hex");
 		return fapp_bboard;
 	}
