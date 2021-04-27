@@ -332,15 +332,11 @@ class Fkad_node {
 			
 			contacts.forEach((node) => {
 				res.push(new Promise((resolve, reject) => {
-					rpc.bind(this)(key, node.get_data(), async (res, ctx) => {
+					rpc.bind(this)(key, node.get_data(), (res, ctx) => {
 						if (res.data.type === Fkad_data.TYPE.VAL) {
-							const is_valid = await Fkad_node._is_valid_storable(res.data.payload);
-
-							if (!is_valid) {
-								resolve(null);
-							} else {
-								resolve([res.data.payload, active.bst_min()]);
-							}
+							Fkad_node._is_valid_storable(res.data.payload[0]).then((is_valid) => {
+								resolve(is_valid ? [res.data.payload, active.bst_min()] : null);
+							});
 
 							return;
 						}	
