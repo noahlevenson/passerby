@@ -1,6 +1,6 @@
 /** 
 * FBUY_STATUS
-* An FBUY_STATUS encapsulates a status information  
+* Encapsulates a status information  
 * for a given transaction ID
 *
 *
@@ -10,19 +10,17 @@
 "use strict";
 
 class Fbuy_status {
-	static CODE = {
-		CONFIRMED: 0
-	}
+  static CODE = {
+    CONFIRMED: 0
+  }
 
-	id;
-	code;
+  id;
+  code;
 
-	constructor({id = null, code = null} = {}) {
-		this.id = id;
-		this.code = code;
-	}
-
-	// TODO: getters and setters
+  constructor({id = null, code = null} = {}) {
+    this.id = id;
+    this.code = code;
+  }
 }
 
 module.exports.Fbuy_status = Fbuy_status;

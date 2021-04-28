@@ -1,6 +1,6 @@
 /** 
 * FBUY_ITEM_CUST
-* Class for an FBUY item customization
+* A customization type for a purchasable entity
 * 
 * 
 * 
@@ -10,14 +10,14 @@
 "use strict";
 
 class Fbuy_item_cust {
-	desc;
-	price;
+  desc;
+  price;
 
-	constructor({desc = "", price = 0.00} = {}) {
-		// TODO: validation
-		this.desc = desc;
-		this.price = price;
-	}
+  constructor({desc = "", price = 0.00} = {}) {
+    // TODO: validation
+    this.desc = desc;
+    this.price = price;
+  }
 }
 
 module.exports.Fbuy_item_cust = Fbuy_item_cust;

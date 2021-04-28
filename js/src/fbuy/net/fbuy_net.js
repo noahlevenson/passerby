@@ -12,19 +12,19 @@
 const EventEmitter = require("events");
 
 class Fbuy_net {
-	network;
+  network;
 
-	constructor() {
-		this.network = new EventEmitter();
-	}
+  constructor() {
+    this.network = new EventEmitter();
+  }
 
-	_in(msg, rinfo) {
-		this.network.emit("message", msg, rinfo);
-	}
+  _in(msg, rinfo) {
+    this.network.emit("message", msg, rinfo);
+  }
 
-	_out(msg, rinfo) {
-		throw new Error("Subclasses must implement the _out() method");
-	}
+  _out(msg, rinfo) {
+    throw new Error("Subclasses must implement the _out() method");
+  }
 }
 
 module.exports.Fbuy_net = Fbuy_net;

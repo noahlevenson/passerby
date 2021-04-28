@@ -15,33 +15,33 @@ const { Ftrans_msg } = require("../../ftrans/ftrans_msg.js");
 const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 
 class Fbuy_net_solo extends Fbuy_net {
-	trans;
+  trans;
 
-	constructor(trans) {
-		super();
+  constructor(trans) {
+    super();
 
-		if (!(trans instanceof Ftrans)) {
-			throw new TypeError("Argument 'trans' must be instance of Ftrans");
-		}
+    if (!(trans instanceof Ftrans)) {
+      throw new TypeError("Argument 'trans' must be instance of Ftrans");
+    }
 
-		this.trans = trans;
-		this.trans.network.on("message", this._on_message.bind(this));
-	}
+    this.trans = trans;
+    this.trans.network.on("message", this._on_message.bind(this));
+  }
 
-	_on_message(ftrans_msg, rinfo) {
-		try {
-			if (ftrans_msg.type === Ftrans_msg.TYPE.FBUY) {
-				const msg = new Fbuy_msg(ftrans_msg.msg);
-				this._in(msg, rinfo);
-			}
-		} catch(err) {
-			// Silently ignore it?
-		}
-	}
+  _on_message(ftrans_msg, rinfo) {
+    try {
+      if (ftrans_msg.type === Ftrans_msg.TYPE.FBUY) {
+        const msg = new Fbuy_msg(ftrans_msg.msg);
+        this._in(msg, rinfo);
+      }
+    } catch(err) {
+      // Silently ignore it?
+    }
+  }
 
-	_out(fbuy_msg, rinfo) {
-		this.trans._send(fbuy_msg, rinfo);
-	}
+  _out(fbuy_msg, rinfo) {
+    this.trans._send(fbuy_msg, rinfo);
+  }
 }
 
 module.exports.Fbuy_net_solo = Fbuy_net_solo;
