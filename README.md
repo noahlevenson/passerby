@@ -11,6 +11,15 @@
 	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
 </p>
 
+### :compass: Table of contents
+* [What is libfood?](#what-is-libfood)
+* [Portability as a design requirement](#portability-as-a-design-requirement)
+* [Implementation overview](#implementation-overview)
+* [Technology overview](#technology-overview)
+* [Why Free Food?](#why-free-food)
+* [Active research](#active-researc)
+
+### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
 
 For software clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline.
@@ -20,7 +29,7 @@ For software clients which operationalize libfood for end users, see Free Food B
 Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by Hacker in Residence (and co-owner of [Pizzeria La Rosa](https://www.youtube.com/watch?v=9bz1Ko5ZDzQ&t=266s) in New Rochelle, NY) [Noah Levenson](https://noahlevenson.com).
 
 ### :handbag: Portability as a design requirement
-Restaurant owners are accustomed to using marketplace order management apps, such as those provided by Grubhub and DoorDash, on mobile devices. But hungry people shouldn't be expected to download a mobile app to order food. Thus, a mandatory objective of this implementation is to ensure portability across a variety of JS runtimes.
+Restaurant owners are accustomed to using marketplace order management apps, such as those provided by Grubhub and DoorDash, on mobile devices. But hungry people shouldn't be expected to download a mobile app to order food. Thus, a mandatory objective of this implementation is to ensure portability across a variety of disparate JS runtimes.
 
 |JS Runtime  |Compatible?|Dependencies|Notes                                                    |
 |------------|-----------|------------|---------------------------------------------------------|
@@ -62,7 +71,7 @@ Free Food implements [STUN](https://tools.ietf.org/html/rfc5389) for NAT travers
 
 At identity creation time, Free Food uses OpenStreetMap's [Nominatim](https://github.com/osm-search/Nominatim) open source geocoder to convert street address to latitude and longitude. OpenStreetMap data is © OpenStreetMap contributors, available under the [Open Database License](https://www.openstreetmap.org/copyright).
 
-### :question: Why Free Food
+### :question: Why Free Food?
 Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.barrons.com/articles/demand-soars-for-food-delivery-companies-theyre-still-not-profitable-51590183967) companies which are entirely the product of Silicon Valley speculation.
 
 As the Wall Street Journal and others have reported, [some of these platforms have recognized that offering third party delivery services as a centralized middleman is a failed business model](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates). Consequently, [there is a push to abandon delivery logistics entirely](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) -- focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is merely to broker local restaurant orders, middlemen like Grubhub charge restaurants 30% per transaction. This far exceeds the profit margins of a typical restaurant.
