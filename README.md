@@ -24,7 +24,7 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 
 [Free Food](https://freefood.is) enables host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click &mdash; all through one convenient interface. 
 
-It's the ["missing protocol"](https://en.wikipedia.org/wiki/TCP/IP_Illustrated) for aggregated local e-commerce that the internet should have shipped with, and part of the part of the Web 3.0 movement to re-decentralize the internet.
+It's the ["missing protocol"](https://en.wikipedia.org/wiki/TCP/IP_Illustrated) for aggregated local e-commerce that the internet should have shipped with, and part of [the Web 3.0 movement](https://www.coindesk.com/web3-transform-the-web) to re-decentralize the internet.
 
 For software clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline.
 
