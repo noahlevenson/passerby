@@ -15,46 +15,41 @@ const { Ftrans_msg } = require("../../ftrans/ftrans_msg.js");
 const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 
 class Fdlt_net_solo extends Fdlt_net {
-	trans;
-	app_id;
+  trans;
+  app_id;
 
-	// TODO: FDLT net modules require an app_id because we support multiple instances
-	// of FDLTs to provide mutliple services for FAPP - but we should prob make app_id
-	// part of the Fdlt_net base class, not subclasses?
-	constructor(trans, app_id) {
-		super();
+  // TODO: app_id should prob become part of the base class
 
-		if (!(trans instanceof Ftrans)) {
-			throw new TypeError("Argument 'trans' must be instance of Ftrans");
-		}
+  constructor(trans, app_id) {
+    super();
 
-		if (typeof app_id !== "string") {
-			throw new Error("You must provide an app_id");
-		}
+    if (!(trans instanceof Ftrans)) {
+      throw new TypeError("Argument 'trans' must be instance of Ftrans");
+    }
 
-		this.trans = trans;
-		this.trans.network.on("message", this._on_message.bind(this));
-		this.app_id = app_id;
-	}
+    if (typeof app_id !== "string") {
+      throw new Error("You must provide an app_id");
+    }
 
-	// Currently, FTRANS_UDP emits the rinfo object as a second argument. FKAD ignores it, and FSTUN and FBUY and FDLT listen for it...
-	// TODO: In the future, we prob want to roll our own generalized "remote info" data type, because, for example,
-	// I'm not sure if Node's TCP implementation provides rinfo objects -- so an FTRANS_TCP might not be able to supply an rinfo 
-	// in the same way as FTRANS_UDP, and we lose all the generality...
-	_on_message(ftrans_msg, rinfo) {
-		try {
-			if (ftrans_msg.type === Ftrans_msg.TYPE.FDLT && ftrans_msg.msg.app_id === this.app_id) {
-				const msg = new Fdlt_msg(ftrans_msg.msg);
-				this._in(msg, rinfo);
-			}
-		} catch(err) {
-			// Silently ignore it?
-		}
-	}
+    this.trans = trans;
+    this.trans.network.on("message", this._on_message.bind(this));
+    this.app_id = app_id;
+  }
 
-	_out(fdlt_msg, rinfo) {
-		this.trans._send(fdlt_msg, rinfo);
-	}
+  _on_message(ftrans_msg, rinfo) {
+    try {
+      if (ftrans_msg.type === Ftrans_msg.TYPE.FDLT && ftrans_msg.msg.app_id === this.app_id) {
+        const msg = new Fdlt_msg(ftrans_msg.msg);
+        this._in(msg, rinfo);
+      }
+    } catch(err) {
+      // Silently ignore it?
+    }
+  }
+
+  _out(fdlt_msg, rinfo) {
+    this.trans._send(fdlt_msg, rinfo);
+  }
 }
 
 module.exports.Fdlt_net_solo = Fdlt_net_solo;
