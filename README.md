@@ -12,12 +12,12 @@
 </p>
 
 # :compass: Table of contents
-* [What is libfood?](#--what-is-libfood)
-* [Portability as a design requirement](#--portability-as-a-design-requirement)
-* [Implementation overview](#--implementation-overview)
-* [Technology overview](#--technology-overview)
-* [Why Free Food?](#--why-free-food)
-* [Active research](#---active-research)
+* [What is libfood?](###--what-is-libfood)
+* [Portability as a design requirement](####--portability-as-a-design-requirement)
+* [Implementation overview](####--implementation-overview)
+* [Technology overview](####--technology-overview)
+* [Why Free Food?](####--why-free-food)
+* [Active research](###--active-research)
 
 ### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete).
