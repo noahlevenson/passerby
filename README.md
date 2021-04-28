@@ -22,7 +22,7 @@
 ### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete). 
 
-[Free Food](https://freefood.is) eliminates the middleman from restaurant marketplaces &mdash; letting you search, browse, and transact **directly** with local restaurants through one convenient interface.
+[Free Food](https://freefood.is) enables host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace. Using the Free Food protocol, a hungry person can search for nearby restaurants, browse menus, and place an order with one click &mdash; all through one convenient interface. It's the "missing protocol" for aggregated local e-commerce that the internet should have shipped with.
 
 For software clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline.
 
@@ -50,7 +50,7 @@ libfood is a layered API:
 |[fid](https://github.com/noahlevenson/libfood/tree/master/js/src/fid)        |identity creation, authentication, and reputation                              |
 |[fdlt](https://github.com/noahlevenson/libfood/tree/master/js/src/fdlt)      |generalized distributed ledger for managing arbitrary contracts                |
 |[fksrv](https://github.com/noahlevenson/libfood/tree/master/js/src/fksrv)    |distributed public keyserver                                                   |
-|[fstun](https://github.com/noahlevenson/libfood/tree/master/js/src/fstun)    |STUN implementation                                                            |
+|[fstun](https://github.com/noahlevenson/libfood/tree/master/js/src/fstun)    |STUN implementation for NAT traversal                                          |
 |[flog](https://github.com/noahlevenson/libfood/tree/master/js/src/flog)      |logging                                                                        |
 |[fcrypto](https://github.com/noahlevenson/libfood/tree/master/js/src/fcrypto)|cryptography                                                                   |
 |[ftypes](https://github.com/noahlevenson/libfood/tree/master/js/src/ftypes)  |elementary data structures                                                     |
