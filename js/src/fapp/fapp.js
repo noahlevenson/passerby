@@ -19,7 +19,6 @@ const { Ftrans_udp } = require("../ftrans/trans/ftrans_udp.js");
 const { Fkad_node } = require("../fkad/fkad_node.js");
 const { Fkad_eng_alpha } = require("../fkad/eng/fkad_eng_alpha.js");
 const { Fkad_net_solo } = require("../fkad/net/fkad_net_solo.js");
-const { Fkad_net_sim } = require("../fkad/net/fkad_net_sim.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fgeo } = require("../fgeo/fgeo.js");
 const { Fgeo_coord } = require("../fgeo/fgeo_coord.js");
