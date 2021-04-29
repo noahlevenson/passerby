@@ -12,19 +12,19 @@
 const EventEmitter = require("events");
 
 class Ftrans {
-	network;
+  network;
 
-	constructor() {
-		this.network = new EventEmitter();
-	}
-	
-	async _on_message() {
-		throw new Error("Subclasses must implement the _on_message() method");
-	}
+  constructor() {
+    this.network = new EventEmitter();
+  }
+  
+  async _on_message() {
+    throw new Error("Subclasses must implement the _on_message() method");
+  }
 
-	async _send() {
-		throw new Error("Subclasses must implement the _send() method");
-	}
+  async _send() {
+    throw new Error("Subclasses must implement the _send() method");
+  }
 }
 
 module.exports.Ftrans = Ftrans;
