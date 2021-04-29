@@ -47,7 +47,7 @@ libfood is a layered API:
 |Module |Description                                                                                                                                          |
 |-----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
 |[fkad](https://github.com/noahlevenson/libfood/tree/master/js/src/fkad)      |distributed hash table                                                         |
-|[fpht](https://github.com/noahlevenson/libfood/tree/master/js/src/fpht)      |prefix hash tree                                                               |
+|[fpht](https://github.com/noahlevenson/libfood/tree/master/js/src/fpht)      |prefix hash tree (aka distributed trie)                                        |
 |[fgeo](https://github.com/noahlevenson/libfood/tree/master/js/src/fgeo)      |functionality for describing and transforming geographic data                  |
 |[fid](https://github.com/noahlevenson/libfood/tree/master/js/src/fid)        |identity creation, authentication, and reputation                              |
 |[fdlt](https://github.com/noahlevenson/libfood/tree/master/js/src/fdlt)      |generalized distributed ledger for managing arbitrary contracts                |

@@ -10,11 +10,11 @@
 "use strict";
 
 class Fstun_type_data {
-	constructor(type = null, bin = null, f = null) {
-		this.type = type;
-		this.bin = bin;
-		this.f = f;
-	}
+  constructor(type = null, bin = null, f = null) {
+    this.type = type;
+    this.bin = bin;
+    this.f = f;
+  }
 }
 
 module.exports.Fstun_type_data = Fstun_type_data;
