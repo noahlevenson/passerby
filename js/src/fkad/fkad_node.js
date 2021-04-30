@@ -562,10 +562,8 @@ class Fkad_node {
       return data;
     });
 
-    all_nodes.sort((a, b) => {
-      return Fkad_node._get_distance(key, a.node_id).greater(
-        Fkad_node._get_distance(key, b.node_id)) ? 1 : -1;
-    });
+    all_nodes.sort((a, b) => Fkad_node._get_distance(key, a.node_id).greater(
+      Fkad_node._get_distance(key, b.node_id)) ? 1 : -1);
 
     return all_nodes.splice(0, Math.min(max, all_nodes.length));
   }
