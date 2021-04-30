@@ -89,13 +89,7 @@ class Fkad_kbucket {
 
   // Return a shallow copy of this k-bucket's underlying linked list
   to_array() {
-    const arr = [];
-
-    this.data.forEach((node_info) => {
-      arr.push(node_info);
-    });
-
-    return arr;
+    return [...this.data];
   }
 }
 
