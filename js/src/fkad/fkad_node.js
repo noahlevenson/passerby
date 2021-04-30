@@ -224,7 +224,7 @@ class Fkad_node {
       // Replicate any of our data that is appropriate to this new node
       this.network_data.entries().forEach((pair) => {
         const key = new Fbigint(pair[0]);
-        const cnodes = this._new_get_nodes_closest_to(key);
+        const cnodes = this._get_nodes_closest_to(key);
 
         // If the new node is one of the K closest nodes to this key AND we are closer to the key 
         // than any of my neighbors (or the new node is now closer to the key than we are), then 
@@ -373,7 +373,7 @@ class Fkad_node {
     const active = new Fbintree();
     const inactive = new Fbintree();
 
-    this._new_get_nodes_closest_to(key, Fkad_node.ALPHA).forEach((node_info) => {
+    this._get_nodes_closest_to(key, Fkad_node.ALPHA).forEach((node_info) => {
       inactive.bst_insert(new Fbintree_node({data: node_info}), _by_distance_and_lex.bind(this));
     });
 
@@ -498,7 +498,7 @@ class Fkad_node {
   }
 
   _res_find_node(req) {
-    const nodes = this._new_get_nodes_closest_to(req.data.payload[0], Fkad_node.K_SIZE);
+    const nodes = this._get_nodes_closest_to(req.data.payload[0], Fkad_node.K_SIZE);
 
     return new Fkad_msg({
       rpc: Fkad_msg.RPC.FIND_NODE,
@@ -525,7 +525,7 @@ class Fkad_node {
       payload = [ds_rec.get_data()];
       type = Fkad_data.TYPE.VAL;
     } else {
-      payload = this._new_get_nodes_closest_to(req.data.payload[0], Fkad_node.K_SIZE);
+      payload = this._get_nodes_closest_to(req.data.payload[0], Fkad_node.K_SIZE);
       type = Fkad_data.TYPE.NODE_LIST;
     }
 
@@ -548,7 +548,7 @@ class Fkad_node {
   // TODO: try optimizing by starting our search at the leaf node and visiting adjacent buckets
   // in the routing table by their distance from our ID, ending the search when we hit the max,
   // then sort by distance from the key...
-  _new_get_nodes_closest_to(key, max = Fkad_node.K_SIZE) {
+  _get_nodes_closest_to(key, max = Fkad_node.K_SIZE) {
     // Touch the bucket so we know it's not a pathological case
     this.find_kbucket_for_id(key).get_data().touch();
 
@@ -691,7 +691,7 @@ class Fkad_node {
     });
 
     Flog.log(`[FKAD] Success: node ${this.node_id.toString()} is online! ` + 
-      `(At least ${this._new_get_nodes_closest_to(this.node_id).length} peers found)`);
+      `(At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
 
     this._init_intervals();
     return true;
