@@ -123,10 +123,19 @@ class Fdlt {
 
   // TODO: this is linear search through the pubkeys in args :(
   async _verify_nonce_auth(block) {
-    return this.args.auth.some(async (arg) => {
-      const data = Buffer.from(Fdlt_block.sha256(Object.assign({}, block, {nonce: arg})), "hex");
-      return await Fcrypto.verify(data, Buffer.from(arg, "hex"), Buffer.from(block.nonce, "hex"));
-    });
+    for (let i = 0; i < this.args.auth.length; i += 1) {
+      const is_valid = await Fcrypto.verify(
+        Buffer.from(Fdlt_block.sha256(Object.assign({}, block, {nonce: this.args.auth[i]})), "hex"), 
+        Buffer.from(this.args.auth[i], "hex"), 
+        Buffer.from(block.nonce, "hex")
+      );
+
+      if (is_valid) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   async make_block(pred_block_node) {
