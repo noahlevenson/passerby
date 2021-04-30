@@ -91,12 +91,8 @@ class Fkad_node {
     this.network_data = new Fkad_ds();
     this.rp_data = new Fkad_ds();
 
-    // Give the engine module a ref to ourself
     this.eng.node = this;
-    //Give the net module a ref to ourself
     this.net.node = this;
-    // TODO: move this to boostrap - don't want to handle messages until we've decided to join the network
-    this.net.network.on("message", this.eng._on_message.bind(this.eng));
   }
 
   // Enforce data integrity on the DHT, we'll run this on any data we receive
@@ -634,10 +630,11 @@ class Fkad_node {
 
   // Supply an addr + port (real world) or just a node_id (local simulation)
   async bootstrap({addr = null, port = null, pubkey = null, node_id = null} = {}) {
+    this.net.network.on("message", this.eng._on_message.bind(this.eng));
+    
     // TODO: the excessive complexity here is a legacy from before we had transport layer encryption
     // and needed to know the pubkeys of bootstrap nodes - it's likely we can skip the ping step by deriving
     // the bootstrap node's node_id from its pubkey
-
     let node_info;
 
     if (addr && port) {
