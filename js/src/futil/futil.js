@@ -76,14 +76,6 @@ class Futil {
     return i - 1;
   }
 
-  // Sort numbers in an array by absolute difference
-  // TODO: this function has a dumb name
-  static _sort_by_distance_from(arr, n) {
-    return arr.sort((a, b) => {
-      return Math.abs(a - n) - Math.abs(b - n);
-    });
-  }
-
   // Normalize positive float f to an integer of bit depth b, where fmax is the largest poss value of f
   static _float_to_normalized_int(f, fmax, b) {
     // TODO: Validate inputs and watch out for overflow
