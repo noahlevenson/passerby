@@ -232,7 +232,7 @@ class Fstun_attr {
       throw new Error("len must be number");
     }
 
-    return Futil._int2Buf16(len); 
+    return Futil.int2buf16(len); 
   }
 
   static _enFam(fam) {
@@ -253,14 +253,14 @@ class Fstun_attr {
   static _enMappedAddr(famType, addrStr, portInt, xor = false, id = Buffer.alloc(12)) {
     const zero = Buffer.alloc(1);
     const fam = Fstun_attr._enFam(famType);
-    const port = Futil._int2Buf16(portInt);
+    const port = Futil.int2buf16(portInt);
     let addr;
 
 
     if (famType === Fstun_attr.K_ADDR_FAMILY.IPv4) {
-      addr = Futil._ipv4Str2Buf32(addrStr);
+      addr = Futil.ipv4str2buf32(addrStr);
     } else if (famType === Fstun_attr.K_ADDR_FAMILY.IPv6) {
-      addr = Futil._ipv6Str2Buf128(addrStr);
+      addr = Futil.ipv6str2buf128(addrStr);
     }
 
     if (xor) {
@@ -299,9 +299,9 @@ class Fstun_attr {
     let decoded_addr;
 
     if (famType.type === Fstun_attr.K_ADDR_FAMILY.IPv4) {
-      decoded_addr = Futil._buf32_2_ipv4Str(addr);
+      decoded_addr = Futil.buf322ipv4str(addr);
     } else if (famType.type === Fstun_attr.K_ADDR_FAMILY.IPv6) {
-      decoded_addr = Futil._buf128_2_ipv6Str(addr);
+      decoded_addr = Futil.buf1282ipv6str(addr);
     }
 
     // Interpret port as a 16-bit unsigned int without using Buffer API

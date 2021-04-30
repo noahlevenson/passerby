@@ -34,7 +34,7 @@ class Fstun_msg {
     const len = buf.slice(Fstun_hdr.K_LEN_OFF[0], Fstun_hdr.K_LEN_OFF[1]);
 
     // Attributes are padded to multiples of 4 bytes, so the 2 LSBs of the msg length must be 0
-    if (Futil._getBit(len, len.length - 1, 0) !== 0 || Futil._getBit(len, len.length - 1, 1) !== 0) {
+    if (Futil.get_bit(len, len.length - 1, 0) !== 0 || Futil.get_bit(len, len.length - 1, 1) !== 0) {
       return null;
     }
     

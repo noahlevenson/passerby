@@ -42,13 +42,13 @@ class Fgeo_coord {
   // Compute the flattened 1D representation of this coordinate pair
   // b = bit depth per dimension (if b = 40, then the 1D representation will fit into 80 bits)
   linearize(b = 40) {
-    const lat = Futil._float_to_normalized_int(this.lat + Math.abs(Fgeo_coord.LIMITS.LAT_MIN), 
+    const lat = Futil.float_to_normalized_int(this.lat + Math.abs(Fgeo_coord.LIMITS.LAT_MIN), 
       Fgeo_coord.LIMITS.LONG_MAX + Math.abs(Fgeo_coord.LIMITS.LONG_MIN), b);
     
-    const long = Futil._float_to_normalized_int(this.long + Math.abs(Fgeo_coord.LIMITS.LONG_MIN), 
+    const long = Futil.float_to_normalized_int(this.long + Math.abs(Fgeo_coord.LIMITS.LONG_MIN), 
       Fgeo_coord.LIMITS.LONG_MAX + Math.abs(Fgeo_coord.LIMITS.LONG_MIN), b);
     
-    return Futil._z_linearize_2d(lat, long, b);
+    return Futil.z_linearize_2d(lat, long, b);
   }
 }
 

@@ -125,11 +125,11 @@ class Fapp {
   } = {}) {
     // Give JavaScript's built-in Map type a serializer and a deserializer
     Object.defineProperty(global.Map.prototype, "toJSON", {
-      value: Futil._map_to_json
+      value: Futil.map_to_json
     });
 
     Object.defineProperty(global.Map, "from_json", {
-      value: Futil._map_from_json
+      value: Futil.map_from_json
     });
 
     this.fid_pub = fid_pub;

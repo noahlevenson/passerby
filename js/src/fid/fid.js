@@ -22,11 +22,11 @@ class Fid {
   static SYM_ADJ_A = dict_adj_a;
   static SYM_ADJ_B = dict_adj_b;
   static SYM_NOUN = dict_noun;
-  static SYM_ADJ_A_BW = Futil._is_power2(dict_adj_a.length) ? 
+  static SYM_ADJ_A_BW = Futil.is_power2(dict_adj_a.length) ? 
     Math.log2(dict_adj_a.length) : Fid.dict_err();
-  static SYM_ADJ_B_BW = Futil._is_power2(dict_adj_b.length) ? 
+  static SYM_ADJ_B_BW = Futil.is_power2(dict_adj_b.length) ? 
     Math.log2(dict_adj_b.length) : Fid.dict_err();
-  static SYM_NOUN_BW = Futil._is_power2(dict_noun.length) ? 
+  static SYM_NOUN_BW = Futil.is_power2(dict_noun.length) ? 
     Math.log2(dict_noun.length) : Fid.dict_err();
   // TODO: Remember to change HASH_SZ if you change the hash function in hash_cert!
   static HASH_SZ = 256;

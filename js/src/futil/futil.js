@@ -18,12 +18,12 @@ const crypto =  require("crypto");
 
 class Futil {
   // JSON serializer for JS Map type
-  static _map_to_json() {
+  static map_to_json() {
     return JSON.stringify(Array.from(this.entries()));
   }
 
   // JSON deserializer for JS Map type
-  static _map_from_json(json) {
+  static map_from_json(json) {
     const arr = JSON.parse(json);
     
     const deeply_parsed = arr.map((elem) => {
@@ -33,37 +33,17 @@ class Futil {
     return new Map(deeply_parsed);
   }
   
-  static _is_power2(n) {
+  static is_power2(n) {
     return (n & (n - 1)) === 0;
   }
 
-  static _is_hex_str(str) {
+  static is_hex_str(str) {
     const reg = /^[A-Fa-f0-9]+$/;
     return reg.test(str);
   }
 
-  // Get the integral part of the log2 of a Fbigint
-  static _log2(n) {
-    let x = new Fbigint(n);
-    
-    if (x.equals(new Fbigint(0))) {
-      return 0;
-    }
-    
-    let zero = new Fbigint(0);
-    let y = new Fbigint(0x01);
-    let i = 0;
-
-    while (x.greater(zero)) {
-      x = x.shift_right(y);
-      i += 1
-    }
-
-    return i - 1;
-  }
-
   // Normalize positive float f to an integer of bit depth b, where fmax is the largest poss value of f
-  static _float_to_normalized_int(f, fmax, b) {
+  static float_to_normalized_int(f, fmax, b) {
     // TODO: Validate inputs and watch out for overflow
     const max = (Math.pow(2, b) - 1) / fmax;
     return Math.floor(f * max);
@@ -71,7 +51,7 @@ class Futil {
 
   // Compute 2D Morton order linearization for positive values x and y, where b is the bit depth of 
   // each dimension (x becomes odd bits, y becomes even bits)
-  static _z_linearize_2d(x, y, b) {
+  static z_linearize_2d(x, y, b) {
     // TODO: Validate inputs
     let xx = new Fbigint(x);
     let yy = new Fbigint(y);
@@ -88,8 +68,8 @@ class Futil {
     return l;
   }
 
-  // Invert _z_linearize_2d
-  static _z_delinearize_2d(key, b) {
+  // Invert z_linearize_2d
+  static z_delinearize_2d(key, b) {
     let x = "";
     let y = "";
 
@@ -107,7 +87,7 @@ class Futil {
   // Compute the longest common prefix of an array of strings
   // if len = true, return the length of the lcp instead of the lcp itself
   // TODO: there's a more alpha way to do this with binary search
-  static _get_lcp(strings = [], len = false) {
+  static get_lcp(strings = [], len = false) {
     if (!Array.isArray(strings)) {
       throw new TypeError("Argument 'strings' must be array");
     }
@@ -148,7 +128,7 @@ class Futil {
 
   // TODO: Validation
   // Network byte order (big endian)
-  static _int2Buf16(int) {
+  static int2buf16(int) {
     const buf = Buffer.alloc(2);
 
     buf[0] = 0xFF & (int >>> Fapp_env.SYS_BYTE_WIDTH);
@@ -158,7 +138,7 @@ class Futil {
   }
 
   // Little endian addressing
-  static _getBit(buffer, idx, off) {
+  static get_bit(buffer, idx, off) {
     let mask = Buffer.alloc(1);
 
     mask[0] = 0x01;
@@ -167,7 +147,7 @@ class Futil {
     return (buffer[idx] & mask[0]) !== 0 ? 1 : 0;
   }
 
-  static _compareBuf(a, b) {
+  static compare_buf(a, b) {
     if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
       return false
     }
@@ -186,19 +166,19 @@ class Futil {
   }
 
   // TODO: Validation
-  static _ipv4Str2Buf32(str) {
+  static ipv4str2buf32(str) {
     return Buffer.from(str.split(".").map((n) => { 
       return parseInt(n); 
     }));
   }
 
   // TODO: validation
-  static _buf32_2_ipv4Str(buf) {
+  static buf322ipv4str(buf) {
     return `${buf[0]}.${buf[1]}.${buf[2]}.${buf[3]}`;
   }
 
   // TODO: Validation
-  static _ipv6Str2Buf128(str) {   
+  static ipv6str2buf128(str) {   
     const arr = str.split(":");
     const len = arr.length - 1;
 
@@ -225,11 +205,11 @@ class Futil {
   }
 
   // TODO: validation
-  static _buf128_2_ipv6Str(buf) {
+  static buf1282ipv6str(buf) {
     // It's an ipv4 mapped ipv6 address
     if (buf.compare(Buffer.alloc(10), 0, 10, 0, 10) === 0 && 
       buf.compare(Buffer.from([0xFF, 0xFF]), 0, 2, 10, 12) === 0) {
-      return `::FFFF:${Futil._buf32_2_ipv4Str(buf.slice(12, buf.length))}`;
+      return `::FFFF:${Futil.buf322ipv4str(buf.slice(12, buf.length))}`;
     }
 
     let addr = "";

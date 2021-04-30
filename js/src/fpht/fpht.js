@@ -269,7 +269,7 @@ class Fpht {
         [new Fbigint(pair[0]), pair[1]]).concat([[key, val]]);
 
       const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
-      const i = Futil._get_lcp(key_bin_strings, true);
+      const i = Futil.get_lcp(key_bin_strings, true);
 
       // Our new child nodes must be 1 level deeper than the length of the lcp of all B + 1 keys
       let child0, child1;
@@ -360,7 +360,7 @@ class Fpht {
       let d = leaf.get_label().length;
 
       // Length of the longest common prefix of all keys between leaf and its sibling
-      const i = Futil._get_lcp(key_bin_strings, true);
+      const i = Futil.get_lcp(key_bin_strings, true);
 
       let old_leaf = leaf;
 
@@ -462,7 +462,7 @@ class Fpht {
       if (pht_node.is_leaf()) {
         const valid_pairs = pht_node.get_all_pairs().filter((pair) => {
           const zvalue = new Fbigint(pair[0]);
-          const zvalue_2d = Futil._z_delinearize_2d(zvalue, Fpht.BIT_DEPTH / 2);
+          const zvalue_2d = Futil.z_delinearize_2d(zvalue, Fpht.BIT_DEPTH / 2);
           
           return zvalue_2d.x.greater_equal(minkey_2d.x) && zvalue_2d.x.less(maxkey_2d.x) && 
             zvalue_2d.y.greater_equal(minkey_2d.y) && zvalue_2d.y.less(maxkey_2d.y);
@@ -478,8 +478,8 @@ class Fpht {
       const subtree_0_zvalue = Fbigint.from_base2_str(subtree0);
       const subtree_1_zvalue = Fbigint.from_base2_str(subtree1);
 
-      const subtree_0_2d = Futil._z_delinearize_2d(subtree_0_zvalue, Fpht.BIT_DEPTH / 2);
-      const subtree_1_2d = Futil._z_delinearize_2d(subtree_1_zvalue, Fpht.BIT_DEPTH / 2);
+      const subtree_0_2d = Futil.z_delinearize_2d(subtree_0_zvalue, Fpht.BIT_DEPTH / 2);
+      const subtree_1_2d = Futil.z_delinearize_2d(subtree_1_zvalue, Fpht.BIT_DEPTH / 2);
       
       // subtree_0_zvalue and subtree_1_zvalue are essentially new minimum values representing a 
       // rectangular region for which we don't know the maximum value... i.e., they "anchor" a 
@@ -523,9 +523,9 @@ class Fpht {
       throw new RangeError("'minkey' must be less than 'maxkey'");
     }
 
-    const lcp = Futil._get_lcp([minkey.to_bin_str(Fpht.BIT_DEPTH), maxkey.to_bin_str(Fpht.BIT_DEPTH)]);
-    const minkey_2d = Futil._z_delinearize_2d(minkey, Fpht.BIT_DEPTH / 2); 
-    const maxkey_2d = Futil._z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2); 
+    const lcp = Futil.get_lcp([minkey.to_bin_str(Fpht.BIT_DEPTH), maxkey.to_bin_str(Fpht.BIT_DEPTH)]);
+    const minkey_2d = Futil.z_delinearize_2d(minkey, Fpht.BIT_DEPTH / 2); 
+    const maxkey_2d = Futil.z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2); 
 
     // Find the node whose label corresponds to the smallest prefix range that completely covers the
     // specified range. In a perfect world, that would be a node whose label is equal to the lcp of
