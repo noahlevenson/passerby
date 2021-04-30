@@ -146,8 +146,8 @@ class Fapp {
   }
 
   // Convenience method to generate a public/private key pair
-  static generate_key_pair(passphrase) {
-    return Fcrypto.generate_key_pair(passphrase);
+  static async generate_key_pair(passphrase) {
+    return await Fcrypto.generate_key_pair(passphrase);
   }
 
   // Convenience method to cryptographically sign some data
