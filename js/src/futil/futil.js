@@ -14,7 +14,6 @@ const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ?
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 // TODO: We currently have no React Native or browser implementation for 'net'
 const net = require("net");
-const crypto =  require("crypto");
 
 class Futil {
   // JSON serializer for JS Map type

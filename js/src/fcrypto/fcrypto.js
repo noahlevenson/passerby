@@ -9,8 +9,8 @@
 
 "use strict";
 
+const crypto = require("crypto");
 const { Fapp_env } = require("../fapp/fapp_env.js");
-const crypto = Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE ? require("crypto") : null;
 
 class Fcrypto {
   static SHA1 = "SHA1";
