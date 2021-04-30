@@ -264,19 +264,10 @@ class Fpht {
     } else {
       // This is the non-chad "unlimited split" version of bucket splitting
       // TODO: implement the "staggered updates" version
-      const pairs = leaf.get_all_pairs();
+      const pairs = leaf.get_all_pairs().map(pair => 
+        [new Fbigint(pair[0]), pair[1]]).concat([[key, val]]);
 
-      pairs.forEach((pair, i, arr) => {
-        arr[i] = [new Fbigint(pair[0]), pair[1]];
-      });
-      
-      pairs.push([key, val]);
-      const key_bin_strings = [];
-
-      pairs.forEach((pair) => {
-        key_bin_strings.push(pair[0].to_bin_str(Fpht.BIT_DEPTH));
-      });
-
+      const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
       const i = Futil._get_lcp(key_bin_strings, true);
 
       // Our new child nodes must be 1 level deeper than the length of the lcp of all B + 1 keys
