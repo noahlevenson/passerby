@@ -626,49 +626,39 @@ class Fkad_node {
       `${(Fkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
   }
 
-  // Supply an addr + port (real world) or just a node_id (local simulation)
-  async bootstrap({addr = null, port = null, pubkey = null, node_id = null} = {}) {
+  // Supply the addr, port, and pubkey of the bootstrap node
+  async bootstrap({addr = null, port = null, pubkey = null} = {}) {
     this.net.network.on("message", this.eng._on_message.bind(this.eng));
     
-    // TODO: the excessive complexity here is a legacy from before we had transport layer encryption
-    // and needed to know the pubkeys of bootstrap nodes - it's likely we can skip the ping step by deriving
-    // the bootstrap node's node_id from its pubkey
-    let node_info;
+    const node_info = new Fkad_node_info({
+      addr: addr, 
+      port: port, 
+      pubkey: pubkey, 
+      node_id: new Fbigint(Futil._sha1(pubkey))
+    });
 
-    if (addr && port) {
-      node_info = await new Promise((resolve, reject) => {
-        this._req_ping({
-          addr: addr, 
-          port: port, 
-          pubkey: pubkey, 
-          node_id: new Fbigint(-1) // node_id of -1 because we must always supply a value
-        }, (res, ctx) => {
-          resolve(res.from);
-        }, () => {
-          resolve(null);
-        });
-      });
-    } else if (node_id instanceof Fbigint) {
-      node_info = new Fkad_node_info({addr: addr, port: port, pubkey: pubkey, node_id: node_id});
-    } else {
-      throw new TypeError("Argument error");
+    const ping_res = await new Promise((resolve, reject) => {
+      this._req_ping(
+        node_info,
+        (res, ctx) => resolve(res.from),
+        () => resolve(null)
+      );
+    });
+
+    if (ping_res === null) {
+      Flog.log(`[FKAD] No PONG from bootstrap node ${addr}:${port}`);
+      return false;
     }
 
     Flog.log(`[FKAD] Joining network as ${this.node_id.toString()} ` + 
       `via bootstrap node ${addr}:${port}...`);
 
-    if (node_info === null) {
-      Flog.log(`[FKAD] No PONG from bootstrap node ${addr}:${port}`);
-      return false;
-    } 
-
-    const bucket = this.find_kbucket_for_id(node_info.node_id).get_data();
-    bucket.enqueue(node_info);
+    const bucket = this.find_kbucket_for_id(ping_res.node_id).get_data();
+    bucket.enqueue(ping_res);
 
     // Do a node lookup on myself, refresh every k-bucket further away from my closest neighbor
-    const res = await this._node_lookup(this.node_id);
-    const closest_nodes = res.payload;
-
+    const lookup_res = await this._node_lookup(this.node_id);
+    const closest_nodes = lookup_res.payload;
     let i = 0;
 
     while (i < closest_nodes.length - 1 && closest_nodes[i].node_id.equals(this.node_id)) {
@@ -676,7 +666,6 @@ class Fkad_node {
     }
 
     i += 1
-
     const buckets = new Set();
 
     while (i < closest_nodes.length) {
@@ -684,9 +673,7 @@ class Fkad_node {
       i += 1
     } 
 
-    buckets.forEach((bucket) => {
-      this._refresh_kbucket(bucket);
-    });
+    buckets.forEach(bucket => this._refresh_kbucket(bucket));
 
     Flog.log(`[FKAD] Success: node ${this.node_id.toString()} is online! ` + 
       `(At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
