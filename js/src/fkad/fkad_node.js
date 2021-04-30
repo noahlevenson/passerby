@@ -61,7 +61,7 @@ class Fkad_node {
   ]);
 
   // net as an Fkad_net module, eng as an Fkad_eng module, addr and port must solve NAT
-  constructor({net = null, eng = null, addr = null, port = null, id = null, pubkey = null} = {}) {
+  constructor({net = null, eng = null, addr = null, port = null, pubkey = null} = {}) {
     if (!(net instanceof Fkad_net)) {
       throw new TypeError("Argument 'net' must be instance of Fkad_net");
     }
@@ -75,7 +75,7 @@ class Fkad_node {
 
     this.net = net;
     this.eng = eng;
-    this.node_id = id;
+    this.node_id = new Fbigint(Futil._sha1(pubkey));
 
     this.node_info = new Fkad_node_info({
       addr: addr, 

@@ -391,11 +391,6 @@ class Fapp {
     return this.node;
   }
 
-  // Get our peer ID as an Fbigint
-  my_id() {
-    return new Fbigint(this.fid_pub.peer_id); 
-  }
-
   // Return a reference to our latitude/longitude as an Fgeo_coord
   get_location() {
     return new Fgeo_coord({lat: this.fid_pub.lat, long: this.fid_pub.long});
@@ -474,7 +469,6 @@ class Fapp {
       net: new Fkad_net_solo(fapp_udp_trans), 
       addr: addr_port[0],
       port: addr_port[1],
-      id: this.my_id(),
       pubkey: this.fid_pub.pubkey
     });
 
