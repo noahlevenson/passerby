@@ -88,36 +88,16 @@ class Futil {
   // if len = true, return the length of the lcp instead of the lcp itself
   // TODO: there's a more alpha way to do this with binary search
   static get_lcp(strings = [], len = false) {
-    if (!Array.isArray(strings)) {
-      throw new TypeError("Argument 'strings' must be array");
-    }
-
-    const all_strings = strings.every((str) => {
-      return typeof str == "string";
-    });
-
-    if (!all_strings) {
-      throw new TypeError("All elements of argument 'strings' must be strings");
-    }
-
-    const lengths = strings.map((str) => {
-      return str.length;
-    });
-
-    const shortest = Math.min(...lengths);
+    const shortest_len = Math.min(...strings.map(str => str.length));
     let i = 0;
     
-      while (i < shortest) {
-        const match = strings.every((str) => {
-          return str[i] === strings[0][i];
-        });
-
-        if (!match) {
-          break;
-        }
-
-        i += 1;
+    while (i < shortest_len) {
+      if (!strings.every(str => str[i] === strings[0][i])) {
+        break;
       }
+
+      i += 1;
+    }
 
     if (len) {
       return i;
