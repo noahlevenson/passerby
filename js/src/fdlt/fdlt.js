@@ -112,9 +112,10 @@ class Fdlt {
   // where block.nonce is replaced with the signer's public key
   // TODO: handle error/bad passphrase etc
   static async make_nonce_auth(block, pubkey) {
-    const data = Buffer.from(Fdlt_block.sha256(Object.assign(block, {nonce: pubkey})), "hex");
+    const data = Buffer.from(Fdlt_block.sha256(Object.assign({}, block, {nonce: pubkey})), "hex");
     const privkey = await Fcrypto.get_privkey();
-    return await Fcrypto.sign(data, Buffer.from(privkey, "hex")).toString("hex");
+    const res = await Fcrypto.sign(data, Buffer.from(privkey, "hex"));
+    return res.toString("hex");
   }
 
   async verify_nonce(block) {
@@ -134,7 +135,7 @@ class Fdlt {
         return true;
       }
     }
-
+    
     return false;
   }
 
