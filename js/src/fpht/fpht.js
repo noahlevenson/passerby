@@ -350,17 +350,10 @@ class Fpht {
         `${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
     } else {
       // Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
-      const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs());
+      const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs()).map(pair => 
+        [new Fbigint(pair[0]), pair[1]]);
 
-      pairs.forEach((pair, i, arr) => {
-        arr[i] = [new Fbigint(pair[0]), pair[1]];
-      });
-      
-      const key_bin_strings = [];
-
-      pairs.forEach((pair) => {
-        key_bin_strings.push(pair[0].to_bin_str(Fpht.BIT_DEPTH));
-      });
+      const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
 
       // Our current depth = the length of our label
       let d = leaf.get_label().length;
