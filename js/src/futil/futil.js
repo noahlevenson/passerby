@@ -32,21 +32,7 @@ class Futil {
 
     return new Map(deeply_parsed);
   }
-
-  // Returns a hex string
-  static _sha1(data) {
-    const hash = crypto.createHash("SHA1");
-    hash.update(data);
-    return hash.digest("hex");
-  }
-
-  // Returns a hex string
-  static _sha256(data) {
-    const hash = crypto.createHash("SHA256");
-    hash.update(data);
-    return hash.digest("hex");
-  }
-    
+  
   static _is_power2(n) {
     return (n & (n - 1)) === 0;
   }

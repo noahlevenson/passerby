@@ -43,7 +43,7 @@ const { Fdlt_block } = require("../src/fdlt/fdlt_block.js");
         long: -73.7912739
     });
 
-    // const pw_hash = Futil._sha256("noah");
+    // const pw_hash = Fcrypto.sha256("noah");
     // console.log(pw_hash);
     // console.log(Fcrypto.generate_key_pair(pw_hash));
 

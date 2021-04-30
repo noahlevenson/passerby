@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Futil } = require("../futil/futil.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 
 class Fid_pub {
   pubkey;
@@ -44,7 +44,7 @@ class Fid_pub {
     this.phone = phone;
     this.lat = lat;
     this.long = long;
-    this.peer_id = Futil._sha1(this.pubkey);
+    this.peer_id = Fcrypto.sha1(this.pubkey);
     // Need two digits for Buffer to parse correctly
     this.nonce = "00";
   }

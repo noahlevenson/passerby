@@ -163,7 +163,7 @@ class Fapp {
   // Compute the peer ID derived from input 'data'
   // Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion
   static get_peer_id(data) {
-    return new Fbigint(Futil._sha1(data));
+    return new Fbigint(Fcrypto.sha1(data));
   }
 
   // Derive a lat/long pair from an address using the specified geocoding method

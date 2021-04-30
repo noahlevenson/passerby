@@ -13,6 +13,7 @@ const { Fapp_env } = require("../fapp/fapp_env.js");
 const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Futil } = require("../futil/futil.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const dict_adj_a = require("./dict/adj_4096_a.json");
 const dict_adj_b = require("./dict/adj_4096_b.json");
 const dict_noun = require("./dict/noun_4096.json");
@@ -38,7 +39,7 @@ class Fid {
 
   // Hashing a cert means hashing the concatenation of its pubkey and its nonce
   static hash_cert(pubkey, nonce, str = false) {
-    const h = Futil._sha256(`${pubkey}${nonce}`);
+    const h = Fcrypto.sha256(`${pubkey}${nonce}`);
     return str ? h : new Fbigint(h);
   }
 

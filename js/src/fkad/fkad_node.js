@@ -15,7 +15,7 @@ const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ?
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Fapp_bboard } = require("../fapp/fapp_bboard.js");
 const { Flog } = require("../flog/flog.js");
-const { Futil } = require("../futil/futil.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fkad_net } = require("./net/fkad_net.js");
 const { Fkad_eng } = require("./eng/fkad_eng.js");
 const { Fkad_node_info } = require("./fkad_node_info.js");
@@ -75,7 +75,7 @@ class Fkad_node {
 
     this.net = net;
     this.eng = eng;
-    this.node_id = new Fbigint(Futil._sha1(pubkey));
+    this.node_id = new Fbigint(Fcrypto.sha1(pubkey));
 
     this.node_info = new Fkad_node_info({
       addr: addr, 
@@ -634,7 +634,7 @@ class Fkad_node {
       addr: addr, 
       port: port, 
       pubkey: pubkey, 
-      node_id: new Fbigint(Futil._sha1(pubkey))
+      node_id: new Fbigint(Fcrypto.sha1(pubkey))
     });
 
     const ping_res = await new Promise((resolve, reject) => {

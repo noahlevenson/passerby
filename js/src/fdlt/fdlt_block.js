@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Futil } = require("../futil/futil.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fbintree } = require("../ftypes/fbintree/fbintree.js");
 const { Fdlt_tsact } = require("./fdlt_tsact.js");
 
@@ -43,7 +43,7 @@ class Fdlt_block {
       throw new Error("Debug warning - do not hash over undefined values!");
     }
 
-    return Futil._sha256(`${block.hash_prev}${block.hash_merkle_root}${block.nonce}`);
+    return Fcrypto.sha256(`${block.hash_prev}${block.hash_merkle_root}${block.nonce}`);
   }
 }
 

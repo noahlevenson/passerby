@@ -13,6 +13,8 @@ const { Fapp_env } = require("../fapp/fapp_env.js");
 const crypto = Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE ? require("crypto") : null;
 
 class Fcrypto {
+  static SHA1 = "SHA1";
+  static SHA256 = "SHA256";
   // Be careful, SIG_ALGORITHM must work with KEY_TYPE
   static SIG_ALGORITHM = "RSA-SHA256";
   // Only KEY_TYPE "rsa" is currently supported
@@ -72,6 +74,20 @@ class Fcrypto {
     if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
       return crypto.randomBytes(len);
     }
+  }
+
+  // Returns a hex string
+  static sha1(data) {
+    const hash = crypto.createHash(Fcrypto.SHA1);
+    hash.update(data);
+    return hash.digest("hex");
+  }
+
+  // Returns a hex string
+  static sha256(data) {
+    const hash = crypto.createHash(Fcrypto.SHA256);
+    hash.update(data);
+    return hash.digest("hex");
   }
 
   static async generate_key_pair(passphrase) {

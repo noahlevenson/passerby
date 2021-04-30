@@ -13,7 +13,7 @@ const { Fbuy_pment } = require("./pment/fbuy_pment.js");
 const { Fbuy_ffment } = require("./fbuy_ffment.js");
 const { Fntree } = require("../ftypes/fntree/fntree.js");
 const { Fntree_node } = require("../ftypes/fntree/fntree_node.js");
-const { Futil } = require("../futil/futil.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js");
 
 class Fbuy_menu {
   static KEYWORDS = {
@@ -86,10 +86,10 @@ class Fbuy_menu {
   // TODO: move me to an Fbuy_form class and make Fbuy_form_menu a subclass
   static get_form_id(fbuy_menu) {
     if (Fbuy_menu.is_frozen(fbuy_menu)) {
-      return Futil._sha1(JSON.stringify(fbuy_menu.data));
+      return Fcrypto.sha1(JSON.stringify(fbuy_menu.data));
     }
 
-    return Futil._sha1(JSON.stringify(fbuy_menu.get_node_list()));
+    return Fcrypto.sha1(JSON.stringify(fbuy_menu.get_node_list()));
   }
 
   // For an unfrozen tree, get its menu node list flattened as an array

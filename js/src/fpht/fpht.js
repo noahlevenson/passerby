@@ -14,6 +14,7 @@ const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ?
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Flog } = require("../flog/flog.js");
 const { Futil } = require("../futil/futil.js");
+const { Fcrypto } = require("../fcrypto/fcrypto.js"); 
 const { Fkad_data } = require("../fkad/fkad_data.js");
 const { Fpht_node } = require("./fpht_node.js");
 
@@ -140,7 +141,7 @@ class Fpht {
       throw new TypeError("Argument 'data' must be string");
     }
 
-    return new Fbigint(Futil._sha1(`${this.index_attr}${data}`));
+    return new Fbigint(Fcrypto.sha1(`${this.index_attr}${data}`));
   }
 
   // Idempotently init a new PHT structure, indexing on index_attr, and kick off the refresh interval

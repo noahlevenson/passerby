@@ -3,7 +3,7 @@ const { Futil } = require("../src/futil/futil.js");
 
 const data = ["1", "2", "3", "4", "5"];
 
-const mt = Fbintree.build_merkle(data.map(d => Futil._sha256(d)));
+const mt = Fbintree.build_merkle(data.map(d => Fcrypto.sha256(d)));
 
 const leafs = mt.dfs((node, data) => {
 	if (node.get_left() === null && node.get_right() === null) {
@@ -32,7 +32,7 @@ mt.dfs((node, data) => {
 	const right = node.get_right() !== null ? node.get_right().get_data() : left;
 
 	// If this node's hash doesn't equal its child concatenation, this merkle tree is bugged bro
-	if (node.get_data() !== Futil._sha256(`${left}${right}`)) {
+	if (node.get_data() !== Fcrypto.sha256(`${left}${right}`)) {
 		console.log("Error bro");
 	} else {
 		console.log("Node is good");

@@ -17,7 +17,7 @@ const { Fkad_msg } = require("../fkad_msg.js");
 const { Ftrans } = require("../../ftrans/trans/ftrans.js");
 const { Ftrans_msg } = require("../../ftrans/ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans/ftrans_rinfo.js");
-const { Futil } = require("../../futil/futil.js");
+const { Fcrypto } = require("../../fcrypto/fcrypto.js");
 
 class Fkad_net_solo extends Fkad_net {
   trans;
@@ -40,7 +40,7 @@ class Fkad_net_solo extends Fkad_net {
 
         // Sender's node ID must equal the hash of their pubkey (we know they're
         // the true owner of this pubkey bc we validated their sig at Ftrans layer)
-        if (msg.from.node_id.equals(new Fbigint(Futil._sha1(rinfo.pubkey)))) {
+        if (msg.from.node_id.equals(new Fbigint(Fcrypto.sha1(rinfo.pubkey)))) {
           this._in(msg);
         }
       }

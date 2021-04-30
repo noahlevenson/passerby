@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Futil } = require("../futil/futil.js"); 
+const { Fcrypto } = require("../fcrypto/fcrypto.js"); 
 
 class Fdlt_tsact {
   static VERSION = {
@@ -99,7 +99,7 @@ class Fdlt_tsact {
 
   // Compute the SHA256 hash of a serialized transaction, returns a string
   static sha256(buf) {
-    return Futil._sha256(buf.toString("hex"));
+    return Fcrypto.sha256(buf.toString("hex"));
   }
 }
 

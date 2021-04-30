@@ -10,7 +10,7 @@
 "use strict";
 
 const { Fbintree_node } = require("./fbintree_node.js");
-const { Futil } = require("../../futil/futil.js");
+const { Fcrypto } = require("../../fcrypto/fcrypto.js");
 
 class Fbintree {
   root;
@@ -21,7 +21,7 @@ class Fbintree {
 
   // Factory function to build a Merkle tree from an array of data as strings
   static build_merkle(data) {
-    const q = data.map(d => new Fbintree_node({data: Futil._sha256(d)})); // Leaf nodes
+    const q = data.map(d => new Fbintree_node({data: Fcrypto.sha256(d)})); // Leaf nodes
 
     while (q.length > 0) {
       const node = q.shift();
@@ -35,7 +35,7 @@ class Fbintree {
         node.parent.set_right(sibling); 
       }
 
-      node.get_parent().set_data(Futil._sha256(`${node.data}${sibling.data}`));
+      node.get_parent().set_data(Fcrypto.sha256(`${node.data}${sibling.data}`));
       node.get_parent().set_left(node);
   
       if (q.length > 0) {
