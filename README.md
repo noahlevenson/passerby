@@ -1,5 +1,7 @@
 # libfood
 
+[![Youtube demo](https://github.com/noahlevenson/libfood/blob/master/screens/youtube_thumb.png)](https://youtu.be/vuLQelvHlkM "Youtube demo")
+
 <p float="left">
 	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
 	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
