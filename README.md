@@ -2,17 +2,6 @@
 
 [![Youtube demo](https://github.com/noahlevenson/libfood/blob/master/screens/youtube_thumb.png)](https://youtu.be/vuLQelvHlkM "Youtube demo")
 
-<p float="left">
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200" />
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200" />
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/console.jpg" height="200" />
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/rest_list.png" height="200">
-	<!-- <img src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200" /> -->
-	<img src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
-</p>
-
 # :compass: Table of contents
 * [What is libfood?](#hamburger-what-is-libfood)
 * [Portability as a design requirement](#handbag-portability-as-a-design-requirement)
@@ -20,6 +9,7 @@
 * [Technology overview](#floppy_disk-technology-overview)
 * [Why Free Food?](#question-why-free-food)
 * [Active research](#brain-active-research)
+* [Screens](#computer-screens)
 
 ### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete). 
@@ -98,3 +88,16 @@ Free Food is not meant to replace restaurant e-commerce tools like Toast, Square
 4. Fully decentralize the distributed ledger &mdash; currently proof of authority, switch to proof of stake/proof of reputation/proof of work
 
 5. Decentralized delivery logistics 
+
+### :computer: Screens
+
+<p float="left">
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/menu_editor.jpg" height="200" />
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/chat.jpg" height="200" />
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/trust_network.jpg" height="200" />
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/console.jpg" height="200" />
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/rest_list.png" height="200">
+  <!-- <img src="https://github.com/noahlevenson/libfood/blob/master/screens/add_item.jpg" height="200" /> -->
+  <img src="https://github.com/noahlevenson/libfood/blob/master/screens/checkout.png" height="200" />
+</p>
