@@ -9,7 +9,7 @@
 * [Technology overview](#floppy_disk-technology-overview)
 * [Why Free Food?](#question-why-free-food)
 * [Active research](#brain-active-research)
-* [Screens](#computer-screens)
+* [Screenshots](#computer-screenshots)
 
 ### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery fair again (and make Grubhub obsolete). 
@@ -89,7 +89,7 @@ Free Food is not meant to replace restaurant e-commerce tools like Toast, Square
 
 5. Decentralized delivery logistics 
 
-### :computer: Screens
+### :computer: Screenshots
 
 <p float="left">
   <img src="https://github.com/noahlevenson/libfood/blob/master/screens/order_detail.jpg" height="200" />
