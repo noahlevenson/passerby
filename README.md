@@ -16,11 +16,11 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 
 [Free Food](https://freefood.is) eliminates third party middlemen, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click &mdash; all through one convenient interface. 
 
-It's the "[missing protocol](https://en.wikipedia.org/wiki/TCP/IP_Illustrated)" for local e-commerce that the internet should have shipped with, and part of [the Web 3.0 movement](https://www.coindesk.com/web3-transform-the-web) to re-decentralize the web.
+It's the "missing protocol" for local e-commerce that the internet should have shipped with, and part of [the Web 3.0 movement](https://theconversation.com/web-3-0-the-decentralised-web-promises-to-make-the-internet-free-again-113139) to re-decentralize the web.
 
 For software clients which operationalize libfood for end users, see Free Food Battlestation and Free Food Hotline (coming summer 2021).
 
-**libfood is pre-alpha and in active development. There will be bugs, security issues, missing features, etc.**
+**libfood is a research prototype in active development. There will be bugs, security issues, missing features, etc.**
 
 Free Food was developed at [Consumer Reports Digital Lab](https://digital-lab.consumerreports.org/) by Hacker in Residence [Noah Levenson](https://noahlevenson.com).
 
@@ -68,7 +68,7 @@ Free Food implements [STUN](https://tools.ietf.org/html/rfc5389) for NAT travers
 At identity creation time, Free Food uses OpenStreetMap's [Nominatim](https://github.com/osm-search/Nominatim) open source geocoder to convert street address to latitude and longitude. OpenStreetMap data is © OpenStreetMap contributors, available under the [Open Database License](https://www.openstreetmap.org/copyright).
 
 ### :question: Why Free Food?
-Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.barrons.com/articles/demand-soars-for-food-delivery-companies-theyre-still-not-profitable-51590183967) companies which are entirely the product of Silicon Valley speculation.
+Third party food delivery apps like DoorDash and Grubhub are parasitic middlemen which are [destroying small businesses and raising prices for everyone](https://chicago.eater.com/2021/1/26/22250664/delivery-apps-destroying-restaurants-chicago-uber-eats-doordash-postmates). They're also [deeply unprofitable](https://www.wsj.com/articles/doordash-and-uber-eats-are-hot-theyre-still-not-making-money-11622194203) companies which are entirely the product of Silicon Valley speculation.
 
 As the Wall Street Journal and others have reported, [some of these platforms have recognized that offering third party delivery services as a centralized middleman is a failed business model](https://www.bloomberg.com/opinion/articles/2019-10-31/food-delivery-is-a-dead-end-for-grubhub-doordash-and-postmates). Consequently, [there is a push to abandon delivery logistics entirely](https://www.wsj.com/articles/strategy-behind-blockbuster-grubhub-deal-dont-deliver-11593266407) &mdash; focusing instead on providing nothing more to consumers than an aggregated ordering interface. For this "service," which is merely to broker local restaurant orders, middlemen like Grubhub charge restaurants 30% per transaction. This far exceeds the profit margins of a typical restaurant.
 
