@@ -31,28 +31,28 @@ Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are ac
 |------------|-----------|------------|---------------------------------------------------------|
 |Node.js     |yes        |none        |                                                         |
 |browsers    |soon       |none        |                                                         |
-|React Native|yes        |~3 shims    |Android only; native Java optimzations, see [fnative](https://github.com/noahlevenson/libfood/tree/master/js/src/fnative/react_native/android)|
+|React Native|yes        |~3 shims    |Android only; native Java optimzations, see [fnative](https://github.com/noahlevenson/libfood/tree/master/src/fnative/react_native/android)|
 
 ### :monocle_face: Implementation overview
 libfood is a layered API:
 
 |Module |Description                                                                                                                                          |
 |-----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-|[fkad](https://github.com/noahlevenson/libfood/tree/master/js/src/fkad)      |distributed hash table                                                         |
-|[fpht](https://github.com/noahlevenson/libfood/tree/master/js/src/fpht)      |prefix hash tree (aka distributed trie)                                        |
-|[fgeo](https://github.com/noahlevenson/libfood/tree/master/js/src/fgeo)      |functionality for describing and transforming geographic data                  |
-|[fid](https://github.com/noahlevenson/libfood/tree/master/js/src/fid)        |identity creation, authentication, and reputation                              |
-|[fdlt](https://github.com/noahlevenson/libfood/tree/master/js/src/fdlt)      |generalized distributed ledger for managing arbitrary contracts                |
-|[fksrv](https://github.com/noahlevenson/libfood/tree/master/js/src/fksrv)    |distributed public keyserver                                                   |
-|[fstun](https://github.com/noahlevenson/libfood/tree/master/js/src/fstun)    |STUN implementation for NAT traversal                                          |
-|[flog](https://github.com/noahlevenson/libfood/tree/master/js/src/flog)      |logging                                                                        |
-|[fcrypto](https://github.com/noahlevenson/libfood/tree/master/js/src/fcrypto)|cryptography                                                                   |
-|[ftypes](https://github.com/noahlevenson/libfood/tree/master/js/src/ftypes)  |elementary data structures                                                     |
-|[futil](https://github.com/noahlevenson/libfood/tree/master/js/src/futil)    |utility functions                                                              |
-|[fbuy](https://github.com/noahlevenson/libfood/tree/master/js/src/fbuy)      |e-commerce layer: menus, transactions, payments, sms, statuses, etc.           |
-|[ftrans](https://github.com/noahlevenson/libfood/tree/master/js/src/ftrans)  |transport layer with hybrid encryption                                         |
-|[fnative](https://github.com/noahlevenson/libfood/tree/master/js/src/fnative)|native platform optimizations                                                  |
-|[fapp](https://github.com/noahlevenson/libfood/tree/master/js/src/fapp)      |public API                                                                     |
+|[fkad](https://github.com/noahlevenson/libfood/tree/master/src/fkad)      |distributed hash table                                                         |
+|[fpht](https://github.com/noahlevenson/libfood/tree/master/src/fpht)      |prefix hash tree (aka distributed trie)                                        |
+|[fgeo](https://github.com/noahlevenson/libfood/tree/master/src/fgeo)      |functionality for describing and transforming geographic data                  |
+|[fid](https://github.com/noahlevenson/libfood/tree/master/src/fid)        |identity creation, authentication, and reputation                              |
+|[fdlt](https://github.com/noahlevenson/libfood/tree/master/src/fdlt)      |generalized distributed ledger for managing arbitrary contracts                |
+|[fksrv](https://github.com/noahlevenson/libfood/tree/master/src/fksrv)    |distributed public keyserver                                                   |
+|[fstun](https://github.com/noahlevenson/libfood/tree/master/src/fstun)    |STUN implementation for NAT traversal                                          |
+|[flog](https://github.com/noahlevenson/libfood/tree/master/src/flog)      |logging                                                                        |
+|[fcrypto](https://github.com/noahlevenson/libfood/tree/master/src/fcrypto)|cryptography                                                                   |
+|[ftypes](https://github.com/noahlevenson/libfood/tree/master/src/ftypes)  |elementary data structures                                                     |
+|[futil](https://github.com/noahlevenson/libfood/tree/master/src/futil)    |utility functions                                                              |
+|[fbuy](https://github.com/noahlevenson/libfood/tree/master/src/fbuy)      |e-commerce layer: menus, transactions, payments, sms, statuses, etc.           |
+|[ftrans](https://github.com/noahlevenson/libfood/tree/master/src/ftrans)  |transport layer with hybrid encryption                                         |
+|[fnative](https://github.com/noahlevenson/libfood/tree/master/src/fnative)|native platform optimizations                                                  |
+|[fapp](https://github.com/noahlevenson/libfood/tree/master/src/fapp)      |public API                                                                     |
 
 ### :floppy_disk: Technology overview
 Location-aware peer discovery is accomplished primarily through the use of a [Morton-order curve](https://en.wikipedia.org/wiki/Z-order_curve) and a [prefix hash tree](https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf), a distributed data structure which enables efficient range queries over a distributed hash table.
