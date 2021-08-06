@@ -10,7 +10,7 @@
 "use strict";
 
 const { Fapp_cfg } = require("../../fapp/fapp_cfg.js");
-const { cfg } = require("../../../libfood.json");
+const cfg = require("../../../libfood.json");
 const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../../ftypes/fbigint/fbigint_rn.js") : require("../../ftypes/fbigint/fbigint_node.js");
 const { Fkad_net } = require("./fkad_net.js");
