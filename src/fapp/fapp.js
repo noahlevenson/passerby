@@ -63,30 +63,11 @@ class Fapp {
     [Fapp.GEOCODING_METHOD.NOMINATIM, Fapp._geocoding_handler_nominatim]
   ]);
 
-  static AUTHORITIES = [
-    "30820122300d06092a864886f70d01010105000382010f003082010a0282010100a6108c36296" + 
-    "1ff79246467b1b0c8505aac91fde23daa711e297f4601b053acb18c2e90defbaba60bdfee93fb" + 
-    "ab3c1d0d0559a50dfb5d0356bee484814a786f7b9e679e6ed822ff77bfc2c4fcc232e418aa5eb" +
-    "ddcbbaa27d63939108a3bd91694c0f347fc1038d151306eecd0630719809aa4187c0d1dab1bb1" +
-    "32ff0df29cbd5342ed32d51d1db053ecb6eacc7c998a19d3f46534d0d9b70d706ef8f90d75431" + 
-    "a8a192f772170b7c97e1f97e651d7ec5ca00a8bf2f5a896e232750f0ecf9007bfdd51550c6a0d" + 
-    "a554c79a64dc4164c71885682d75e278c0fc27db1942b4d15d48c9ff9c2aa8f1e9b77d211a4ae" + 
-    "8aa56927cf9393dc71121d97eadb52c555bba310203010001",
-    
-    "30820122300d06092a864886f70d01010105000382010f003082010a0282010100ae76dbab80b" + 
-    "72039d8c3c31ccc39b8331b36b12cc41587180251d184a1c33de27c1213270eafb584f43d2bb7" + 
-    "34eca91054e23fd99be6be28c2eaf9e354b4c1a81f10673092a49d8c7d60a5eac7ac50be55a07" + 
-    "7ad0fae0364b21fb0ae2737e388c2b8c5b1c19ccfa197aceae3070be8152d763d0b80631733db" + 
-    "824953e332743ae3c79c3299cd7edf9c362fd9f48fff53ab162a43196bdad5654a7045068c7ac" + 
-    "3ca76efe5ebcd88fecac0ad2bd4406ff2452a5d50340e9b94302ea58918f2de9380eec4e0e249" + 
-    "ab86cfe2ecbd87fd126494da7ee53cdb8ed9701aef22994cd875e007bb64f124e19d00cfb56e1" +
-    "f15e9e114b083188f5a7aefd01fb3f71dcc34170203010001"
-  ];
-
   port;
   fid_pub;
   fid_prv;
   bootstrap_nodes;
+  authorities;
   fpht;
   fbuy;
   fksrv;
@@ -105,6 +86,7 @@ class Fapp {
     fid_prv = null, 
     port = 27500,
     bootstrap_nodes = [],
+    authorities = [],
     keepalive = true, 
     geocoding = Fapp.GEOCODING_METHOD.NOMINATIM, 
     is_keyserver_validator = false
@@ -124,6 +106,7 @@ class Fapp {
       pubkey: node[2]
     }));
 
+    this.authorities = [...authorities];
     this.fid_pub = fid_pub;
     this.fid_prv = fid_prv;
     this.port = port;
@@ -521,7 +504,7 @@ class Fapp {
       fid_pub: this.fid_pub,
       consensus: Fdlt.CONSENSUS_METHOD.AUTH, 
       is_validator: this.is_keyserver_validator,
-      args: {auth: Fapp.AUTHORITIES, rate: Fapp.KEYSERVER_BLOCK_RATE, t_handle: null},
+      args: {auth: this.authorities, rate: Fapp.KEYSERVER_BLOCK_RATE, t_handle: null},
       tx_valid_hook: Fksrv.TX_VALID_HOOK,
       db_hook: Fksrv.UTXO_DB_HOOK,
       db_init_hook: Fksrv.UTXO_DB_INIT_HOOK
