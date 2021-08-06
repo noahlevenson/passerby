@@ -12,7 +12,7 @@
 const { Fdlt_tsact } = require("./fdlt_tsact.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
-const { Fapp_env } = require("../fapp/fapp_env.js");
+const { cfg } = require("../../libfood.json");
 
 // Be forewarned: the stack uses Buffers instead of Fbigints so as to preserve leading zeros
 
@@ -107,7 +107,7 @@ class Fdlt_vm {
 
   // The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
   async _op_push2() {
-    const n = (this.program[this.PC + 1] << Fapp_env.SYS_BYTE_WIDTH) | this.program[this.PC + 2];
+    const n = (this.program[this.PC + 1] << cfg.SYS_BYTE_WIDTH) | this.program[this.PC + 2];
     const start = this.PC + 3;
     this.STACK[this.SP] = Buffer.from(this.program.slice(start, start + n));
     this.SP += 1;

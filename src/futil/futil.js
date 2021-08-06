@@ -9,8 +9,9 @@
 
 "use strict";
 
-const { Fapp_env } = require("../fapp/fapp_env.js");
-const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? 
+const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
+const { cfg } = require("../../libfood.json");
+const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 // TODO: We currently have no React Native or browser implementation for 'net'
 const net = require("net");
@@ -110,7 +111,7 @@ class Futil {
   static int2buf16(int) {
     const buf = Buffer.alloc(2);
 
-    buf[0] = 0xFF & (int >>> Fapp_env.SYS_BYTE_WIDTH);
+    buf[0] = 0xFF & (int >>> cfg.SYS_BYTE_WIDTH);
     buf[1] = 0xFF & int;
 
     return buf;

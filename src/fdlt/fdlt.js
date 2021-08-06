@@ -10,8 +10,9 @@
 "use strict";
 
 const EventEmitter = require("events");
-const { Fapp_env } = require("../fapp/fapp_env.js");
-const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? 
+const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
+const { config } = require("../../libfood.json"); 
+const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");

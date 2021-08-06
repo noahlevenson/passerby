@@ -9,9 +9,10 @@
 
 "use strict";
 
-const { Fapp_env } = require("./fapp_env.js");
-const https = Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE ? require("https") : null;
-const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? 
+const { Fapp_cfg } = require("./fapp_cfg.js");
+const { cfg } = require("../../libfood.json");
+const https = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.NODE ? require("https") : null;
+const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Fapp_bboard } = require("./fapp_bboard.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
@@ -189,7 +190,7 @@ class Fapp {
   }
 
   static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
-    if (Fapp_env.ENV === Fapp_env.ENV_TYPE.BROWSER) {
+    if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.BROWSER) {
       // TODO: write the browser implementation using XMLHttpRequest
       throw new Error("No browser implementation for HTTPS requests yet!"); 
     }
@@ -205,7 +206,7 @@ class Fapp {
     const path = `/search?${query.toString()}`;
     const headers = {"User-Agent": Fapp.USER_AGENT};
     
-    if (Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE) {
+    if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       return fetch(`https://${hostname}${path}`, {
         method: "GET",
         headers: headers
@@ -217,7 +218,7 @@ class Fapp {
       });
     }
 
-    if (Fapp_env.ENV === Fapp_env.ENV_TYPE.NODE) {
+    if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.NODE) {
       const opt = {
         hostname: hostname,
         headers: headers,

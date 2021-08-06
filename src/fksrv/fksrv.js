@@ -9,7 +9,7 @@
 
 "use strict";
 
-const { Fapp_env } = require("../fapp/fapp_env.js");
+const { cfg } = require("../../libfood.json");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
 const { Fdlt } = require("../fdlt/fdlt.js");
@@ -204,7 +204,7 @@ class Fksrv {
     function _get_recip_pubkey(tx) {
       // The recpient's pubkey is the bytes specified by the 0th OP_PUSH2 instruction
       // (which happens to be the 0th byte of the script)
-      const recip_len = (tx.lock[1] << Fapp_env.SYS_BYTE_WIDTH) | tx.lock[2];
+      const recip_len = (tx.lock[1] << cfg.SYS_BYTE_WIDTH) | tx.lock[2];
       return tx.lock.slice(3, 3 + recip_len);
     }
 
@@ -218,11 +218,11 @@ class Fksrv {
       
       while (count < 4) {
         idx = tx.lock.indexOf(Fdlt_vm.OPCODE.OP_PUSH2, idx + start);
-        start = (tx.lock[idx + 1] << Fapp_env.SYS_BYTE_WIDTH) | tx.lock[idx + 2];
+        start = (tx.lock[idx + 1] << cfg.SYS_BYTE_WIDTH) | tx.lock[idx + 2];
         count += 1;
       }
 
-      const signer_len = (tx.lock[idx + 1] << Fapp_env.SYS_BYTE_WIDTH) | tx.lock[idx + 2];
+      const signer_len = (tx.lock[idx + 1] << cfg.SYS_BYTE_WIDTH) | tx.lock[idx + 2];
       return tx.lock.slice(idx + 3, idx + 3 + signer_len);
     }
 

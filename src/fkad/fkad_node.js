@@ -10,8 +10,9 @@
 "use strict";
 
 
-const { Fapp_env } = require("../fapp/fapp_env.js");
-const { Fbigint } = Fapp_env.ENV === Fapp_env.ENV_TYPE.REACT_NATIVE ? 
+const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
+const { cfg } = require("../../libfood.json");  
+const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Fapp_bboard } = require("../fapp/fapp_bboard.js");
 const { Flog } = require("../flog/flog.js");
@@ -31,7 +32,7 @@ const { Fpht_node } = require("../fpht/fpht_node.js");
 
 class Fkad_node {
   static DHT_BIT_WIDTH = 160;
-  static ID_LEN = this.DHT_BIT_WIDTH / Fapp_env.SYS_BYTE_WIDTH;
+  static ID_LEN = this.DHT_BIT_WIDTH / cfg.SYS_BYTE_WIDTH;
   static K_SIZE = 20;
   static ALPHA = 3;
   // T_KBUCKET_REFRESH: How frequently to force a refresh on stale k-buckets?
