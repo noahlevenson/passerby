@@ -63,23 +63,6 @@ class Fapp {
     [Fapp.GEOCODING_METHOD.NOMINATIM, Fapp._geocoding_handler_nominatim]
   ]);
 
-  static BOOTSTRAP_NODES = [
-    new Ftrans_rinfo({
-      address: "66.228.34.29",
-      port: 27500,
-      pubkey: 
-        "30820122300d06092a864886f70d01010105000382010f003082010a0282010100ae76d" + 
-        "bab80b72039d8c3c31ccc39b8331b36b12cc41587180251d184a1c33de27c1213270eaf" + 
-        "b584f43d2bb734eca91054e23fd99be6be28c2eaf9e354b4c1a81f10673092a49d8c7d6" + 
-        "0a5eac7ac50be55a077ad0fae0364b21fb0ae2737e388c2b8c5b1c19ccfa197aceae307" + 
-        "0be8152d763d0b80631733db824953e332743ae3c79c3299cd7edf9c362fd9f48fff53a" + 
-        "b162a43196bdad5654a7045068c7ac3ca76efe5ebcd88fecac0ad2bd4406ff2452a5d50" + 
-        "340e9b94302ea58918f2de9380eec4e0e249ab86cfe2ecbd87fd126494da7ee53cdb8ed" + 
-        "9701aef22994cd875e007bb64f124e19d00cfb56e1f15e9e114b083188f5a7aefd01fb3" + 
-        "f71dcc34170203010001"
-    })
-  ];
-
   static AUTHORITIES = [
     "30820122300d06092a864886f70d01010105000382010f003082010a0282010100a6108c36296" + 
     "1ff79246467b1b0c8505aac91fde23daa711e297f4601b053acb18c2e90defbaba60bdfee93fb" + 
@@ -103,6 +86,7 @@ class Fapp {
   port;
   fid_pub;
   fid_prv;
+  bootstrap_nodes;
   fpht;
   fbuy;
   fksrv;
@@ -119,7 +103,8 @@ class Fapp {
   constructor({
     fid_pub = null, 
     fid_prv = null, 
-    port = 27500, 
+    port = 27500,
+    bootstrap_nodes = [],
     keepalive = true, 
     geocoding = Fapp.GEOCODING_METHOD.NOMINATIM, 
     is_keyserver_validator = false
@@ -132,6 +117,12 @@ class Fapp {
     Object.defineProperty(global.Map, "from_json", {
       value: Futil.map_from_json
     });
+
+    this.bootstrap_nodes = bootstrap_nodes.map(node => new Ftrans_rinfo({
+      address: node[0], 
+      port: node[1], 
+      pubkey: node[2]
+    }));
 
     this.fid_pub = fid_pub;
     this.fid_prv = fid_prv;
@@ -451,11 +442,11 @@ class Fapp {
       addr_port = [addr, port];
     } else {
       // Try all of our known bootstrap nodes' STUN servers to resolve our external addr and port 
-      for (let i = 0; i < Fapp.BOOTSTRAP_NODES.length && addr_port === null; i += 1) {
+      for (let i = 0; i < this.bootstrap_nodes.length && addr_port === null; i += 1) {
         addr_port = await fapp_stun_service._binding_req(
-          Fapp.BOOTSTRAP_NODES[i].address, 
-          Fapp.BOOTSTRAP_NODES[i].port, 
-          Fapp.BOOTSTRAP_NODES[i].pubkey
+          this.bootstrap_nodes[i].address, 
+          this.bootstrap_nodes[i].port, 
+          this.bootstrap_nodes[i].pubkey
         );
       }
     }
@@ -479,11 +470,11 @@ class Fapp {
     // Bootstrap with every bootstrap node in our list?
     let bootstrap_res = false;
 
-    for (let i = 0; i < Fapp.BOOTSTRAP_NODES.length && bootstrap_res === false; i += 1) {
+    for (let i = 0; i < this.bootstrap_nodes.length && bootstrap_res === false; i += 1) {
       bootstrap_res = await peer_node.bootstrap({
-        addr: Fapp.BOOTSTRAP_NODES[i].address, 
-        port: Fapp.BOOTSTRAP_NODES[i].port, 
-        pubkey: Fapp.BOOTSTRAP_NODES[i].pubkey
+        addr: this.bootstrap_nodes[i].address, 
+        port: this.bootstrap_nodes[i].port, 
+        pubkey: this.bootstrap_nodes[i].pubkey
       });
     }
 
@@ -496,11 +487,11 @@ class Fapp {
       this.keepalive_interval_handle = setInterval(async () => {
         let res = null;
 
-        for (let i = 0; i < Fapp.BOOTSTRAP_NODES.length && res === null; i += 1) {
+        for (let i = 0; i < this.bootstrap_nodes.length && res === null; i += 1) {
           res = await fapp_stun_service._binding_req(
-            Fapp.BOOTSTRAP_NODES[i].address, 
-            Fapp.BOOTSTRAP_NODES[i].port, 
-            Fapp.BOOTSTRAP_NODES[i].pubkey
+            this.bootstrap_nodes[i].address, 
+            this.bootstrap_nodes[i].port, 
+            this.bootstrap_nodes[i].pubkey
           );
         }
       }, Fapp.T_NAT_KEEPALIVE);
