@@ -11,7 +11,7 @@
 
 const crypto = require("crypto");
 const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
-const cfg = require("../../../libfood.json");
+const cfg = require("../../libfood.json");
 
 class Fcrypto {
   static SHA1 = "SHA1";
