@@ -12,7 +12,7 @@
 const { Fdlt_tsact } = require("./fdlt_tsact.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
-const cfg = require("../../libfood.json");
+const cfg = require("../../../libfood.json");
 
 // Be forewarned: the stack uses Buffers instead of Fbigints so as to preserve leading zeros
 

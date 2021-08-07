@@ -11,7 +11,7 @@
 
 const EventEmitter = require("events");
 const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
-const cfg = require("../../libfood.json");
+const cfg = require("../../../libfood.json");
 const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Flog } = require("../flog/flog.js");

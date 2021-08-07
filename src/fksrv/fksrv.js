@@ -9,7 +9,7 @@
 
 "use strict";
 
-const cfg = require("../../libfood.json");
+const cfg = require("../../../libfood.json");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
 const { Fdlt } = require("../fdlt/fdlt.js");
