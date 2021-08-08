@@ -407,7 +407,8 @@ class Fapp {
   }
 
   // Boot this instance and join the network
-  // To boot as a bootstrap node, pass addr and port
+  // If we're a bootstrap node, specify a public addr and port; if we're a regular node, leave
+  // them unspecified and we'll first ask a bootstrap node to resolve our network info using STUN
   async start({addr = null, port = null} = {}) {
     // Create and boot a UDP transport module
     const fapp_udp_trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
