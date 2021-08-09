@@ -60,7 +60,8 @@ class Ftrans_udp extends Ftrans {
     this.socket.bind(this.port);
     
     Flog.log(`[FTRANS] UDP service starting on port ${this.port}, ` + 
-      `retransmission ${Ftrans_udp.RETRANSMIT ? "enabled" : "disabled"}...`);
+      `retransmission ${Ftrans_udp.RETRANSMIT ? "enabled (" + Ftrans_udp.DEFAULT_RTT_MS + 
+        "ms, max " + Ftrans_udp.MAX_RETRIES + ")" : "disabled"}...`);
 
     await this._listening();
   }
