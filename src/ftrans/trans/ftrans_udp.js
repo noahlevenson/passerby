@@ -153,15 +153,15 @@ class Ftrans_udp extends Ftrans {
         if (i === max_retries) {
           end_cb();
           
-          Flog.log(`[FTRANS] Retransmitted msg # ${ftrans_msg.id.toString()} ` + 
-            `${max_retries} times, giving up!`);
+          Flog.log(`[FTRANS] Retransmitted ${Object.keys(Ftrans_msg.TYPE)[ftrans_msg.type]} ` + 
+            `msg # ${ftrans_msg.id.toString()} ${max_retries} times, giving up!`);
 
           return;
         }
 
         timeout_id = setTimeout(() => {
-          Flog.log(`[FTRANS] No UDP ACK for msg # ${ftrans_msg.id}, ` + 
-            `retransmitting ${i + 1}/${max_retries}`);
+          Flog.log(`[FTRANS] No UDP ACK for ${Object.keys(Ftrans_msg.TYPE)[ftrans_msg.type]} ` + 
+            `msg # ${ftrans_msg.id}, retransmitting ${i + 1}/${max_retries}`);
 
           f();
           _retry_runner(f, i + 1, max_retries, backoff_f(delay), backoff_f, end_cb);
