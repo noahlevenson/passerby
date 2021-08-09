@@ -395,7 +395,7 @@ class Fapp {
     const res = await this.geosearch(search_window);
     
     Flog.log(`[FAPP] Searched ${Fapp.SEARCH_DIST_MILES.toFixed(1)} miles from ` + 
-      `${loc.lat}, ${loc.long};resources discovered: ${res.length}`);
+      `${loc.lat}, ${loc.long}; resources discovered: ${res.length}`);
     
     return res;
   }
