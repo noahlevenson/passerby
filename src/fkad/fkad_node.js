@@ -676,8 +676,9 @@ class Fkad_node {
 
     buckets.forEach(bucket => this._refresh_kbucket(bucket));
 
+    const npeers = this._get_nodes_closest_to(this.node_id, Number.POSITIVE_INFINITY).length;
     Flog.log(`[FKAD] Success: node ${this.node_id.toString()} is online! ` + 
-      `(At least ${this._get_nodes_closest_to(this.node_id).length} peers found)`);
+      `(Discovered ${npeers} peers)`);
 
     this._init_intervals();
     return true;
