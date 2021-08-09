@@ -15,7 +15,7 @@ const { Fkad_msg } = require("../fkad_msg.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
   // TODO: a TIMEOUT value of 1000 makes node lookups nice and snappy, but be careful when
-  // evaluating debug builds of clients: a sluggish debug build on a low power device can
+  // evaluating debug builds of clients: a sluggish debug build on a resource constrained device can
   // fail to process queries within 1000ms, and then your node lookups will fail,
   // your sms/status/whatever won't send, and you'll incorrectly think you had an FKAD regression
   static TIMEOUT = 2000;
