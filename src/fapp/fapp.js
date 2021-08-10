@@ -45,7 +45,7 @@ const { Flog } = require("../flog/flog.js");
 
 class Fapp {
   static USER_AGENT = "Free Food (https://freefood.is)";
-  static GEO_INDEX_ATTR = "___h34v3n.geoha$h!!";
+  static GEO_INDEX_ATTR = "ffm41nl1n3";
   static KEYSERVER_APP_ID = "k";
   static KEYSERVER_BLOCK_RATE = [10000, 20000];
   static SEARCH_DIST_MILES = 2.0;

@@ -261,7 +261,7 @@ class Fpht {
       const label_hash = this._get_label_hash(leaf.label);
       await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
       
-      Flog.log(`[FPHT] Inserted key ${key.toString()} >> ${this.index_attr} leaf ${leaf.label} ` + 
+      Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ${leaf.label} ` + 
         `(DHT key ${label_hash})`);
     } else {
       // This is the non-chad "unlimited split" version of bucket splitting
