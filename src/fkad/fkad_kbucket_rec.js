@@ -10,9 +10,9 @@
 "use strict";
 
 class Fkad_kbucket_rec {
-  static MAX_LOCK_ATTEMPTS = 5;
+  static MAX_LOCK_ATTEMPTS = 4;
   static FIRST_LOCK_MS = 1000 * 10;
-  static BACKOFF_FUNC = x => x * 2;
+  static BACKOFF_FUNC = x => Fkad_kbucket_rec.FIRST_LOCK_MS ** x;
 
   node_info;
   lock_until;
@@ -29,7 +29,12 @@ class Fkad_kbucket_rec {
   }
 
   is_stale() {
-    return this.n_locks >= Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS;
+    return this.n_locks > Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS;
+  }
+
+  lock() {
+    this.n_locks += 1;
+    this.lock_until = Date.now() + Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
   }  
 }
 
