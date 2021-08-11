@@ -38,7 +38,8 @@ class Fkad_kbucket_rec {
     this.n_locks += 1;
     this.lock_until = Date.now() + Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
     Flog.log(`[FKAD] Locked unresponsive contact ${this.node_info.node_id.toString()} ` + 
-      `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS}`);
+      `(${this.node_info.addr}:${this.node_info.port}) ` +
+        `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS}`);
   }  
 }
 
