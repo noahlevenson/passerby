@@ -262,9 +262,9 @@ class Fkad_node {
         leaf_node.set_right(right_child);
         leaf_node.set_data(null);
 
-        // Redistribute the node_infos from the old bucket to the new leaves
-        bucket.to_array().forEach((node_info) => {
-          const b = node_info.node_id.get_bit(bucket.get_prefix().length);
+        // Redistribute the Fkad_kbucket_recs from the old bucket to the new leaves
+        bucket.to_array().forEach((kbucket_rec) => {
+          const b = kbucket_rec.node_info.node_id.get_bit(bucket.get_prefix().length);
           leaf_node.get_child_bin(b).get_data().enqueue(kbucket_rec);
         });
 
@@ -558,7 +558,7 @@ class Fkad_node {
       const bucket = node.get_data();
       
       if (bucket !== null) {
-        data = data.concat(bucket.to_array());
+        data = data.concat(bucket.to_array().map(kbucket_rec => kbucket_rec.node_info));
       }
 
       return data;
