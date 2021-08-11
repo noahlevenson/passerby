@@ -9,6 +9,8 @@
 
 "use strict";
 
+const { Flog } = require("../flog/flog.js");
+
 class Fkad_kbucket_rec {
   static MAX_LOCK_ATTEMPTS = 4;
   static FIRST_LOCK_MS = 1000 * 10;
@@ -35,6 +37,8 @@ class Fkad_kbucket_rec {
   lock() {
     this.n_locks += 1;
     this.lock_until = Date.now() + Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
+    Flog.log(`[FKAD] Locked unresponsive contact ${this.node_info.node_id.toString()} ` + 
+      `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS}`);
   }  
 }
 

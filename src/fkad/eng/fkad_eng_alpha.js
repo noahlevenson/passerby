@@ -59,6 +59,13 @@ class Fkad_eng_alpha extends Fkad_eng {
           resolve();
         });
       }).catch((reason) => {
+        const bucket = this.node.find_kbucket_for_id(node_info.node_id).get_data();
+        const kbucket_rec = bucket.exists(node_info);
+
+        if (kbucket_rec !== null) {
+          kbucket_rec.lock();
+        }
+
         if (typeof timeout === "function") {
           timeout();
         }
