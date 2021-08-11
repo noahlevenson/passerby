@@ -574,11 +574,11 @@ class Fkad_node {
       return data;
     });
 
-    all_nodes = all_nodes.map(kbucket_rec => kbucket_rec.node_info).sort((a, b) => 
+    const sorted_node_infos = all_nodes.map(kbucket_rec => kbucket_rec.node_info).sort((a, b) => 
       Fkad_node._get_distance(key, a.node_id).greater(Fkad_node._get_distance(key, b.node_id)) ? 
         1 : -1);
 
-    return all_nodes.splice(0, Math.min(max, all_nodes.length));
+    return sorted_node_infos.splice(0, Math.min(max, sorted_node_infos.length));
   }
 
   _init_intervals() {
