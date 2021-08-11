@@ -21,6 +21,7 @@ const { Fkad_net } = require("./net/fkad_net.js");
 const { Fkad_eng } = require("./eng/fkad_eng.js");
 const { Fkad_node_info } = require("./fkad_node_info.js");
 const { Fkad_kbucket } = require("./fkad_kbucket.js");
+const { Fkad_kbucket_rec } = require("./fkad_kbucket_rec.js"); 
 const { Fkad_msg } = require("./fkad_msg.js");
 const { Fkad_ds } = require("./fkad_ds.js");
 const { Fkad_data } = require("./fkad_data.js");
@@ -178,7 +179,7 @@ class Fkad_node {
   // TODO: to get a "random ID in the bucket's range," we're selecting a random node in the bucket
   // it's prob more rigorous to generate a random ID in the bucket's range
   async _refresh_kbucket(kbucket) {
-    const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_id;
+    const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_info.node_id;
     Flog.log(`[FKAD] Refreshing k-bucket for range including ID ${random_id.toString()}`);
     await this._node_lookup(random_id);
   }
@@ -212,15 +213,15 @@ class Fkad_node {
   _routing_table_insert(inbound_node_info) {
     let leaf_node = this.find_kbucket_for_id(inbound_node_info.node_id);
     let bucket = leaf_node.get_data();
-    const node_info = bucket.exists(inbound_node_info);
+    const kbucket_rec = bucket.exists(inbound_node_info);
 
-    if (node_info !== null) {
+    if (kbucket_rec !== null) {
       // We've already seen this node in this bucket, so just move it to the tail
-      bucket.delete(node_info);
-      bucket.enqueue(inbound_node_info);
-    } else if (node_info === null && !bucket.is_full()) {
+      bucket.delete(kbucket_rec);
+      bucket.enqueue(kbucket_rec);
+    } else if (kbucket_rec === null && !bucket.is_full()) {
       // We've never seen this node and the appropriate bucket isn't full, so just insert it
-      bucket.enqueue(inbound_node_info);
+      bucket.enqueue(new Fkad_kbucket_rec({node_info: inbound_node_info}));
 
       // Replicate any of our data that is appropriate to this new node
       this.network_data.entries().forEach((pair) => {
@@ -264,7 +265,7 @@ class Fkad_node {
         // Redistribute the node_infos from the old bucket to the new leaves
         bucket.to_array().forEach((node_info) => {
           const b = node_info.node_id.get_bit(bucket.get_prefix().length);
-          leaf_node.get_child_bin(b).get_data().enqueue(node_info);
+          leaf_node.get_child_bin(b).get_data().enqueue(kbucket_rec);
         });
 
         // Attempt reinsertion via recursion
@@ -655,7 +656,7 @@ class Fkad_node {
       `via bootstrap node ${addr}:${port}...`);
 
     const bucket = this.find_kbucket_for_id(ping_res.node_id).get_data();
-    bucket.enqueue(ping_res);
+    bucket.enqueue(new Fkad_kbucket_rec({node_info: ping_res}));
 
     // Do a node lookup on myself, refresh every k-bucket further away from my closest neighbor
     const lookup_res = await this._node_lookup(this.node_id);
