@@ -13,8 +13,8 @@ const { Flog } = require("../flog/flog.js");
 
 class Fkad_kbucket_rec {
   static MAX_LOCK_ATTEMPTS = 4;
-  static FIRST_LOCK_MS = 1000 * 10;
-  static BACKOFF_FUNC = x => Fkad_kbucket_rec.FIRST_LOCK_MS ** x;
+  static LOCK_BASE_SECONDS = 10;
+  static BACKOFF_FUNC = x => (Fkad_kbucket_rec.LOCK_BASE_SECONDS ** x) * 1000;
 
   node_info;
   lock_until;
@@ -36,10 +36,10 @@ class Fkad_kbucket_rec {
 
   lock() {
     this.n_locks += 1;
-    const duration = Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
-    this.lock_until = Date.now() + duration;
+    const dur_ms = Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
+    this.lock_until = Date.now() + dur_ms;
     Flog.log(`[FKAD] Locked contact ${this.node_info.node_id.toString()} ` + 
-      `(${this.node_info.addr}:${this.node_info.port}) for ${duration} ms ` +
+      `(${this.node_info.addr}:${this.node_info.port}) for ${(dur_ms / 1000).toFixed(1)} sec ` +
         `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS}`);
   }  
 }
