@@ -36,9 +36,10 @@ class Fkad_kbucket_rec {
 
   lock() {
     this.n_locks += 1;
-    this.lock_until = Date.now() + Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
-    Flog.log(`[FKAD] Locked unresponsive contact ${this.node_info.node_id.toString()} ` + 
-      `(${this.node_info.addr}:${this.node_info.port}) ` +
+    const duration = Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
+    this.lock_until = Date.now() + duration;
+    Flog.log(`[FKAD] Locked contact ${this.node_info.node_id.toString()} ` + 
+      `(${this.node_info.addr}:${this.node_info.port}) for ${duration} ms ` +
         `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS}`);
   }  
 }
