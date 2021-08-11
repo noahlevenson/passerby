@@ -574,7 +574,7 @@ class Fkad_node {
       return data;
     });
 
-    all_nodes.map(kbucket_rec => kbucket_rec.node_info).sort((a, b) => 
+    all_nodes = all_nodes.map(kbucket_rec => kbucket_rec.node_info).sort((a, b) => 
       Fkad_node._get_distance(key, a.node_id).greater(Fkad_node._get_distance(key, b.node_id)) ? 
         1 : -1);
 
