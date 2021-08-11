@@ -489,7 +489,7 @@ class Fdlt {
   // this is prob even less efficient than choosing a random subset of peers from FKAD's routing table
   // TODO: this also grossly assumes that the config object passed to each req function is the same
   broadcast(msg_func, config_obj) {
-    const neighbors = this.fkad._get_nodes_closest_to(this.fkad.node_id).filter(n => 
+    const neighbors = this.fkad._get_nodes_closest_to({key: this.fkad.node_id}).filter(n => 
       !n.node_id.equals(this.fkad.node_id));
     
     Flog.log(`[FDLT] (${this.net.app_id}) Broadcasting a ${msg_func.name} to ` + 

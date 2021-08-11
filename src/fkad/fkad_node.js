@@ -226,7 +226,7 @@ class Fkad_node {
       // Replicate any of our data that is appropriate to this new node
       this.network_data.entries().forEach((pair) => {
         const key = new Fbigint(pair[0]);
-        const cnodes = this._get_nodes_closest_to(key);
+        const cnodes = this._get_nodes_closest_to({key: key});
 
         // If the new node is one of the K closest nodes to this key AND we are closer to the key 
         // than any of my neighbors (or the new node is now closer to the key than we are), then 
@@ -375,7 +375,7 @@ class Fkad_node {
     const active = new Fbintree();
     const inactive = new Fbintree();
 
-    this._get_nodes_closest_to(key, Fkad_node.ALPHA).forEach((node_info) => {
+    this._get_nodes_closest_to({key: key, max: Fkad_node.ALPHA}).forEach((node_info) => {
       inactive.bst_insert(new Fbintree_node({data: node_info}), _by_distance_and_lex.bind(this));
     });
 
@@ -500,7 +500,7 @@ class Fkad_node {
   }
 
   _res_find_node(req) {
-    const nodes = this._get_nodes_closest_to(req.data.payload[0], Fkad_node.K_SIZE);
+    const nodes = this._get_nodes_closest_to({key: req.data.payload[0], max: Fkad_node.K_SIZE});
 
     return new Fkad_msg({
       rpc: Fkad_msg.RPC.FIND_NODE,
@@ -527,7 +527,7 @@ class Fkad_node {
       payload = [ds_rec.get_data()];
       type = Fkad_data.TYPE.VAL;
     } else {
-      payload = this._get_nodes_closest_to(req.data.payload[0], Fkad_node.K_SIZE);
+      payload = this._get_nodes_closest_to({key: req.data.payload[0], max: Fkad_node.K_SIZE});
       type = Fkad_data.TYPE.NODE_LIST;
     }
 
@@ -550,7 +550,7 @@ class Fkad_node {
   // TODO: try optimizing by starting our search at the leaf node and visiting adjacent buckets
   // in the routing table by their distance from our ID, ending the search when we hit the max,
   // then sort by distance from the key...
-  _get_nodes_closest_to(key, max = Fkad_node.K_SIZE) {
+  _get_nodes_closest_to({key, max = Fkad_node.K_SIZE, get_locked = false, get_stale = false} = {}) {
     // Touch the bucket so we know it's not a pathological case
     this.find_kbucket_for_id(key).get_data().touch();
 
@@ -558,14 +558,25 @@ class Fkad_node {
       const bucket = node.get_data();
       
       if (bucket !== null) {
-        data = data.concat(bucket.to_array().map(kbucket_rec => kbucket_rec.node_info));
+        data = data.concat(bucket.to_array().filter(kbucket_rec => {
+          if (!get_locked && !get_stale) {
+            return !kbucket_rec.is_locked() && !kbucket_rec.is_stale();
+          } else if (get_locked && !get_stale) {
+            return !kbucket_rec.is_stale();
+          } else if (!get_locked && get_stale) {
+            return !kbucket_rec.is_locked();
+          } else {
+            return true;
+          }
+        }));
       }
 
       return data;
     });
 
-    all_nodes.sort((a, b) => Fkad_node._get_distance(key, a.node_id).greater(
-      Fkad_node._get_distance(key, b.node_id)) ? 1 : -1);
+    all_nodes.map(kbucket_rec => kbucket_rec.node_info).sort((a, b) => 
+      Fkad_node._get_distance(key, a.node_id).greater(Fkad_node._get_distance(key, b.node_id)) ? 
+        1 : -1);
 
     return all_nodes.splice(0, Math.min(max, all_nodes.length));
   }
@@ -677,7 +688,11 @@ class Fkad_node {
 
     buckets.forEach(bucket => this._refresh_kbucket(bucket));
 
-    const npeers = this._get_nodes_closest_to(this.node_id, Number.POSITIVE_INFINITY).length;
+    const npeers = this._get_nodes_closest_to({
+      key: this.node_id, 
+      max: Number.POSITIVE_INFINITY
+    }).length;
+
     Flog.log(`[FKAD] Success: node ${this.node_id.toString()} is online! ` + 
       `(Discovered ${npeers} peers)`);
 
