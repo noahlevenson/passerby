@@ -62,7 +62,7 @@ class Fkad_eng_alpha extends Fkad_eng {
         const bucket = this.node.find_kbucket_for_id(node_info.node_id).get_data();
         const kbucket_rec = bucket.exists(node_info);
 
-        if (kbucket_rec !== null) {
+        if (kbucket_rec !== null && !kbucket_rec.is_locked()) {
           kbucket_rec.lock();
         }
 
