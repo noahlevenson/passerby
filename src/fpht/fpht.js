@@ -281,7 +281,7 @@ class Fpht {
         child0 = new Fpht_node({label: `${old_leaf.label}0`});
         child1 = new Fpht_node({label: `${old_leaf.label}1`});
 
-        Flog.log(`[FPHT] Splitting leaf ${old_leaf.label} into ${child0.label} + ${child1.label}`)
+        Flog.log(`[FPHT] Split ${old_leaf.label} -> ${child0.label} + ${child1.label}`)
 
         child0.set_ptrs({left: old_leaf.ptr_left(), right: child1.get_label()});
         child1.set_ptrs({left: child0.get_label(), right: old_leaf.ptr_right()});
