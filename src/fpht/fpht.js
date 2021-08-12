@@ -206,13 +206,15 @@ class Fpht {
     }
   }
 
-  // Find the PHT leaf node responsible for a given key, linear search edition
-  // Returns null if there's no leaf node associated with that key
+  // Find the PHT node responsible for a given key, linear search edition
+  // leaf = true means you want to find a leaf node, ie a node whose prefix owns the key
+  // leaf = false means you want to find an internal node, ie an ancestor to the leaf node
+  // Returns null if there's no node associated with that key
   async lookup_lin(key_str, leaf = true) {
     for (let i = 0; i < key_str.length; i += 1) {
       const pht_node = await this._dht_lookup(key_str.substring(0, i));
       
-      if (pht_node !== null && (leaf ? pht_node.is_leaf() : true)) {
+      if (pht_node !== null && (leaf ? pht_node.is_leaf() : !pht_node.is_leaf())) {
         return pht_node;
       }
     }
@@ -220,8 +222,10 @@ class Fpht {
     return null;
   } 
 
-  // Find the PHT leaf node responsible for a given key, binary search edition
-  // Returns null if there's no leaf node associated with that key
+  // Find the PHT node responsible for a given key, binary search edition
+  // leaf = true means you want to find a leaf node, ie a node whose prefix owns the key
+  // leaf = false means you want to find an internal node, ie an ancestor to the leaf node
+  // Returns null if there's no node associated with that key
   async lookup_bin(key_str, leaf = true) {
     let p = 0;
     let r = Fpht.BIT_DEPTH - 1;
@@ -230,7 +234,7 @@ class Fpht {
       let q = Math.floor((p + r) / 2);  
       const pht_node = await this._dht_lookup(key_str.substring(0, q));
 
-      if (pht_node !== null && (leaf ? pht_node.is_leaf() : true)) {
+      if (pht_node !== null && (leaf ? pht_node.is_leaf() : !pht_node.is_leaf())) {
         return pht_node;
       } else if (pht_node !== null && Fpht_node.valid_magic(pht_node)) {
         p = q + 1;
