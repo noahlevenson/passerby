@@ -182,7 +182,7 @@ class Fkad_node {
     const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_info.node_id;
     const prefix = kbucket.get_prefix();
     Flog.log(`[FKAD] Refreshing k-bucket ${prefix.length === 0 ? "[root]" : prefix} ` + 
-      `(${kbucket.length()} contacts)`);
+      `(${kbucket.length()} contact${kbucket.length() > 1 ? "s" : ""})`);
     await this._node_lookup(random_id);
   }
 
@@ -217,13 +217,17 @@ class Fkad_node {
     let bucket = leaf_node.get_data();
     const kbucket_rec = bucket.exists(inbound_node_info);
 
+    // TODO: a locked contact is silently unlocked before insertion by wrapping it in a fresh 
+    // Fkad_kbucket_rec; it's bad for code comprehension bc the locking occurs in Fkad_eng_alpha 
+    const new_kbucket_rec = new Fkad_kbucket_rec({node_info: inbound_node_info});
+
     if (kbucket_rec !== null) {
-      // We've already seen this node in this bucket, so just move it to the tail
+      // We've already seen this node in this bucket, so just move a fresh record to the tail
       bucket.delete(kbucket_rec);
-      bucket.enqueue(kbucket_rec);
+      bucket.enqueue(new_kbucket_rec);
     } else if (kbucket_rec === null && !bucket.is_full()) {
       // We've never seen this node and the appropriate bucket isn't full, so just insert it
-      bucket.enqueue(new Fkad_kbucket_rec({node_info: inbound_node_info}));
+      bucket.enqueue(new_kbucket_rec);
 
       // Replicate any of our data that is appropriate to this new node
       this.network_data.entries().forEach((pair) => {
@@ -235,8 +239,8 @@ class Fkad_node {
         // replicate this (key, value) pair to the new node
         if (cnodes.includes(inbound_node_info) && 
           (Fkad_node._get_distance(this.node_id, key).less_equal(
-          Fkad_node._get_distance(cnodes[0].node_id, key) || 
-          cnodes[0] === inbound_node_info))) {
+            Fkad_node._get_distance(cnodes[0].node_id, key) || 
+              cnodes[0] === inbound_node_info))) {
           
           Flog.log(`[FKAD] Replicating ${key.toString()} to new node ` +
           `${inbound_node_info.node_id.toString()}`);
