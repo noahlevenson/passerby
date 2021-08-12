@@ -23,7 +23,7 @@ class Fpht {
   // BIT_DEPTH is the size of our input keys (our Fgeo linearizations are currently 80 bits)
   static BIT_DEPTH = 80;
   // B is block size, aka max keys per leaf
-  static B = 1000;
+  static B = 1;
 
   // reference to the DHT node associated with this PHT interface
   dht_node;
