@@ -18,7 +18,7 @@ class Fkad_eng_alpha extends Fkad_eng {
   // evaluating debug builds of clients: a sluggish debug build on a resource constrained device can
   // fail to process queries within 1000ms, and then your node lookups will fail,
   // your sms/status/whatever won't send, and you'll incorrectly think you had an FKAD regression
-  static TIMEOUT = 2000;
+  static TIMEOUT = 4000;
   static RES_EVENT_PREFIX = "r+";
   
   res;
