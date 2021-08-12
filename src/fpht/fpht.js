@@ -298,8 +298,8 @@ class Fpht {
             const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
             child_ref.put(pair[0], pair[1]);
 
-            Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} ` + 
-              `leaf ${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
+            Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} -> ${this.index_attr} ` + 
+              `${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
           });
         }
 
@@ -348,7 +348,7 @@ class Fpht {
 
     if (leaf.size() + sibling_node.size() > Fpht.B) {
       // Easy case: leaf + its sibling node contains more than B keys, so the invariant is maintained
-      Flog.log(`[FPHT] Deleted key ${key.toString()} >> ${this.index_attr} leaf ` + 
+      Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
         `${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
     } else {
       // Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
@@ -415,7 +415,7 @@ class Fpht {
           pairs.forEach((pair, idx, arr) => {
             parent_node.put(pair[0], pair[1]);
 
-            Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} >> ${this.index_attr} leaf ` + 
+            Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} -> ${this.index_attr} ` + 
               `${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})`);
           });
         }
