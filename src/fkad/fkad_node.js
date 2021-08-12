@@ -180,7 +180,7 @@ class Fkad_node {
   // it's prob more rigorous to generate a random ID in the bucket's range
   async _refresh_kbucket(kbucket) {
     const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_info.node_id;
-    Flog.log(`[FKAD] Refreshing k-bucket for range including ID ${random_id.toString()}`);
+    Flog.log(`[FKAD] Refreshing k-bucket prefix ${kbucket.get_prefix()} (${kbucket.length()} contacts)`);
     await this._node_lookup(random_id);
   }
 
