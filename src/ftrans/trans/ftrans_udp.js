@@ -26,8 +26,8 @@ const { Futil } = require("../../futil/futil.js");
 
 class Ftrans_udp extends Ftrans {
   static RETRANSMIT = true;
-  static MAX_RETRIES = 2;
-  static DEFAULT_RTT_MS = 750;
+  static MAX_RETRIES = 6;
+  static DEFAULT_RTT_MS = 200;
   static BACKOFF_FUNC = x => x * 2;
 
   socket;
