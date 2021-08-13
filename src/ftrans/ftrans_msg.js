@@ -47,7 +47,6 @@ class Ftrans_msg {
     id = null
   } = {}) {
     // TODO: Validation!
-    
     this.msg = msg;
     this.type = type;
     // Sender's pubkey
@@ -60,6 +59,22 @@ class Ftrans_msg {
     this.iv = iv;
     // Not used by default, but Ftrans subclasses may utilize it
     this.id = id;
+  }
+
+  // Return the Ftrans_msg.TYPE for a given msg
+  static get_msg_type(msg) {
+    if (msg instanceof Fkad_msg) {
+      return Ftrans_msg.TYPE.FKAD;
+    } else if (Buffer.isBuffer(msg)) {
+      // TODO: FSTUN breaks the pattern by delivering messages as Buffers, this is brittle n sketchy
+      return Ftrans_msg.TYPE.FSTUN;
+    } else if (msg instanceof Fbuy_msg) {
+      return Ftrans_msg.TYPE.FBUY;
+    } else if (msg instanceof Fdlt_msg) {
+      return Ftrans_msg.TYPE.FDLT;
+    } else {
+      throw new Error("msg must be instance of Fkad_msg, Fbuy_msg, Fdlt_msg, or Buffer");
+    }
   }
 
   // Construct a decrypted Ftrans_msg from an encrypted Ftrans_msg
@@ -105,27 +120,15 @@ class Ftrans_msg {
   // Construct an encrypted Ftrans_msg
   static async encrypted_from({
     msg = null, 
+    type = null,
     sender_pubkey = null, 
     recip_pubkey = null, 
     id = null
   } = {}) {
-    const ftrans_msg = new Ftrans_msg({id: id});
-
-    if (msg instanceof Fkad_msg) {
-      ftrans_msg.type = Ftrans_msg.TYPE.FKAD;
-    } else if (Buffer.isBuffer(msg)) {
-      // TODO: FSTUN breaks the pattern by delivering messages as Buffers, this is brittle n sketchy
-      ftrans_msg.type = Ftrans_msg.TYPE.FSTUN;
-    } else if (msg instanceof Fbuy_msg) {
-      ftrans_msg.type = Ftrans_msg.TYPE.FBUY;
-    } else if (msg instanceof Fdlt_msg) {
-      ftrans_msg.type = Ftrans_msg.TYPE.FDLT;
-    } else {
-      throw new Error("msg must be instance of Fkad_msg, Fbuy_msg, Fdlt_msg, or Buffer");
-    }
+    const ftrans_msg = new Ftrans_msg({id: id, type: type});
 
     if (typeof sender_pubkey !== "string" || typeof recip_pubkey !== "string") {
-      throw new Error("both pubkeys must be strings");
+      throw new Error("sender_pubkey and recip_pubkey must be strings");
     }
 
     const privkey = await Fcrypto.get_privkey();
