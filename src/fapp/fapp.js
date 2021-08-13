@@ -18,6 +18,7 @@ const { Fapp_bboard } = require("./fapp_bboard.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 const { Ftrans_udp } = require("../ftrans/trans/ftrans_udp.js");
 const { Fkad_node } = require("../fkad/fkad_node.js");
+const { Fkad_node_info } = require("../fkad/fkad_node_info.js");
 const { Fkad_eng_alpha } = require("../fkad/eng/fkad_eng_alpha.js");
 const { Fkad_net_solo } = require("../fkad/net/fkad_net_solo.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
@@ -240,6 +241,7 @@ class Fapp {
     // TODO: we can enter an infinite loop of keepalive retries here lolololol
     try {
       await this.send_keepalive(recip);
+      Flog.log(`[FAPP] Keepalive OK`);
     } catch(err) {
       this._keepalive_handler();
     }
@@ -495,7 +497,7 @@ class Fapp {
     }
 
     if (this.keepalive) {
-      this.keepalive_interval = setInterval(this._keepalive_handler, this.t_keepalive);
+      this.keepalive_interval = setInterval(this._keepalive_handler.bind(this), this.t_keepalive);
       Flog.log(`[FAPP] keepalive enabled (${this.t_keepalive / 1000}s)`);
     }
 
