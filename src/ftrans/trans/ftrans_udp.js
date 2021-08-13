@@ -77,7 +77,7 @@ class Ftrans_udp extends Ftrans {
     return new Promise((resolve, reject) => {
       this.socket.on("listening", () => {
         const addr = this.socket.address();
-        Flog.log(`[FTRANS] UDP service online, listening on ${addr.address}:${addr.port}`);   
+        Flog.log(`[FTRANS] UDP service online, listening on ${addr.address}:${addr.port}`);
         resolve();
       });
     });
@@ -117,22 +117,6 @@ class Ftrans_udp extends Ftrans {
         family: rinfo.family, 
         pubkey: decrypted_msg.pubkey
       }));
-    }
-  }
-
-  async on_message(ftrans_msg, ftrans_rinfo) {
-    // Handle PINGs for NAT keepalive
-    try {
-      if (ftrans_msg.type === Ftrans_msg.TYPE.PING) {
-        const reply_msg = await Ftrans_msg.encrypted_from({
-          msg: null,
-          type: Ftrans_msg.TYPE.PONG,
-          sender_pubkey: this.pubkey,
-          recip_pubkey: ftrans_rinfo.pubkey
-        });
-      }
-    } catch(err) {
-      // Do nothing?
     }
   }
 

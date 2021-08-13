@@ -22,17 +22,14 @@ const { Fcrypto } = require("../fcrypto/fcrypto.js");
 class Ftrans_msg {
   static ID_LEN = 8;
   
-  // F-prefix messages are self explanatory; ACK, PING, and PONG are general purpose types for use 
-  // by Ftrans subclasses now and in the future (Our UDP subclass currently uses ACK to implement 
-  // retransmission, and PING/PONG are used for NAT keepalive)
+  // F-prefix messages are self explanatory; ACK is a general purpose type for use by Ftrans
+  // subclasses now and in the future (Our UDP subclass currently uses ACK for retransmission)
   static TYPE = {
     FKAD: 0,
     FSTUN: 1,
     FBUY: 2,
     FDLT: 3,
-    ACK: 4,
-    PING: 5,
-    PONG: 6
+    ACK: 4
   };
 
   msg;

@@ -49,8 +49,7 @@ class Fapp {
   static KEYSERVER_APP_ID = "k";
   static KEYSERVER_BLOCK_RATE = [10000, 20000];
   static SEARCH_DIST_MILES = 2.0;
-  static T_NAT_KEEPALIVE = 20000;
-
+ 
   static GEOCODING_METHOD = {
     NOMINATIM: 0
   };
@@ -74,7 +73,8 @@ class Fapp {
   node;
   trans;
   keepalive;
-  keepalive_interval_handle;
+  t_keepalive;
+  keepalive_interval;
   geocoding;
   is_keyserver_validator;
 
@@ -87,11 +87,12 @@ class Fapp {
     port = 27500,
     bootstrap_nodes = [],
     authorities = [],
-    keepalive = true, 
     geocoding = Fapp.GEOCODING_METHOD.NOMINATIM, 
-    is_keyserver_validator = false
+    is_keyserver_validator = false,
+    keepalive = true,
+    t_keepalive = 20000
   } = {}) {
-    // Give JavaScript's built-in Map type a serializer and a deserializer
+    // Give JavaScript's Map a serializer and a deserializer
     Object.defineProperty(global.Map.prototype, "toJSON", {
       value: Futil.map_to_json
     });
@@ -115,9 +116,25 @@ class Fapp {
     this.node = null;
     this.trans = null;
     this.keepalive = keepalive;
-    this.keepalive_interval_handle = null;
+    this.t_keepalive = t_keepalive;
+    this.keepalive_interval = null;
     this.geocoding = geocoding;
     this.is_keyserver_validator = is_keyserver_validator;
+  }
+
+  // Send a keepalive message to a peer
+  // TODO: to keep track of msg state, we use an FKAD ping RPC, but we should be more lightweight
+  static send_keepalive(ftrans_rinfo) {
+    return new Promise((resolve, reject) => {
+      const node_info = new Fkad_node_info({
+        addr: ftrans_rinfo.address,
+        port: ftrans_rinfo.port,
+        node_id: new Fbigint(Fcrypto.sha1(ftrans_rinfo.pubkey),
+        pubkey: ftrans_rinfo.pubkey
+      });
+
+      this.node._req_ping(node_info, resolve, reject);
+    });
   }
 
   // Convenience method to generate a public/private key pair
@@ -214,6 +231,17 @@ class Fapp {
 
         req.end();
       });
+    }
+  }
+
+  async _keepalive_handler() {
+    const recip = this.bootstrap_nodes[Math.floor(Math.random() * this.bootstrap_nodes.length)];
+
+    // TODO: we can enter an infinite loop of keepalive retries here lolololol
+    try {
+      await this.send_keepalive(recip);
+    } catch(err) {
+      this._keepalive_handler();
     }
   }
 
@@ -466,21 +494,9 @@ class Fapp {
       throw new Error("DHT bootstrap failed!");
     }
 
-    // TODO: Keepalive should send a much smaller msg than this
     if (this.keepalive) {
-      this.keepalive_interval_handle = setInterval(async () => {
-        let res = null;
-
-        for (let i = 0; i < this.bootstrap_nodes.length && res === null; i += 1) {
-          res = await fapp_stun_service._binding_req(
-            this.bootstrap_nodes[i].address, 
-            this.bootstrap_nodes[i].port, 
-            this.bootstrap_nodes[i].pubkey
-          );
-        }
-      }, Fapp.T_NAT_KEEPALIVE);
-
-      Flog.log(`[FAPP] NAT keepalive enabled (${Fapp.T_NAT_KEEPALIVE / 1000}s)`);
+      this.keepalive_interval = setInterval(this._keepalive_handler, this.t_keepalive);
+      Flog.log(`[FAPP] keepalive enabled (${this.t_keepalive / 1000}s)`);
     }
 
     // Create a PHT interface
@@ -529,9 +545,9 @@ class Fapp {
         this.node = null;
       }
 
-      if (this.keepalive_interval_handle) {
-        clearInterval(this.keepalive_interval_handle);
-        this.keepalive_interval_handle = null;
+      if (this.keepalive_interval) {
+        clearInterval(this.keepalive_interval);
+        this.keepalive_interval = null;
       }
     } catch {
       // Do nothing

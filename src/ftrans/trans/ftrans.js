@@ -22,12 +22,7 @@ class Ftrans {
   async _on_network() {
     throw new Error("Subclasses must implement the _on_network() method");
   }
-
-  // Ftrans message hook; if an Ftrans subclass wants to listen for new messages, do it here
-  async _on_message() {
-    throw new Error("Subclasses must implement the _on_message() method");
-  }
-
+  
   async _send() {
     throw new Error("Subclasses must implement the _send() method");
   }
