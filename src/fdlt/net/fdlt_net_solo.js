@@ -48,7 +48,7 @@ class Fdlt_net_solo extends Fdlt_net {
   }
 
   _out(fdlt_msg, rinfo) {
-    this.trans._send(fdlt_msg, rinfo);
+    this.trans._send(fdlt_msg, Ftrans_msg.TYPE.FDLT, rinfo);
   }
 }
 

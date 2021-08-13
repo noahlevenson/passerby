@@ -22,12 +22,17 @@ const { Fcrypto } = require("../fcrypto/fcrypto.js");
 class Ftrans_msg {
   static ID_LEN = 8;
   
+  // F-prefix messages are self explanatory; ACK, PING, and PONG are general purpose types for use 
+  // by Ftrans subclasses now and in the future (Our UDP subclass currently uses ACK to implement 
+  // retransmission, and PING/PONG are used for NAT keepalive)
   static TYPE = {
     FKAD: 0,
     FSTUN: 1,
     FBUY: 2,
     FDLT: 3,
     ACK: 4,
+    PING: 5,
+    PONG: 6
   };
 
   msg;
@@ -59,22 +64,6 @@ class Ftrans_msg {
     this.iv = iv;
     // Not used by default, but Ftrans subclasses may utilize it
     this.id = id;
-  }
-
-  // Return the Ftrans_msg.TYPE for a given msg
-  static get_msg_type(msg) {
-    if (msg instanceof Fkad_msg) {
-      return Ftrans_msg.TYPE.FKAD;
-    } else if (Buffer.isBuffer(msg)) {
-      // TODO: FSTUN breaks the pattern by delivering messages as Buffers, this is brittle n sketchy
-      return Ftrans_msg.TYPE.FSTUN;
-    } else if (msg instanceof Fbuy_msg) {
-      return Ftrans_msg.TYPE.FBUY;
-    } else if (msg instanceof Fdlt_msg) {
-      return Ftrans_msg.TYPE.FDLT;
-    } else {
-      throw new Error("msg must be instance of Fkad_msg, Fbuy_msg, Fdlt_msg, or Buffer");
-    }
   }
 
   // Construct a decrypted Ftrans_msg from an encrypted Ftrans_msg

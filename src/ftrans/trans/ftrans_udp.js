@@ -23,7 +23,6 @@ const { Ftrans_msg } = require("../ftrans_msg.js");
 const { Ftrans_rinfo } = require("../ftrans_rinfo.js");
 const { Futil } = require("../../futil/futil.js");
 
-
 class Ftrans_udp extends Ftrans {
   static RETRANSMIT = true;
   static MAX_RETRIES = 2;
@@ -121,6 +120,22 @@ class Ftrans_udp extends Ftrans {
     }
   }
 
+  async on_message(ftrans_msg, ftrans_rinfo) {
+    // Handle PINGs for NAT keepalive
+    try {
+      if (ftrans_msg.type === Ftrans_msg.TYPE.PING) {
+        const reply_msg = await Ftrans_msg.encrypted_from({
+          msg: null,
+          type: Ftrans_msg.TYPE.PONG,
+          sender_pubkey: this.pubkey,
+          recip_pubkey: ftrans_rinfo.pubkey
+        });
+      }
+    } catch(err) {
+      // Do nothing?
+    }
+  }
+
   _do_send(buf, addr, port, cb = () => {}) {
     this.socket.send(buf, 0, buf.length, port, addr, (err) => {
       if (err) {
@@ -132,10 +147,10 @@ class Ftrans_udp extends Ftrans {
     });
   }
 
-  async _send(msg, ftrans_rinfo) {
+  async _send(msg, msg_type, ftrans_rinfo) {
     const ftrans_msg = await Ftrans_msg.encrypted_from({
       msg: msg, 
-      type: Ftrans_msg.get_msg_type(msg),
+      type: msg_type,
       sender_pubkey: this.pubkey, 
       recip_pubkey: ftrans_rinfo.pubkey
     });

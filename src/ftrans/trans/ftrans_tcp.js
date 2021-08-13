@@ -65,10 +65,10 @@ class Ftrans_tcp extends Ftrans {
     }));
   }
 
-  async _send(msg, ftrans_rinfo) {
+  async _send(msg, msg_type, ftrans_rinfo) {
     const ftrans_msg = await Ftrans_msg.encrypted_from({
       msg: msg,
-      type: Ftrans_msg.get_msg_type(msg),
+      type: msg_type,
       sender_pubkey: this.pubkey, 
       recip_pubkey: ftrans_rinfo.pubkey
     });
