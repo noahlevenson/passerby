@@ -129,7 +129,7 @@ class Fapp {
       const node_info = new Fkad_node_info({
         addr: ftrans_rinfo.address,
         port: ftrans_rinfo.port,
-        node_id: new Fbigint(Fcrypto.sha1(ftrans_rinfo.pubkey),
+        node_id: new Fbigint(Fcrypto.sha1(ftrans_rinfo.pubkey)),
         pubkey: ftrans_rinfo.pubkey
       });
 
