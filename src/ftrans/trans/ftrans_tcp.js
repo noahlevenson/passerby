@@ -89,8 +89,8 @@ class Ftrans_tcp extends Ftrans {
         });
       });
 
-      new_socket.on("error", err => Flog.log(`[FTRANS] TCP send error: ${err.message}`);
-      this.connections.set(JSON.stringify(ftrans_rinfo));
+      new_socket.on("error", err => Flog.log(`[FTRANS] TCP send error: ${err.message}`));
+      this.connections.set(JSON.stringify(ftrans_rinfo), new_socket);
     }
   }
 }
