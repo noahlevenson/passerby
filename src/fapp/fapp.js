@@ -123,21 +123,6 @@ class Fapp {
     this.is_keyserver_validator = is_keyserver_validator;
   }
 
-  // Send a keepalive message to a peer
-  // TODO: to keep track of msg state, we use an FKAD ping RPC, but we should be more lightweight
-  static send_keepalive(ftrans_rinfo) {
-    return new Promise((resolve, reject) => {
-      const node_info = new Fkad_node_info({
-        addr: ftrans_rinfo.address,
-        port: ftrans_rinfo.port,
-        node_id: new Fbigint(Fcrypto.sha1(ftrans_rinfo.pubkey)),
-        pubkey: ftrans_rinfo.pubkey
-      });
-
-      this.node._req_ping(node_info, resolve, reject);
-    });
-  }
-
   // Convenience method to generate a public/private key pair
   static async generate_key_pair(passphrase) {
     return await Fcrypto.generate_key_pair(passphrase);
@@ -245,6 +230,21 @@ class Fapp {
     } catch(err) {
       this._keepalive_handler();
     }
+  }
+
+  // Send a keepalive message to a peer
+  // TODO: to keep track of msg state, we use an FKAD ping RPC, but we should be more lightweight
+  send_keepalive(ftrans_rinfo) {
+    return new Promise((resolve, reject) => {
+      const node_info = new Fkad_node_info({
+        addr: ftrans_rinfo.address,
+        port: ftrans_rinfo.port,
+        node_id: new Fbigint(Fcrypto.sha1(ftrans_rinfo.pubkey)),
+        pubkey: ftrans_rinfo.pubkey
+      });
+
+      this.node._req_ping(node_info, resolve, reject);
+    });
   }
 
   // Convenience method: send a transaction req to the peer named on cred and listen once
