@@ -56,7 +56,7 @@ class Ftrans_udp extends Ftrans {
       this.socket = dgram.createSocket({type: "udp6", ipv6Only: true});
     }
 
-    this.socket.on("message", this._on_message.bind(this));
+    this.socket.on("message", this._on_network.bind(this));
     this.socket.bind(this.port);
     
     Flog.log(`[FTRANS] UDP service starting on port ${this.port}, ` + 
@@ -84,7 +84,7 @@ class Ftrans_udp extends Ftrans {
     });
   }
 
-  async _on_message(msg, rinfo) {
+  async _on_network(msg, rinfo) {
     // TODO: msg is a Buffer representing a stringified Ftrans_msg
     // TODO: Validation!
     const in_msg = new Ftrans_msg(JSON.parse(msg.toString(), Fbigint._json_revive));

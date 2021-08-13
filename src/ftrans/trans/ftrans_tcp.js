@@ -37,7 +37,7 @@ class Ftrans_tcp extends Ftrans {
     return new Promise((resolve, reject) => {
       this.server = net.createServer((connection) => {
         connection.on("data", (msg) => {
-          this._on_message(msg, {
+          this._on_network(msg, {
             address: connection.remoteAddress, 
             port: connection.remotePort, 
             family: connection.remoteFamily
@@ -53,7 +53,7 @@ class Ftrans_tcp extends Ftrans {
     });
   }
 
-  async _on_message(msg, rinfo) {
+  async _on_network(msg, rinfo) {
     const in_msg = new Ftrans_msg(JSON.parse(msg.toString(), Fbigint._json_revive));
     const decrypted_msg = await Ftrans_msg.decrypted_from(in_msg);
 
