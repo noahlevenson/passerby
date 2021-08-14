@@ -16,7 +16,7 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Fapp_bboard } = require("./fapp_bboard.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
-const { Ftrans_udp } = require("../ftrans/trans/ftrans_udp.js");
+const { Ftrans_udp } = require("../ftrans/trans/udp/ftrans_udp.js");
 const { Fkad_node } = require("../fkad/fkad_node.js");
 const { Fkad_node_info } = require("../fkad/fkad_node_info.js");
 const { Fkad_eng_alpha } = require("../fkad/eng/fkad_eng_alpha.js");
