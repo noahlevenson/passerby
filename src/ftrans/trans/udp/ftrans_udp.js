@@ -10,18 +10,18 @@
 "use strict";
 
 const EventEmitter = require("events");
-const { Fapp_cfg } = require("../../fapp/fapp_cfg.js");
-const cfg = require("../../../libfood.json");
+const { Fapp_cfg } = require("../../../fapp/fapp_cfg.js");
+const cfg = require("../../../../libfood.json");
 const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
-  require("../../ftypes/fbigint/fbigint_rn.js") : require("../../ftypes/fbigint/fbigint_node.js");
+  require("../../../ftypes/fbigint/fbigint_rn.js") : require("../../../ftypes/fbigint/fbigint_node.js");
 const dgram = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("react-native-udp").default : require("dgram");
-const { Fid } = require("../../fid/fid.js"); 
-const { Flog } = require("../../flog/flog.js");
-const { Ftrans } = require("./ftrans.js");
-const { Ftrans_msg } = require("../ftrans_msg.js");
-const { Ftrans_rinfo } = require("../ftrans_rinfo.js");
-const { Futil } = require("../../futil/futil.js");
+const { Fid } = require("../../../fid/fid.js"); 
+const { Flog } = require("../../../flog/flog.js");
+const { Ftrans } = require("../ftrans.js");
+const { Ftrans_msg } = require("../../ftrans_msg.js");
+const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
+const { Futil } = require("../../../futil/futil.js");
 
 class Ftrans_udp extends Ftrans {
   static RETRANSMIT = true;
