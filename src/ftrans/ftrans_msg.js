@@ -20,16 +20,11 @@ const { Fdlt_msg } = require("../fdlt/fdlt_msg.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 
 class Ftrans_msg {
-  static ID_LEN = 8;
-  
-  // F-prefix messages are self explanatory; ACK is a general purpose type for use by Ftrans
-  // subclasses now and in the future (Our UDP subclass currently uses ACK for retransmission)
   static TYPE = {
     FKAD: 0,
     FSTUN: 1,
     FBUY: 2,
-    FDLT: 3,
-    ACK: 4
+    FDLT: 3
   };
 
   msg;
@@ -37,7 +32,6 @@ class Ftrans_msg {
   pubkey;
   sig;
   iv;
-  id;
 
   constructor({
     msg = null, 
@@ -45,8 +39,7 @@ class Ftrans_msg {
     pubkey = null, 
     sig = null, 
     key = null, 
-    iv = null, 
-    id = null
+    iv = null
   } = {}) {
     // TODO: Validation!
     this.msg = msg;
@@ -59,8 +52,6 @@ class Ftrans_msg {
     this.key = key;
     // IV for one time key (send it in the clear)
     this.iv = iv;
-    // Not used by default, but Ftrans subclasses may utilize it
-    this.id = id;
   }
 
   // Construct a decrypted Ftrans_msg from an encrypted Ftrans_msg
@@ -95,8 +86,7 @@ class Ftrans_msg {
         pubkey: ftrans_msg.pubkey,
         sig: ftrans_msg.sig,
         key: ftrans_msg.key,
-        iv: ftrans_msg.iv,
-        id: ftrans_msg.id
+        iv: ftrans_msg.iv
       });
     } catch (err) {
       return null;
@@ -108,10 +98,9 @@ class Ftrans_msg {
     msg = null, 
     type = null,
     sender_pubkey = null, 
-    recip_pubkey = null, 
-    id = null
+    recip_pubkey = null
   } = {}) {
-    const ftrans_msg = new Ftrans_msg({id: id, type: type});
+    const ftrans_msg = new Ftrans_msg({type: type});
 
     if (typeof sender_pubkey !== "string" || typeof recip_pubkey !== "string") {
       throw new Error("sender_pubkey and recip_pubkey must be strings");

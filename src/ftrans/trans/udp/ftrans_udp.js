@@ -21,29 +21,61 @@ const { Flog } = require("../../../flog/flog.js");
 const { Ftrans } = require("../ftrans.js");
 const { Ftrans_msg } = require("../../ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
+const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
+const { Ftrans_udp_slice_send_buf } = require("./ftrans_udp_slice_send_buf.js");
+const { Ftrans_udp_slice_recv_buf } = require("./ftrans_udp_slice_recv_buf.js");
 const { Futil } = require("../../../futil/futil.js");
 
+/*
+* A note about parameterization:
+* At an outbound rate of 262144 and a slice size of 512 bytes, we can send 512 slices per second.
+* So, consider the effect on the chunk buffer: If MAX_CHUNKS is 65536 (max 16-bit uint), in
+* a near-worst case where all of our chunks consist of one 512-byte slice, we'll wrap around
+* the chunk buffer in 128 seconds (65536 / 512 = 128). In an even worse case, where all of our
+* chunks consist of one 64-byte slice, we'll wrap around the chunk buffer in 16 seconds 
+* (65536 / (262144 / 64) = 16). That's probably OK, but beware! 
+*/
+
 class Ftrans_udp extends Ftrans {
-  static RETRANSMIT = true;
-  static MAX_RETRIES = 2;
-  static DEFAULT_RTT_MS = 750;
-  static BACKOFF_FUNC = x => x * 2;
+  static MAX_OUTBOUND_PER_SEC = 262144;
+  static OUTBOUND_HZ = 500;
+  static TICK_DURATION = 1000 / Ftrans_udp.OUTBOUND_HZ;
+  static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
+  static MAX_RETRIES = 0;
 
   socket;
   port;
   pubkey;
   udp4;
   udp6;
-  ack;
+  chunk_send_buf;
+  chunk_recv_buf;
+  rd_ptr;
+  wr_ptr;
+  outbound_budget;
+  send_interval;
 
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
     super();
+
+    this.chunk_send_buf = new Map(new Array(Ftrans_udp_slice.MAX_CHUNKS).fill().map((elem, i) => {
+      return [i, null];
+    }));
+
+    this.chunk_recv_buf = new Map();
     this.port = port;
     this.pubkey = pubkey;
     this.udp4 = udp4;
     this.udp6 = udp6;
-    this.ack = new EventEmitter();
+    this.rd_ptr = 0;
+    this.wr_ptr = 0;
+    this.outbound_budget = 0;;
+    this.send_interval = null;
+  }
+
+  _get_outbound_rate() {
+    return Ftrans_udp.MAX_OUTBOUND_PER_SEC - this.outbound_budget;
   }
 
   async _start() {
@@ -58,11 +90,11 @@ class Ftrans_udp extends Ftrans {
     this.socket.on("message", this._on_network.bind(this));
     this.socket.bind(this.port);
     
-    Flog.log(`[FTRANS] UDP service starting on port ${this.port}, ` + 
-      `retransmission ${Ftrans_udp.RETRANSMIT ? "enabled (" + Ftrans_udp.DEFAULT_RTT_MS + 
-        "ms, max " + Ftrans_udp.MAX_RETRIES + ")" : "disabled"}...`);
+    Flog.log(`[FTRANS] UDP service starting on port ${this.port}, ` +
+      `max ${Ftrans_udp.MAX_OUTBOUND_PER_SEC / 1024}k/sec outbound`);
 
     await this._listening();
+    this.send_interval = setInterval(this._send_handler.bind(this), Ftrans_udp.TICK_DURATION);
   }
 
   _stop() {
@@ -70,6 +102,10 @@ class Ftrans_udp extends Ftrans {
       Flog.log(`[FTRANS] UDP service stopped`);
     });
 
+    // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
+    clearInterval(this.send_interval);
+    this.send_interval = null;
+    this.outbound_budget = 0;
     this.socket.close();
   }
 
@@ -83,52 +119,92 @@ class Ftrans_udp extends Ftrans {
     });
   }
 
-  async _on_network(msg, rinfo) {
-    // TODO: msg is a Buffer representing a stringified Ftrans_msg
-    // TODO: Validation!
-    const in_msg = new Ftrans_msg(JSON.parse(msg.toString(), Fbigint._json_revive));
+  // Runs once every TICK_DURATION ms, transmitting the next eligible slice in the send buffer or 
+  // preventing transmission for one tick for network congestion
+  _send_handler() {
+    if (this.outbound_budget > 0) {
+      let chunk_reads = 0;
 
-    // TODO: since we handle the ACK before decrypting the message, we'll inadvertently send
-    // ACK replies for messages from adversaries... we must be more alpha than that
+      while (chunk_reads < Ftrans_udp_slice.MAX_CHUNKS) {
+        const s_buf = this.chunk_send_buf.get(this.rd_ptr);
 
-    // We're in retransmit mode and the incoming msg is an ACK, so just announce the ACK and be done
-    if (Ftrans_udp.RETRANSMIT && in_msg.type === Ftrans_msg.TYPE.ACK) {
-      this.ack.emit(in_msg.id.toString(), in_msg);
-      return;
+        // Case 1: we haven't written a chunk to this index yet, occurs only during early network
+        // TODO: eliminate this case by improving the way we init the chunk send buffer
+        if (s_buf === null) {
+          this._incr_rd_ptr();
+          chunk_reads += 1;
+          continue;
+        }
+
+        const s = s_buf.next();
+
+        // Case 2: We've reached the end of this chunk
+        if (s === null) {
+          s_buf.reset();
+          this._incr_rd_ptr();
+          continue;
+        }
+
+        // Case 3: We've got a slice we can send
+        if (!s.acked && s.tries <= Ftrans_udp.MAX_RETRIES) {
+          this.socket.send(s.slice, 0, s.slice.length, s_buf.rinfo.port, s_buf.rinfo.address, (err) => {
+            if (err) {
+              Flog.log(`[FTRANS] UDP send error ${s_buf.rinfo.addr}:${s_buf.rinfo.port} (${err})`);
+            }
+          });
+
+          s.tries += 1;
+          this.outbound_budget -= s.slice.length;
+          break;
+        }
+      }
     }
 
-    // We're in retransmit mode and someone sent us a non-ACK msg, so we short circuit the _send
-    // method to send an ACK reply without retransmitting it
-    if (Ftrans_udp.RETRANSMIT) {
-      const ack = new Ftrans_msg({
-        type: Ftrans_msg.TYPE.ACK,
-        id: in_msg.id
-      });
-
-      this._do_send(Buffer.from(JSON.stringify(ack)), rinfo.address, rinfo.port);
-    }
-
-    const decrypted_msg = await Ftrans_msg.decrypted_from(in_msg);
-
-    if (decrypted_msg !== null) {
-      this.network.emit("message", decrypted_msg, new Ftrans_rinfo({
-        address: rinfo.address, 
-        port: rinfo.port, 
-        family: rinfo.family, 
-        pubkey: decrypted_msg.pubkey
-      }));
-    }
+    this.outbound_budget = Math.min(
+      this.outbound_budget + Ftrans_udp.OUTBOUND_TICK_BUDGET, 
+      Ftrans_udp.MAX_OUTBOUND_PER_SEC
+    );
   }
 
-  _do_send(buf, addr, port, cb = () => {}) {
-    this.socket.send(buf, 0, buf.length, port, addr, (err) => {
-      if (err) {
-        Flog.log(`[FTRANS] UDP socket send error ${addr}:${port} (${err})`);
-        return;
-      }
+  async _on_network(msg, rinfo) {
+    // msg is a slice, an ack, or some garbage we shouldn't have been sent
+    // TODO: is_valid_slice and is_valid_ack may error when used on the opposite msg type
 
-      cb();
-    });
+    try {
+      if (Ftrans_udp_slice.is_valid_slice(msg)) {
+        const chunk_id = Ftrans_udp_slice.get_chunk_id(msg);
+        const nslices = Ftrans_udp_slice.get_nslices(msg);
+        const chunk_key = `${rinfo.address}:${rinfo.port}:${chunk_id},${nslices}`;
+        let r_buf = this.chunk_recv_buf.get(chunk_key);
+
+        if (!r_buf) {
+          r_buf = new Ftrans_udp_slice_recv_buf({chunk_id: chunk_id, nslices: nslices});
+          this.chunk_recv_buf.set(chunk_key, r_buf);
+        }
+
+        r_buf.add(msg);
+
+        if (r_buf.is_complete()) {
+          const reassembled = r_buf.reassemble_unsafe();
+          this.chunk_recv_buf.delete(chunk_key);
+
+          // Rehydrate and decrypt the message, pass to the next layer
+          const in_msg = new Ftrans_msg(JSON.parse(reassembled.toString(), Fbigint._json_revive));
+          const decrypted_msg = await Ftrans_msg.decrypted_from(in_msg);
+
+          if (decrypted_msg !== null) {
+            this.network.emit("message", decrypted_msg, new Ftrans_rinfo({
+              address: rinfo.address, 
+              port: rinfo.port, 
+              family: rinfo.family, 
+              pubkey: decrypted_msg.pubkey
+            }));
+          }
+        }
+      }
+    } catch(err) {
+      // Do nothing
+    }
   }
 
   async _send(msg, msg_type, ftrans_rinfo) {
@@ -139,50 +215,23 @@ class Ftrans_udp extends Ftrans {
       recip_pubkey: ftrans_rinfo.pubkey
     });
     
-    // Add an ID if we're in retransmit mode
-    if (Ftrans_udp.RETRANSMIT) {
-      ftrans_msg.id = Fbigint.unsafe_random(Ftrans_msg.ID_LEN);
-    }
+    this.chunk_send_buf.set(this.wr_ptr, new Ftrans_udp_slice_send_buf({
+      chunk: Buffer.from(JSON.stringify(ftrans_msg)),
+      chunk_id: this.wr_ptr,
+      rinfo: ftrans_rinfo
+    }));
 
-    const buf = Buffer.from(JSON.stringify(ftrans_msg));
+    this._incr_wr_ptr();
+  }
 
-    this._do_send(buf, ftrans_rinfo.address, ftrans_rinfo.port, () => {
-      let timeout_id = null;
+  _incr_wr_ptr() {
+    this.wr_ptr = this.wr_ptr < Ftrans_udp_slice.MAX_CHUNKS - 1 ? 
+      this.wr_ptr + 1 : 0;
+  }
 
-      function _retry_runner(f, i, max_retries, delay, backoff_f, end_cb) {
-        if (i === max_retries) {
-          end_cb();
-          
-          Flog.log(`[FTRANS] Retransmitted ${Object.keys(Ftrans_msg.TYPE)[ftrans_msg.type]} ` + 
-            `msg # ${ftrans_msg.id.toString()} ${max_retries} times, giving up!`);
-
-          return;
-        }
-
-        timeout_id = setTimeout(() => {
-          Flog.log(`[FTRANS] No UDP ACK for ${Object.keys(Ftrans_msg.TYPE)[ftrans_msg.type]} ` + 
-            `msg # ${ftrans_msg.id}, retransmitting ${i + 1}/${max_retries}`);
-
-          f();
-          _retry_runner(f, i + 1, max_retries, backoff_f(delay), backoff_f, end_cb);
-        }, delay);
-      }
-
-      if (Ftrans_udp.RETRANSMIT) {
-        this.ack.once(ftrans_msg.id.toString(), (res_msg) => {
-          clearTimeout(timeout_id);
-        });
-
-        _retry_runner(this._do_send.bind(
-          this, 
-          buf, 
-          ftrans_rinfo.address, 
-          ftrans_rinfo.port
-        ), 0, Ftrans_udp.MAX_RETRIES, Ftrans_udp.DEFAULT_RTT_MS, Ftrans_udp.BACKOFF_FUNC, () => {
-          this.ack.removeAllListeners(ftrans_msg.id.toString());
-        });
-      }
-    });
+  _incr_rd_ptr() {
+    this.rd_ptr = this.rd_ptr < Ftrans_udp_slice.MAX_CHUNKS - 1 ? 
+      this.rd_ptr + 1 : 0;
   }
 }
 
