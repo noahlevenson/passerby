@@ -37,7 +37,8 @@ class Fkad_node {
   static K_SIZE = 20;
   static ALPHA = 3;
   // T_KBUCKET_REFRESH: How frequently to force a refresh on stale k-buckets?
-  static T_KBUCKET_REFRESH = 1000 * 60 * 60;
+  // 1000 * 60 * 60 is default, but very frequent refreshes help with churn in tiny networks
+  static T_KBUCKET_REFRESH = 1000 * 5;
   // T_DATA_TTL: How long does data live on this network?
   static T_DATA_TTL = (1000 * 60 * 60 * 24) + (1000 * 20);
   // T_REPUBLISH: How often do we republish our owned data? 

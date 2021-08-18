@@ -16,7 +16,6 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
   require("../../../ftypes/fbigint/fbigint_rn.js") : require("../../../ftypes/fbigint/fbigint_node.js");
 const dgram = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("react-native-udp").default : require("dgram");
-const { Fid } = require("../../../fid/fid.js"); 
 const { Flog } = require("../../../flog/flog.js");
 const { Ftrans } = require("../ftrans.js");
 const { Ftrans_msg } = require("../../ftrans_msg.js");
@@ -24,21 +23,26 @@ const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
 const { Ftrans_udp_slice_send_buf } = require("./ftrans_udp_slice_send_buf.js");
 const { Ftrans_udp_slice_recv_buf } = require("./ftrans_udp_slice_recv_buf.js");
-const { Futil } = require("../../../futil/futil.js");
 
 /*
-* A note about parameterization:
-* At an outbound rate of 262144 and a slice size of 512 bytes, we can send 512 slices per second.
-* So, consider the effect on the chunk buffer: If MAX_CHUNKS is 65536 (max 16-bit uint), in
-* a near-worst case where all of our chunks consist of one 512-byte slice, we'll wrap around
-* the chunk buffer in 128 seconds (65536 / 512 = 128). In an even worse case, where all of our
-* chunks consist of one 64-byte slice, we'll wrap around the chunk buffer in 16 seconds 
-* (65536 / (262144 / 64) = 16). That's probably OK, but beware! 
+* Some thoughts about parameterization:
+* At a max outbound rate of 262144 and a slice size of 512 bytes, we can send 512 slices per second.
+* Of course, outbound Bps is also bound by tick rate: at 250 Hz and a slice size of 512, you're
+* only going to send 128,000 bytes/sec. Consider your effective outbound rate wrt the chunk buffer:
+* If MAX_CHUNKS is 65536 (max 16-bit uint), our tick rate is 250 Hz, our slice size is 512, and our 
+* max outbound rate is greater than our effective outbound rate of 128,000 bytes/sec, then in the 
+* the worst case, where all of our chunks consist of just one slice, we're bound by tick rate; we 
+* can effectively transmit 250 chunks per second, meaning we'll wrap around the chunk buffer in ~262 
+* seconds (65536 / 250 = 262.144). If we're unhappy with this, and we find that most of our chunks
+* are about 256 bytes, then changing our slice size to 128 would make us bound by slice size; each
+* chunk would, on average, consist of two slices, our effective outbound rate would be 
+* 32,000 bytes/sec, and chunks will require two ticks to transmit, meaning we'll wrap the chunk 
+* buffer in ~524 seconds (65536 / (250 / 2) = 524.288).
 */
 
 class Ftrans_udp extends Ftrans {
   static MAX_OUTBOUND_PER_SEC = 262144;
-  static OUTBOUND_HZ = 500;
+  static OUTBOUND_HZ = 250;
   static TICK_DURATION = 1000 / Ftrans_udp.OUTBOUND_HZ;
   static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
   static MAX_RETRIES = 0;

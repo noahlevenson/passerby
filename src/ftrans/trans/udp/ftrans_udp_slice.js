@@ -29,7 +29,7 @@ class Ftrans_udp_slice {
   static MAGIC = Buffer.from([0xF2, 0x33, 0xF0, 0x0D]);
   static VERSION = 1;
   // Keep SLICE_SZ under your MTU; 512 and 1024 are prob OK
-  static SLICE_SZ = 512;
+  static SLICE_SZ = 1024;
   // MAX_SLICES is bound by the width of [n slices], [slice ID] & [n slices], [acked] in the ack packet
   static MAX_SLICES = 256;
   static MAX_CHUNK_SZ = Ftrans_udp_slice.SLICE_SZ * Ftrans_udp_slice.MAX_SLICES;
