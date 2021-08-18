@@ -109,14 +109,14 @@ class Fbigint extends Fbigint_base {
     return new Fbigint((this.data.pow(op.get())).toString(16));
   }
 
-  // Get binary string representation of this Fbigint, leftmost bit is MSB
-  // b is the number of bits to consider, we'll add trailing '0' bits to fill
+  // Get binary string representation of this Fbigint, most significant bit on the left
+  // b is the number of bits to consider, we'll pad with zeros as required
   to_bin_str(b) {
     if (!b) {
-      throw new Error("Must supply value for 'b'")
+      throw new Error("Must supply value for 'b'");
     }
-    
-    return this.data.toString(2).padEnd(b, "0");
+
+    return this.data.toString(2).padStart(b, "0");
   }
 
   // TODO: This really needs to be tested

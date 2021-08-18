@@ -9,6 +9,13 @@
 
 "use strict";
 
+/*
+* Never forget™:
+* The longest binary prefix for two integers is based on the commonality of their high order bits.
+* e.g. 7 and 4, interpreted as 8-bit integers 00000111 and 00000100, have an LCP of 000001.
+* Pain awaits all who confuse their endianness.
+*/
+
 const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
 const cfg = require("../../libfood.json");
 const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
@@ -23,7 +30,7 @@ class Fpht {
   // BIT_DEPTH is the size of our input keys (our Fgeo linearizations are currently 80 bits)
   static BIT_DEPTH = 80;
   // B is block size, aka max keys per leaf
-  static B = 1;
+  static B = 2;
 
   // reference to the DHT node associated with this PHT interface
   dht_node;
@@ -156,10 +163,10 @@ class Fpht {
           const k = new Fbigint(key);
           await this.insert(k, val);
 
-          let leaf = await this.lookup_bin(k.to_bin_str(Fpht.BIT_DEPTH), true);
+          let leaf = await this.lookup_bin(k.to_bin_str(Fpht.BIT_DEPTH));
 
           if (leaf === null) {
-            leaf = await this.lookup_lin(k.to_bin_str(Fpht.BIT_DEPTH), true);
+            leaf = await this.lookup_lin(k.to_bin_str(Fpht.BIT_DEPTH));
           }
 
           if (leaf === null) {
@@ -207,14 +214,12 @@ class Fpht {
   }
 
   // Find the PHT node responsible for a given key, linear search edition
-  // leaf = true means you want to find a leaf node, ie a node whose prefix owns the key
-  // leaf = false means you want to find an internal node, ie an ancestor to the leaf node
   // Returns null if there's no node associated with that key
-  async lookup_lin(key_str, leaf = true) {
+  async lookup_lin(key_str) {
     for (let i = 0; i < key_str.length; i += 1) {
       const pht_node = await this._dht_lookup(key_str.substring(0, i));
       
-      if (pht_node !== null && (leaf ? pht_node.is_leaf() : !pht_node.is_leaf())) {
+      if (pht_node !== null && pht_node.is_leaf()) {
         return pht_node;
       }
     }
@@ -223,10 +228,8 @@ class Fpht {
   } 
 
   // Find the PHT node responsible for a given key, binary search edition
-  // leaf = true means you want to find a leaf node, ie a node whose prefix owns the key
-  // leaf = false means you want to find an internal node, ie an ancestor to the leaf node
   // Returns null if there's no node associated with that key
-  async lookup_bin(key_str, leaf = true) {
+  async lookup_bin(key_str) {
     let p = 0;
     let r = Fpht.BIT_DEPTH - 1;
 
@@ -234,7 +237,7 @@ class Fpht {
       let q = Math.floor((p + r) / 2);  
       const pht_node = await this._dht_lookup(key_str.substring(0, q));
 
-      if (pht_node !== null && (leaf ? pht_node.is_leaf() : !pht_node.is_leaf())) {
+      if (pht_node !== null && pht_node.is_leaf()) {
         return pht_node;
       } else if (pht_node !== null && Fpht_node.valid_magic(pht_node)) {
         p = q + 1;
@@ -248,10 +251,10 @@ class Fpht {
 
   // Insert a (key, value) pair into the PHT
   async insert(key, val) {
-    let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH), true);
+    let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH));
 
     if (leaf === null) {
-      leaf = await this.lookup_lin(k.to_bin_str(Fpht.BIT_DEPTH), true);
+      leaf = await this.lookup_lin(k.to_bin_str(Fpht.BIT_DEPTH));
     }
 
     // If we can't find the leaf node for a key, our graph is likely corrupted
@@ -265,8 +268,8 @@ class Fpht {
       const label_hash = this._get_label_hash(leaf.label);
       await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
       
-      Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ${leaf.label} ` + 
-        `(DHT key ${label_hash})`);
+      Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ` +
+        `${leaf.label.length > 0 ? leaf.label : "[root]"} (DHT key ${label_hash})`);
     } else {
       // This is the non-chad "unlimited split" version of bucket splitting
       // TODO: implement the "staggered updates" version
@@ -274,7 +277,9 @@ class Fpht {
         [new Fbigint(pair[0]), pair[1]]).concat([[key, val]]);
 
       const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
-      const i = Futil.get_lcp(key_bin_strings, true);
+      const lcp = Futil.get_lcp(key_bin_strings, false);
+      const i = lcp.length;
+
 
       // Our new child nodes must be 1 level deeper than the length of the lcp of all B + 1 keys
       let child0, child1;
@@ -285,7 +290,8 @@ class Fpht {
         child0 = new Fpht_node({label: `${old_leaf.label}0`});
         child1 = new Fpht_node({label: `${old_leaf.label}1`});
 
-        Flog.log(`[FPHT] Split ${old_leaf.label} -> ${child0.label} + ${child1.label}`)
+        Flog.log(`[FPHT] Split ${old_leaf.label.length > 0 ? old_leaf.label : "[root]"} ` +
+          `-> ${child0.label} + ${child1.label}`)
 
         child0.set_ptrs({left: old_leaf.ptr_left(), right: child1.get_label()});
         child1.set_ptrs({left: child0.get_label(), right: old_leaf.ptr_right()});
@@ -315,7 +321,7 @@ class Fpht {
 
         // For the next iteration, old_leaf must be the child node from above that has the label 
         // equal to the lcp of the keys (or just the last digit of the longest common prefix, right?)
-        old_leaf = child0.label[i - 1] === key_bin_strings[0][i - 1] ? child0 : child1;
+        old_leaf = child0.label[d] === lcp[d] ? child0 : child1;
         d += 1;
       }
     }
@@ -326,10 +332,10 @@ class Fpht {
   
   // Delete some data from the network
   async delete(key) {
-    let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH), true);
+    let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH));
 
     if (leaf === null) {
-      leaf = await this.lookup_lin(key.to_bin_str(Fpht.BIT_DEPTH), true);
+      leaf = await this.lookup_lin(key.to_bin_str(Fpht.BIT_DEPTH));
     }
 
     // Key not found
@@ -532,19 +538,24 @@ class Fpht {
     const minkey_2d = Futil.z_delinearize_2d(minkey, Fpht.BIT_DEPTH / 2); 
     const maxkey_2d = Futil.z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2); 
 
-    // Find the node whose label corresponds to the smallest prefix range that completely covers the
-    // specified range. In a perfect world, that would be a node whose label is equal to the lcp of
-    // minkey and maxkey, but that node might not exist (because our trie is small, we don't have
-    // much data, we have a big block size etc.)
+    /*
+    * The range query search process follows the following idea: 
+    * If the values in the specified range are distributed among many leaf nodes, then an interior
+    * node corresponding to the LCP should exist, so we can jump to it with one DHT lookup. This
+    * interior node is the nearest common ancestor which minimally encompasses our search range,
+    * so we begin our traversal there. Conversely, if the values in the specified range are 
+    * held in just one leaf node, then we should be able to find that leaf node using the 
+    * binary/linear search fallback method.
+    */
 
-    // TODO: this is the least understood aspect of the prefix hash tree, we may need to call
-    // a Real Scientist™ at UC Berkeley
+    let start_node = await this._dht_lookup(lcp);
 
-    let start_node = await this.lookup_bin(lcp, false);
-
-    // Fall back to linear search, which will grab the root node
     if (start_node === null) {
-      start_node = await this.lookup_lin(lcp, false);
+      let start_node = await this.lookup_bin(lcp);
+    }
+
+    if (start_node === null) {
+      start_node = await this.lookup_lin(lcp);
     }
 
     if (start_node === null) {
