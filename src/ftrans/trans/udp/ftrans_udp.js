@@ -57,7 +57,7 @@ class Ftrans_udp extends Ftrans {
   rd_ptr;
   wr_ptr;
   outbound_budget;
-  send_interval;
+  send_timeout;
 
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
@@ -75,7 +75,7 @@ class Ftrans_udp extends Ftrans {
     this.rd_ptr = 0;
     this.wr_ptr = 0;
     this.outbound_budget = 0;;
-    this.send_interval = null;
+    this.send_timeout = null;
   }
 
   _get_outbound_rate() {
@@ -98,7 +98,7 @@ class Ftrans_udp extends Ftrans {
       `max ${Ftrans_udp.MAX_OUTBOUND_PER_SEC / 1024}k/sec outbound`);
 
     await this._listening();
-    this.send_interval = setInterval(this._send_handler.bind(this), Ftrans_udp.TICK_DURATION);
+    this._send_handler();
   }
 
   _stop() {
@@ -107,8 +107,8 @@ class Ftrans_udp extends Ftrans {
     });
 
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
-    clearInterval(this.send_interval);
-    this.send_interval = null;
+    clearTimeout(this.send_timeout);
+    this.send_timeout = null;
     this.outbound_budget = 0;
     this.socket.close();
   }
@@ -126,48 +126,52 @@ class Ftrans_udp extends Ftrans {
   // Runs once every TICK_DURATION ms, transmitting the next eligible slice in the send buffer or 
   // preventing transmission for one tick for network congestion
   _send_handler() {
-    if (this.outbound_budget > 0) {
-      let chunk_reads = 0;
+    this.send_timeout = setTimeout(() => {
+      if (this.outbound_budget > 0) {
+        let chunk_reads = 0;
 
-      while (chunk_reads < Ftrans_udp_slice.MAX_CHUNKS) {
-        const s_buf = this.chunk_send_buf.get(this.rd_ptr);
+        while (chunk_reads < Ftrans_udp_slice.MAX_CHUNKS) {
+          const s_buf = this.chunk_send_buf.get(this.rd_ptr);
 
-        // Case 1: we haven't written a chunk to this index yet, occurs only during early network
-        // TODO: eliminate this case by improving the way we init the chunk send buffer
-        if (s_buf === null) {
-          this._incr_rd_ptr();
-          chunk_reads += 1;
-          continue;
-        }
+          // Case 1: we haven't written a chunk to this index yet, occurs only during early network
+          // TODO: eliminate this case by improving the way we init the chunk send buffer
+          if (s_buf === null) {
+            this._incr_rd_ptr();
+            chunk_reads += 1;
+            continue;
+          }
 
-        const s = s_buf.next();
+          const s = s_buf.next();
 
-        // Case 2: We've reached the end of this chunk
-        if (s === null) {
-          s_buf.reset();
-          this._incr_rd_ptr();
-          continue;
-        }
+          // Case 2: We've reached the end of this chunk
+          if (s === null) {
+            s_buf.reset();
+            this._incr_rd_ptr();
+            continue;
+          }
 
-        // Case 3: We've got a slice we can send
-        if (!s.acked && s.tries <= Ftrans_udp.MAX_RETRIES) {
-          this.socket.send(s.slice, 0, s.slice.length, s_buf.rinfo.port, s_buf.rinfo.address, (err) => {
-            if (err) {
-              Flog.log(`[FTRANS] UDP send error ${s_buf.rinfo.addr}:${s_buf.rinfo.port} (${err})`);
-            }
-          });
+          // Case 3: We've got a slice we can send
+          if (!s.acked && s.tries <= Ftrans_udp.MAX_RETRIES) {
+            this.socket.send(s.slice, 0, s.slice.length, s_buf.rinfo.port, s_buf.rinfo.address, (err) => {
+              if (err) {
+                Flog.log(`[FTRANS] UDP send error ${s_buf.rinfo.addr}:${s_buf.rinfo.port} (${err})`);
+              }
+            });
 
-          s.tries += 1;
-          this.outbound_budget -= s.slice.length;
-          break;
+            s.tries += 1;
+            this.outbound_budget -= s.slice.length;
+            break;
+          }
         }
       }
-    }
 
-    this.outbound_budget = Math.min(
-      this.outbound_budget + Ftrans_udp.OUTBOUND_TICK_BUDGET, 
-      Ftrans_udp.MAX_OUTBOUND_PER_SEC
-    );
+      this.outbound_budget = Math.min(
+        this.outbound_budget + Ftrans_udp.OUTBOUND_TICK_BUDGET, 
+        Ftrans_udp.MAX_OUTBOUND_PER_SEC
+      );
+
+      this._send_handler();
+    }, Ftrans_udp.TICK_DURATION);
   }
 
   async _on_network(msg, rinfo) {
