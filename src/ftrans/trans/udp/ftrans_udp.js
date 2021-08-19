@@ -46,7 +46,6 @@ class Ftrans_udp extends Ftrans {
   static T_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
   static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
   static MAX_RETRIES = 0;
-  static T_LOG = 1000 * 5;
 
   socket;
   port;
@@ -59,7 +58,6 @@ class Ftrans_udp extends Ftrans {
   wr_ptr;
   outbound_budget;
   send_timeout;
-  log_interval;
 
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
@@ -78,7 +76,6 @@ class Ftrans_udp extends Ftrans {
     this.wr_ptr = 0;
     this.outbound_budget = 0;;
     this.send_timeout = null;
-    this.log_interval = null;
   }
 
   _get_outbound_rate() {
@@ -100,10 +97,6 @@ class Ftrans_udp extends Ftrans {
     Flog.log(`[FTRANS] UDP service starting on port ${this.port}, ` +
       `max ${Ftrans_udp.MAX_OUTBOUND_PER_SEC / 1024}k/sec outbound`);
 
-    this.log_interval = setInterval(() => {
-      Flog.log(`[FTRANS] Net state: ${(this._get_outbound_rate() / 1024).toFixed(1)}k/sec outbound`);
-    }, Ftrans_udp.T_LOG);
-
     await this._listening();
     this._send_handler();
   }
@@ -115,9 +108,7 @@ class Ftrans_udp extends Ftrans {
 
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
     clearTimeout(this.send_timeout);
-    clearInterval(this.log_interval);
     this.send_timeout = null;
-    this.log_interval = null;
     this.outbound_budget = 0;
     this.socket.close();
   }
