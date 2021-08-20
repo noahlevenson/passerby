@@ -46,6 +46,10 @@ class Ftrans_udp extends Ftrans {
   static T_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
   static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
   static MAX_RETRIES = 0;
+  // How long do incomplete inbound chunks live til we garbage collect them? Here we assume a 
+  // minimum inbound rate of 8k/sec, i.e. we give up on an incomplete 256k chunk after 32 seconds
+  static T_INBOUND_TTL = 1000 * (Ftrans_udp_slice.MAX_CHUNK_SZ / 8192);
+  static T_GARBAGE_COLLECT = 1000 * 60;
 
   socket;
   port;
@@ -58,6 +62,7 @@ class Ftrans_udp extends Ftrans {
   wr_ptr;
   outbound_budget;
   send_timeout;
+  gc_timeout;
 
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
@@ -76,6 +81,7 @@ class Ftrans_udp extends Ftrans {
     this.wr_ptr = 0;
     this.outbound_budget = 0;;
     this.send_timeout = null;
+    this.gc_timeout = null;
   }
 
   _get_outbound_rate() {
@@ -99,6 +105,7 @@ class Ftrans_udp extends Ftrans {
 
     await this._listening();
     this._send_handler();
+    this._gc_handler();
   }
 
   _stop() {
@@ -108,7 +115,9 @@ class Ftrans_udp extends Ftrans {
 
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
     clearTimeout(this.send_timeout);
+    clearTimeout(this.gc_timeout);
     this.send_timeout = null;
+    this.gc_timeout = null;
     this.outbound_budget = 0;
     this.socket.close();
   }
@@ -121,6 +130,24 @@ class Ftrans_udp extends Ftrans {
         resolve();
       });
     });
+  }
+
+  _gc_handler() {
+    this.gc_timeout = setTimeout(() => {
+      const t_expiry = Date.now() - Ftrans_udp.T_INBOUND_TTL;
+      let stale = 0;
+
+      Array.from(this.chunk_recv_buf.entries()).forEach((pair) => {
+        if (pair[1].at < t_expiry) {
+          this.chunk_recv_buf.delete(pair[0]);
+          stale += 1;
+        }
+      });
+
+      Flog.log(`[FTRANS] UDP network controller: deleted ${stale} stale chunks`);
+
+      this._gc_handler();
+    }, Ftrans_udp.T_GARBAGE_COLLECT);
   }
 
   // Runs once every T_TICK ms, transmitting the next eligible slice in the send buffer or 

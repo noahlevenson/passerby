@@ -15,6 +15,7 @@ class Ftrans_udp_slice_recv_buf {
   chunk_id;
   slice_buf;
   nslices;
+  at;
 
   constructor({chunk_id, nslices} = {}) {
     this.chunk_id = chunk_id;
@@ -23,6 +24,7 @@ class Ftrans_udp_slice_recv_buf {
     }));
 
     this.nslices = nslices;
+    this.at = Date.now();
   }
 
   add(slice) {
