@@ -1,6 +1,6 @@
 /** 
-* FTRANS_UDP_SLICE_SEND_BUF
-* A slice send buffer keeps state for all
+* FTRANS_UDP_SEND_BUF
+* A send buffer keeps state for all
 * the slices which comprise one outbound chunk
 * 
 * 
@@ -10,8 +10,9 @@
 "use strict";
 
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
+const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
 
-class Ftrans_udp_slice_send_buf {
+class Ftrans_udp_send_buf {
   chunk_id;
   slice_buf
   nslices;
@@ -25,13 +26,17 @@ class Ftrans_udp_slice_send_buf {
     }
 
     this.chunk_id = chunk_id;
-    this.slice_buf = new Map(Ftrans_udp_slice_send_buf._make_slices(chunk, chunk_id).map((s, i) => {
+    this.slice_buf = new Map(Ftrans_udp_send_buf._make_slices(chunk, chunk_id).map((s, i) => {
       return [i, {slice: s, acked: false, tries: 0}];
     }));
 
     this.nslices = this.slice_buf.size;
     this.rinfo = rinfo;
     this.rd_ptr = 0;
+  }
+
+  static _compute_checksum(chunk) {
+    return Buffer.from(Fcrypto.sha256(chunk).substring(0, Ftrans_udp_slice.CHECKSUM_LEN * 2), "hex");
   }
 
   static _make_slices(chunk, chunk_id) {
@@ -45,11 +50,14 @@ class Ftrans_udp_slice_send_buf {
       end += Math.min(Ftrans_udp_slice.SLICE_SZ, chunk.length - end);
     }
 
+    const checksum = Ftrans_udp_send_buf._compute_checksum(chunk);
+
     return chopped.map((buf, i) => { 
       return Ftrans_udp_slice.new({
         chunk_id: chunk_id,
         slice_id: i,
         nslices: chopped.length,
+        checksum: checksum,
         payload: buf
       });
     });
@@ -72,4 +80,4 @@ class Ftrans_udp_slice_send_buf {
   }
 }
 
-module.exports.Ftrans_udp_slice_send_buf = Ftrans_udp_slice_send_buf;
+module.exports.Ftrans_udp_send_buf = Ftrans_udp_send_buf;

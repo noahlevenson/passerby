@@ -18,9 +18,6 @@
 * [acked] 1 byte (which slices have we acknowledged so far?)
 */
 
-// TODO: To identify ack packets, it's prob more robust to include not the MAGIC and VERSION,
-// but a CRC computed over a hash of the MAGIC and VERSION...
-
 class Ftrans_udp_ack {
   static MAGIC = Buffer.from([0xFE, 0xED, 0xFA, 0xCE]);
   static VERSION = 1;

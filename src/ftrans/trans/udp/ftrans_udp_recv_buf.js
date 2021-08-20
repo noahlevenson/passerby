@@ -1,6 +1,6 @@
 /** 
-* FTRANS_UDP_SLICE_RECV_BUF
-* A slice recv buffer keeps state for all
+* FTRANS_UDP_RECV_BUF
+* A recv buffer keeps state for all
 * the slices which comprise one inbound chunk
 * 
 * 
@@ -11,19 +11,21 @@
 
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
 
-class Ftrans_udp_slice_recv_buf {
+class Ftrans_udp_recv_buf {
   chunk_id;
   slice_buf;
   nslices;
+  checksum;
   at;
 
-  constructor({chunk_id, nslices} = {}) {
+  constructor({chunk_id, nslices, checksum} = {}) {
     this.chunk_id = chunk_id;
     this.slice_buf = new Map(new Array(nslices).fill().map((elem, i) => {
       return [i, null];
     }));
 
     this.nslices = nslices;
+    this.checksum = checksum;
     this.at = Date.now();
   }
 
@@ -42,4 +44,4 @@ class Ftrans_udp_slice_recv_buf {
   }
 }
 
-module.exports.Ftrans_udp_slice_recv_buf = Ftrans_udp_slice_recv_buf;
+module.exports.Ftrans_udp_recv_buf = Ftrans_udp_recv_buf;

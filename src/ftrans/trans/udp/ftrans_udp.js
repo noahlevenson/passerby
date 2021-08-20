@@ -1,8 +1,8 @@
 /** 
 * FTRANS_UDP
-* UDP transport
-* 
-* 
+* UDP transport, implementing a reliable UDP
+* protocol, packetization and reassembly, and 
+* a fancy network controller with congestion management
 * 
 * 
 */ 
@@ -21,8 +21,8 @@ const { Ftrans } = require("../ftrans.js");
 const { Ftrans_msg } = require("../../ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
-const { Ftrans_udp_slice_send_buf } = require("./ftrans_udp_slice_send_buf.js");
-const { Ftrans_udp_slice_recv_buf } = require("./ftrans_udp_slice_recv_buf.js");
+const { Ftrans_udp_send_buf } = require("./ftrans_udp_send_buf.js");
+const { Ftrans_udp_recv_buf } = require("./ftrans_udp_recv_buf.js");
 
 /*
 * Some thoughts about parameterization:
@@ -209,11 +209,16 @@ class Ftrans_udp extends Ftrans {
       if (Ftrans_udp_slice.is_valid_slice(msg)) {
         const chunk_id = Ftrans_udp_slice.get_chunk_id(msg);
         const nslices = Ftrans_udp_slice.get_nslices(msg);
+        const checksum = Ftrans_udp_slice.get_checksum(msg);
         const chunk_key = `${rinfo.address}:${rinfo.port}:${chunk_id},${nslices}`;
         let r_buf = this.chunk_recv_buf.get(chunk_key);
 
-        if (!r_buf) {
-          r_buf = new Ftrans_udp_slice_recv_buf({chunk_id: chunk_id, nslices: nslices});
+        // If we don't yet have a recv buffer for this chunk, or if there's an existing incomplete
+        // chunk in progress but with a different checksum, create a new recv buffer for this chunk
+        // TODO: if we include checksum in chunk_key, we don't need this Buffer compare... compare
+        // 2 4-byte Buffers vs stringify 1 4-byte Buffer, what's the megachad micro optimization here?
+        if (!r_buf || Buffer.compare(r_buf.checksum, checksum) !== 0) {
+          r_buf = new Ftrans_udp_recv_buf({chunk_id: chunk_id, nslices: nslices, checksum: checksum});
           this.chunk_recv_buf.set(chunk_key, r_buf);
         }
 
@@ -250,7 +255,7 @@ class Ftrans_udp extends Ftrans {
       recip_pubkey: ftrans_rinfo.pubkey
     });
     
-    this.chunk_send_buf.set(this.wr_ptr, new Ftrans_udp_slice_send_buf({
+    this.chunk_send_buf.set(this.wr_ptr, new Ftrans_udp_send_buf({
       chunk: Buffer.from(JSON.stringify(ftrans_msg)),
       chunk_id: this.wr_ptr,
       rinfo: ftrans_rinfo
