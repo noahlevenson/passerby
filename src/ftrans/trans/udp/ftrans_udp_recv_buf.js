@@ -42,6 +42,11 @@ class Ftrans_udp_recv_buf {
     return Buffer.concat(Array.from(this.slice_buf.values()).map(slice => 
       Ftrans_udp_slice.get_payload(slice)));
   }
+
+  // TODO: this is too expensive, an easy optimization is to cache an array of acked bools
+  get_acked() {
+    return Array.from(this.slice_buf.values()).map(slice => slice === null ? false : true);
+  }
 }
 
 module.exports.Ftrans_udp_recv_buf = Ftrans_udp_recv_buf;

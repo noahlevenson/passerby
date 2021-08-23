@@ -21,31 +21,32 @@ const { Ftrans } = require("../ftrans.js");
 const { Ftrans_msg } = require("../../ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
-const { Ftrans_udp_send_buf } = require("./ftrans_udp_send_buf.js");
+const { Ftrans_udp_ack } = require("./ftrans_udp_ack.js");
 const { Ftrans_udp_recv_buf } = require("./ftrans_udp_recv_buf.js");
+const { Ftrans_udp_ack_sender } = require("./ftrans_udp_ack_sender.js");
+const { Ftrans_udp_chunk_sender } = require("./ftrans_udp_chunk_sender.js");
 
-/*
-* Some thoughts about parameterization:
-* At a max outbound rate of 262144 and a slice size of 512 bytes, we can send 512 slices per second.
-* Of course, outbound Bps is also bound by tick rate: at 250 Hz and a slice size of 512, you're
-* only going to send 128,000 bytes/sec. Consider your effective outbound rate wrt the chunk buffer:
-* If MAX_CHUNKS is 65536 (max 16-bit uint), our tick rate is 250 Hz, our slice size is 512, and our 
-* max outbound rate is greater than our effective outbound rate of 128,000 bytes/sec, then in the 
-* the worst case, where all of our chunks consist of just one slice, we're bound by tick rate; we 
-* can effectively transmit 250 chunks per second, meaning we'll wrap around the chunk buffer in ~262 
-* seconds (65536 / 250 = 262.144). If we're unhappy with this, and we find that most of our chunks
-* are about 256 bytes, then changing our slice size to 128 would make us bound by slice size; each
-* chunk would, on average, consist of two slices, our effective outbound rate would be 
-* 32,000 bytes/sec, and chunks will require two ticks to transmit, meaning we'll wrap the chunk 
-* buffer in ~524 seconds (65536 / (250 / 2) = 524.288).
-*/
+/**
+ * Thoughts about parameterization:
+ * Each tick, the network controller will try to send as much data as it can while respecting 
+ * the outbound tick budget. The result: slower tick rates, by budgeting more data per tick, give
+ * you a higher burst rate at the expense of less consistent execution time -- while faster tick
+ * rates, by reducing how many packets can be sent per tick, give you a lower burst rate but keep
+ * the send handler's computational complexity relatively consistent across invocations. This stuff
+ * matters on resource constrained mobile devices. Always consider your outbound tick budget wrt 
+ * your slice size; you probably want to be able to send at least one slice per tick. Another 
+ * consideration is how often you'll wrap the outbound chunk buffer: with a max outbound rate of 
+ * 256kbytes, a slice size of 1024 bytes, and a tick rate of 250 Hz, you can send 1 slice per tick 
+ * (the tick budget is ~1048 bytes). Given these parameters, in the worst case where each chunk 
+ * consists of only one slice, you'll wrap the chunk buffer in ~262 seconds (65536 / 250 = 262.144).
+ */
 
 class Ftrans_udp extends Ftrans {
+  // Max outbound is in bytes, not bits
   static MAX_OUTBOUND_PER_SEC = 262144;
   static OUTBOUND_HZ = 250;
   static T_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
   static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
-  static MAX_RETRIES = 0;
   // How long do incomplete inbound chunks live til we garbage collect them? Here we assume a 
   // minimum inbound rate of 8k/sec, i.e. we give up on an incomplete 256k chunk after 32 seconds
   static T_INBOUND_TTL = 1000 * (Ftrans_udp_slice.MAX_CHUNK_SZ / 8192);
@@ -56,10 +57,10 @@ class Ftrans_udp extends Ftrans {
   pubkey;
   udp4;
   udp6;
-  chunk_send_buf;
+  ack_sender;
+  chunk_sender;
+  sender_map;
   chunk_recv_buf;
-  rd_ptr;
-  wr_ptr;
   outbound_budget;
   send_timeout;
   gc_timeout;
@@ -67,25 +68,17 @@ class Ftrans_udp extends Ftrans {
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
     super();
-
-    this.chunk_send_buf = new Map(new Array(Ftrans_udp_slice.MAX_CHUNKS).fill().map((elem, i) => {
-      return [i, null];
-    }));
-
+    this.ack_sender = new Ftrans_udp_ack_sender();
+    this.chunk_sender = new Ftrans_udp_chunk_sender();
+    this.sender_map = new Map([[true, this.ack_sender], [false, this.chunk_sender]]);
     this.chunk_recv_buf = new Map();
     this.port = port;
     this.pubkey = pubkey;
     this.udp4 = udp4;
     this.udp6 = udp6;
-    this.rd_ptr = 0;
-    this.wr_ptr = 0;
-    this.outbound_budget = 0;;
+    this.outbound_budget = 0;
     this.send_timeout = null;
     this.gc_timeout = null;
-  }
-
-  _get_outbound_rate() {
-    return Ftrans_udp.MAX_OUTBOUND_PER_SEC - this.outbound_budget;
   }
 
   async _start() {
@@ -150,46 +143,48 @@ class Ftrans_udp extends Ftrans {
     }, Ftrans_udp.T_GARBAGE_COLLECT);
   }
 
-  // Runs once every T_TICK ms, transmitting the next eligible slice in the send buffer or 
-  // preventing transmission for one tick for network congestion
+  // TODO: this can be designed better... here's why it's excessively complex: each iteration of
+  // the while loop, we don't know how much we've spent until after we've already sent it, which
+  // means that we could be sending way more data than we've budgeted per tick! To compensate, 
+  // we let outbound_budget go negative and pause transmission if we overspent in the previous tick.
+  // A smarter design would invert this: check the bytes required to send each packet before popping
+  // it off the queue, and exit the loop if we would exceed our budget by sending it.
   _send_handler() {
     this.send_timeout = setTimeout(() => {
       if (this.outbound_budget > 0) {
-        let chunk_reads = 0;
+        let spent = 0;
+        let prioritize_ack = true;
+    
+        while (spent < Ftrans_udp.OUTBOUND_TICK_BUDGET && 
+          !(this.chunk_sender.length() === 0 && this.ack_sender.length() === 0)) {
+          let socketable;
 
-        while (chunk_reads < Ftrans_udp_slice.MAX_CHUNKS) {
-          const s_buf = this.chunk_send_buf.get(this.rd_ptr);
-
-          // Case 1: we haven't written a chunk to this index yet, occurs only during early network
-          // TODO: eliminate this case by improving the way we init the chunk send buffer
-          if (s_buf === null) {
-            this._incr_rd_ptr();
-            chunk_reads += 1;
-            continue;
+          if (this.chunk_sender.length() === 0) {
+            socketable = this.ack_sender.next();
+          } else if (this.ack_sender.length() === 0) {
+            socketable = this.chunk_sender.next();
+          } else {
+            socketable = this.sender_map.get(prioritize_ack).next();
+            prioritize_ack = !prioritize_ack;
           }
 
-          const s = s_buf.next();
-
-          // Case 2: We've reached the end of this chunk
-          if (s === null) {
-            s_buf.reset();
-            this._incr_rd_ptr();
-            continue;
-          }
-
-          // Case 3: We've got a slice we can send
-          if (!s.acked && s.tries <= Ftrans_udp.MAX_RETRIES) {
-            this.socket.send(s.slice, 0, s.slice.length, s_buf.rinfo.port, s_buf.rinfo.address, (err) => {
+          this.socket.send(
+            socketable.buf, 
+            0, 
+            socketable.buf.length, 
+            socketable.port, 
+            socketable.address, 
+            (err) => {
               if (err) {
-                Flog.log(`[FTRANS] UDP send error ${s_buf.rinfo.addr}:${s_buf.rinfo.port} (${err})`);
+                Flog.log(`[FTRANS] UDP send error ${socketable.address}:${socketable.port} (${err})`);
               }
-            });
+            }
+          );
 
-            s.tries += 1;
-            this.outbound_budget -= s.slice.length;
-            break;
-          }
+          spent += socketable.buf.length;
         }
+
+        this.outbound_budget -= spent;
       }
 
       this.outbound_budget = Math.min(
@@ -224,6 +219,14 @@ class Ftrans_udp extends Ftrans {
 
         r_buf.add(msg);
 
+        const ack = Ftrans_udp_ack.new({
+          chunk_id: chunk_id,
+          nslices: nslices,
+          acked: r_buf.get_acked()
+        });       
+        
+        this.ack_sender.add({ack: ack, rinfo: rinfo});
+    
         if (r_buf.is_complete()) {
           const reassembled = r_buf.reassemble_unsafe();
           this.chunk_recv_buf.delete(chunk_key);
@@ -241,6 +244,11 @@ class Ftrans_udp extends Ftrans {
             }));
           }
         }
+      } else if (Ftrans_udp_ack.is_valid_ack(msg)) {
+        this.chunk_sender.set_acked({
+          chunk_id: Ftrans_udp_ack.get_chunk_id(msg), 
+          acked: Ftrans_udp_ack.get_acked(msg)
+        });
       }
     } catch(err) {
       // Do nothing
@@ -254,24 +262,8 @@ class Ftrans_udp extends Ftrans {
       sender_pubkey: this.pubkey, 
       recip_pubkey: ftrans_rinfo.pubkey
     });
-    
-    this.chunk_send_buf.set(this.wr_ptr, new Ftrans_udp_send_buf({
-      chunk: Buffer.from(JSON.stringify(ftrans_msg)),
-      chunk_id: this.wr_ptr,
-      rinfo: ftrans_rinfo
-    }));
 
-    this._incr_wr_ptr();
-  }
-
-  _incr_wr_ptr() {
-    this.wr_ptr = this.wr_ptr < Ftrans_udp_slice.MAX_CHUNKS - 1 ? 
-      this.wr_ptr + 1 : 0;
-  }
-
-  _incr_rd_ptr() {
-    this.rd_ptr = this.rd_ptr < Ftrans_udp_slice.MAX_CHUNKS - 1 ? 
-      this.rd_ptr + 1 : 0;
+    this.chunk_sender.add({chunk: Buffer.from(JSON.stringify(ftrans_msg)), rinfo: ftrans_rinfo});
   }
 }
 
