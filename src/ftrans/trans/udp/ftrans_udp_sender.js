@@ -15,16 +15,19 @@ class Ftrans_udp_sender {
   
   }
 
+  // This should enqeueue a data item
   add() {
     throw new Error("Subclasses must implement the add() method");
   }
 
-  next() {
-    throw new Error("Subclasses must implement the next() method");
-  }
-
+  // This should return the length of the queue
   length() {
     throw new Error("Subclasses must implement the length() method");
+  }
+
+  // If length() > 0, this should dequeue a data item in O(1) in all cases
+  next() {
+    throw new Error("Subclasses must implement the next() method");
   }
 }
 

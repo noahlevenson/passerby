@@ -17,14 +17,17 @@ const { Ftrans_udp_send_state } = require("./ftrans_udp_send_state.js");
 const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
 
 class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
-  static MAX_RETRIES = 0;
+  static MAX_RETRIES = 5;
+  static WAIT_UNTIL_RETRY = 500;
 
   send_buf;
+  replacement_buf;
   wr_ptr;
 
   constructor() {
     super();
     this.send_buf = new Map();
+    this.replacement_buf = new Map();
     this.wr_ptr = 0;
   }
 
@@ -65,6 +68,13 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
     this._incr_wr_ptr();
   }
 
+
+  /**
+   * We exploit the fact that the JS Map type returns entries while preserving insertion order...
+   * to "pop" the oldest value, we just delete it after access... to re-enqueue it, just set it 
+   * again... this is how we get queue-like O(1) next() but also guarantee that we can delete acked
+   * slices located anywhere in the data structure in O(1)
+   */  
   next() {
     if (this.send_buf.size === 0) {
       return null;
@@ -74,8 +84,9 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
     this.send_buf.delete(key);
 
     if (send_state.tries < Ftrans_udp_chunk_sender.MAX_RETRIES) {
-      this.send_buf.set(key, send_state);
       send_state.tries += 1;
+      send_state.last_sent = Date.now();
+      this.replacement_buf.set(key, send_state);
     }
 
     return new Ftrans_udp_socketable({
@@ -85,7 +96,24 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
     });
   }
 
+  /**
+   * We want Ftrans_udp_sender subclasses to enforce the following contract: if length() returns > 0,
+   * then a call to next() will return a socketable object in O(1). For our chunk sender, this is 
+   * made considerably more complex by the fact that we also want to enforce a minimum duration to
+   * wait before retransmitting a given slice. Our solution is this hack: after transmission, slices
+   * which are eligible to be retransmitted are transferred to a replacement buffer; each call to
+   * length() checks the time that we last sent the oldest slice in the replacement buffer, and, 
+   * if said slice may now be retransmitted, silently transfers it back to the send buffer.
+   */
   length() {
+    if (this.replacement_buf.size > 0) {
+      const [rep_key, rep_send_state] = this.replacement_buf.entries().next().value;
+
+      if (rep_send_state.last_sent < Date.now() - Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
+        this.send_buf.set(rep_key, rep_send_state);
+      }
+    }
+  
     return this.send_buf.size;
   }
 
@@ -97,6 +125,7 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
     acked.forEach((state, i) => {
       if (state) {
         this.send_buf.delete(this.get_key({chunk_id: chunk_id, slice_id: i}));
+        this.replacement_buf.delete(this.get_key({chunk_id: chunk_id, slice_id: i}));
       }
     });
   }
