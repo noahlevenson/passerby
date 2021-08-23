@@ -15,7 +15,7 @@ class Ftrans_udp_sender {
   
   }
 
-  // This should enqeueue a data item
+  // This should enqueue a data item
   add() {
     throw new Error("Subclasses must implement the add() method");
   }

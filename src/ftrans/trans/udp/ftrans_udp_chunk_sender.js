@@ -111,6 +111,7 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
 
       if (rep_send_state.last_sent < Date.now() - Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
         this.send_buf.set(rep_key, rep_send_state);
+        this.replacement_buf.delete(rep_key);
       }
     }
   
