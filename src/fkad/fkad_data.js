@@ -21,8 +21,9 @@ class Fkad_data {
   type;
   payload;
 
+  // TODO: allowing payload arrays with 0 elements may break conventions established elsewhere...
   constructor({type = null, payload = null} = {}) {
-    if (type === null || !Array.isArray(payload) || payload.length < 1) {
+    if (type === null || !Array.isArray(payload)) {
       throw new Error("Argument error");
     }
 
