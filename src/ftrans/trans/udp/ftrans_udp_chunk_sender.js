@@ -17,7 +17,7 @@ const { Ftrans_udp_send_state } = require("./ftrans_udp_send_state.js");
 const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
 
 class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
-  static MAX_RETRIES = 5;
+  static MAX_RETRIES = 2;
   static WAIT_UNTIL_RETRY = 500;
 
   send_buf;
@@ -73,7 +73,7 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
    * We exploit the fact that the JS Map type returns entries while preserving insertion order...
    * to "pop" the oldest value, we just delete it after access... to re-enqueue it, just set it 
    * again... this is how we get queue-like O(1) next() but also guarantee that we can delete acked
-   * slices located anywhere in the data structure in O(1)
+   * slices located anywhere in the data structure in something close to O(1)
    */  
   next() {
     if (this.send_buf.size === 0) {
@@ -110,8 +110,8 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
       const [rep_key, rep_send_state] = this.replacement_buf.entries().next().value;
 
       if (rep_send_state.last_sent < Date.now() - Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
-        this.send_buf.set(rep_key, rep_send_state);
         this.replacement_buf.delete(rep_key);
+        this.send_buf.set(rep_key, rep_send_state);
       }
     }
   
@@ -125,8 +125,9 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
   set_acked({chunk_id, acked}) {
     acked.forEach((state, i) => {
       if (state) {
-        this.send_buf.delete(this.get_key({chunk_id: chunk_id, slice_id: i}));
-        this.replacement_buf.delete(this.get_key({chunk_id: chunk_id, slice_id: i}));
+        const key = this.get_key({chunk_id: chunk_id, slice_id: i});
+        this.send_buf.delete(key);
+        this.replacement_buf.delete(key);
       }
     });
   }

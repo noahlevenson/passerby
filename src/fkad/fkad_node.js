@@ -422,7 +422,7 @@ class Fkad_node {
     return new Fkad_data({type: Fkad_data.TYPE.NODE_LIST, payload: sorted});
   }
 
-  _req_ping(node_info, success, timeout) {
+  _req_ping(node_info, success, timeout, ttl) {
     const msg = new Fkad_msg({
       rpc: Fkad_msg.RPC.PING,
       from: new Fkad_node_info(this.node_info),
@@ -430,10 +430,10 @@ class Fkad_node {
       id: Fbigint.unsafe_random(Fkad_node.ID_LEN)
     });
 
-    this.eng._send(msg, node_info, success, timeout);
+    this.eng._send(msg, node_info, success, timeout, ttl);
   }
 
-  _req_store(key, val, node_info, success, timeout) {
+  _req_store(key, val, node_info, success, timeout, ttl) {
     const msg = new Fkad_msg({
       rpc: Fkad_msg.RPC.STORE,
       from: new Fkad_node_info(this.node_info),
@@ -442,10 +442,10 @@ class Fkad_node {
       id: Fbigint.unsafe_random(Fkad_node.ID_LEN)
     });
 
-    this.eng._send(msg, node_info, success, timeout);
+    this.eng._send(msg, node_info, success, timeout, ttl);
   }
 
-  _req_find_node(key, node_info, success, timeout) {
+  _req_find_node(key, node_info, success, timeout, ttl) {
     const msg = new Fkad_msg({
       rpc: Fkad_msg.RPC.FIND_NODE,
       from: new Fkad_node_info(this.node_info),
@@ -454,10 +454,10 @@ class Fkad_node {
       id: Fbigint.unsafe_random(Fkad_node.ID_LEN)
     });
 
-    this.eng._send(msg, node_info, success, timeout);
+    this.eng._send(msg, node_info, success, timeout, ttl);
   }
 
-  _req_find_value(key, node_info, success, timeout) {
+  _req_find_value(key, node_info, success, timeout, ttl) {
     const msg = new Fkad_msg({
       rpc: Fkad_msg.RPC.FIND_VALUE,
       from: new Fkad_node_info(this.node_info),
@@ -466,7 +466,7 @@ class Fkad_node {
       id: Fbigint.unsafe_random(Fkad_node.ID_LEN)
     });
 
-    this.eng._send(msg, node_info, success, timeout); 
+    this.eng._send(msg, node_info, success, timeout, ttl); 
   }
 
   _res_ping(req) {
@@ -657,11 +657,19 @@ class Fkad_node {
       node_id: new Fbigint(Fcrypto.sha1(pubkey))
     });
 
+    /**
+     * TODO: this PING RPC is how we insert ourselves into the routing table of the bootstrap 
+     * node. Since peers determine whether to replicate their stored data to new peers at routing
+     * table insertion time, this ping can result in a ton of STORE RPCs which arrive before the
+     * pong. These inbound STORE RPCs can take a long time to process on resource constrained 
+     * devices, so we give this ping an extra long timeout. 
+     */ 
     const ping_res = await new Promise((resolve, reject) => {
       this._req_ping(
         node_info,
         (res, ctx) => resolve(res.from),
-        () => resolve(null)
+        () => resolve(null),
+        8000
       );
     });
 

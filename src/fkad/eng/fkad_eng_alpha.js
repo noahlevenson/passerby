@@ -14,11 +14,7 @@ const { Fkad_eng } = require("./fkad_eng.js");
 const { Fkad_msg } = require("../fkad_msg.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
-  // TODO: a TIMEOUT value of 1000 makes node lookups nice and snappy, but be careful when
-  // evaluating debug builds of clients: a sluggish debug build on a resource constrained device can
-  // fail to process queries within 1000ms, and then your node lookups will fail,
-  // your sms/status/whatever won't send, and you'll incorrectly think you had an FKAD regression
-  static TIMEOUT = 4000;
+  static DEFAULT_TIMEOUT = 4000;
   static RES_EVENT_PREFIX = "r+";
   
   res;
@@ -39,14 +35,14 @@ class Fkad_eng_alpha extends Fkad_eng {
     }
   }
 
-  _send(msg, node_info, success, timeout)  {
+  _send(msg, node_info, success, timeout, ttl = Fkad_eng_alpha.DEFAULT_TIMEOUT)  {
     if (msg.type === Fkad_msg.TYPE.REQ) {
       const outgoing = new Promise((resolve, reject) => {
         const timeout_id = setTimeout(() => {
           this.res.removeAllListeners(`${Fkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`);
           // TODO: Maybe we should reject with an err code
           reject();
-        }, Fkad_eng_alpha.TIMEOUT);
+        }, ttl);
 
         this.res.once(`${Fkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`, (res_msg) => {
           clearTimeout(timeout_id);
