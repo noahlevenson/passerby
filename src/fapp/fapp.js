@@ -544,6 +544,7 @@ class Fapp {
       if (this.trans) {
         this.trans._stop()
         this.fpht = null;
+        this.node._stop_intervals();
         this.node = null;
       }
 

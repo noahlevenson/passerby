@@ -646,6 +646,23 @@ class Fkad_node {
       `${(Fkad_node.T_REPLICATE / 60 / 60 / 1000).toFixed(1)} hours`);
   }
 
+  _stop_intervals() {
+    if (this.refresh_interval_handle) {
+      clearInterval(this.refresh_interval_handle);
+      this.refresh_interval_handle = null;
+    }
+
+    if (this.republish_interval_handle) {
+      clearInterval(this.republish_interval_handle);
+      this.republish_interval_handle = null;
+    }
+
+    if (this.replicate_interval_handle) {
+      clearInterval(this.replicate_interval_handle);
+      this.replicate_interval_handle = null;
+    }
+  }
+
   // Supply the addr, port, and pubkey of the bootstrap node
   async bootstrap({addr = null, port = null, pubkey = null} = {}) {
     this.net.network.on("message", this.eng._on_message.bind(this.eng));
