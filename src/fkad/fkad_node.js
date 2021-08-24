@@ -658,18 +658,18 @@ class Fkad_node {
     });
 
     /**
-     * TODO: this PING RPC is how we insert ourselves into the routing table of the bootstrap 
-     * node. Since peers determine whether to replicate their stored data to new peers at routing
-     * table insertion time, this ping can result in a ton of STORE RPCs which arrive before the
-     * pong. These inbound STORE RPCs can take a long time to process on resource constrained 
-     * devices, so we give this ping an extra long timeout. 
+     * This PING RPC is how we insert ourselves into the routing table of the bootstrap node. Since
+     * peers determine whether to replicate their stored data to new peers at routing table insertion
+     * time, this ping can result in a ton of large STORE RPCs which arrive before the pong. Our UDP
+     * network controller implements message prioritization which ensures an orderly bootstrap 
+     * procedure by processing the pong before getting to work processing the big chunks of data, but
+     * if you're reading this from some strange future where we're using a non-UDP transport, beware!
      */ 
     const ping_res = await new Promise((resolve, reject) => {
       this._req_ping(
         node_info,
         (res, ctx) => resolve(res.from),
         () => resolve(null),
-        8000
       );
     });
 

@@ -2,8 +2,8 @@
 * FTRANS_UDP
 * UDP transport, implementing a reliable UDP
 * protocol, packetization and reassembly, and 
-* a fancy network controller with congestion management
-* 
+* a fancy network controller with congestion management,
+* algorithmic prioritization of inbound messages, etc.
 * 
 */ 
 
@@ -17,6 +17,8 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
 const dgram = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("react-native-udp").default : require("dgram");
 const { Flog } = require("../../../flog/flog.js");
+const { Fbintree } = require("../../../ftypes/fbintree/fbintree.js");
+const { Fbintree_node } = require("../../../ftypes/fbintree/fbintree_node.js");
 const { Ftrans } = require("../ftrans.js");
 const { Ftrans_msg } = require("../../ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
@@ -45,7 +47,9 @@ class Ftrans_udp extends Ftrans {
   // Max outbound is in bytes, not bits
   static MAX_OUTBOUND_PER_SEC = 262144;
   static OUTBOUND_HZ = 250;
-  static T_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
+  static INBOUND_HZ = 100;
+  static T_SEND_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
+  static T_RECV_TICK = 1000 / Ftrans_udp.INBOUND_HZ;
   static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
   // How long do incomplete inbound chunks live til we garbage collect them? Here we assume a 
   // minimum inbound rate of 8k/sec, i.e. we give up on an incomplete 256k chunk after 32 seconds
@@ -61,8 +65,10 @@ class Ftrans_udp extends Ftrans {
   chunk_sender;
   sender_map;
   chunk_recv_buf;
+  recv_queue;
   outbound_budget;
   send_timeout;
+  recv_timeout;
   gc_timeout;
 
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
@@ -72,12 +78,14 @@ class Ftrans_udp extends Ftrans {
     this.chunk_sender = new Ftrans_udp_chunk_sender();
     this.sender_map = new Map([[true, this.ack_sender], [false, this.chunk_sender]]);
     this.chunk_recv_buf = new Map();
+    this.recv_queue = new Fbintree();
     this.port = port;
     this.pubkey = pubkey;
     this.udp4 = udp4;
     this.udp6 = udp6;
     this.outbound_budget = 0;
     this.send_timeout = null;
+    this.recv_timeout = null;
     this.gc_timeout = null;
   }
 
@@ -97,6 +105,7 @@ class Ftrans_udp extends Ftrans {
       `max ${Ftrans_udp.MAX_OUTBOUND_PER_SEC / 1024}k/sec outbound`);
 
     await this._listening();
+    this._recv_handler();
     this._send_handler();
     this._gc_handler();
   }
@@ -108,8 +117,10 @@ class Ftrans_udp extends Ftrans {
 
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
     clearTimeout(this.send_timeout);
+    clearTimeout(this.recv_timeout);
     clearTimeout(this.gc_timeout);
     this.send_timeout = null;
+    this.recv_timeout = null;
     this.gc_timeout = null;
     this.outbound_budget = 0;
     this.socket.close();
@@ -141,6 +152,31 @@ class Ftrans_udp extends Ftrans {
 
       this._gc_handler();
     }, Ftrans_udp.T_GARBAGE_COLLECT);
+  }
+
+  _recv_handler() {
+    this.recv_timeout = setTimeout(async () => {
+      const node = this.recv_queue.bst_min();
+
+      if (node !== null) {
+        const [reassembled, rinfo] = node.data;
+        this.recv_queue.bst_delete(node);
+
+        const in_msg = new Ftrans_msg(JSON.parse(reassembled.toString(), Fbigint._json_revive));
+        const decrypted_msg = await Ftrans_msg.decrypted_from(in_msg);
+
+        if (decrypted_msg !== null) {
+          this.network.emit("message", decrypted_msg, new Ftrans_rinfo({
+            address: rinfo.address, 
+            port: rinfo.port, 
+            family: rinfo.family, 
+            pubkey: decrypted_msg.pubkey
+          }));
+        }
+      }
+
+      this._recv_handler();
+    }, Ftrans_udp.T_RECV_TICK);
   }
 
   // TODO: this can be designed better... here's why it's excessively complex: each iteration of
@@ -193,7 +229,7 @@ class Ftrans_udp extends Ftrans {
       );
 
       this._send_handler();
-    }, Ftrans_udp.T_TICK);
+    }, Ftrans_udp.T_SEND_TICK);
   }
 
   async _on_network(msg, rinfo) {
@@ -231,18 +267,24 @@ class Ftrans_udp extends Ftrans {
           const reassembled = r_buf.reassemble_unsafe();
           this.chunk_recv_buf.delete(chunk_key);
 
-          // Rehydrate and decrypt the message, pass to the next layer
-          const in_msg = new Ftrans_msg(JSON.parse(reassembled.toString(), Fbigint._json_revive));
-          const decrypted_msg = await Ftrans_msg.decrypted_from(in_msg);
+          /**
+           * Deserialization and decryption are expensive, so we defer that stuff to _recv_handler...
+           * This BST comparator function encapsulates v0.0 of our inbound prioritization logic:
+           * just prioritize small messages over large messages. This is based on the idea that peers
+           * should always ensure an orderly flow of administrative messages by deferring the 
+           * processing of large chunks of inbound data to periods of downtime.
+           */
+          this.recv_queue.bst_insert(new Fbintree_node({data: [reassembled, rinfo]}), (node, oldnode) => {
+            if (node.data[0].length < oldnode.data[0].length) {
+              return -1
+            }
 
-          if (decrypted_msg !== null) {
-            this.network.emit("message", decrypted_msg, new Ftrans_rinfo({
-              address: rinfo.address, 
-              port: rinfo.port, 
-              family: rinfo.family, 
-              pubkey: decrypted_msg.pubkey
-            }));
-          }
+            if (node.data[0].length > oldnode.data[0].length) {
+              return 1;
+            }
+
+            return 0;
+          });
         }
       } else if (Ftrans_udp_ack.is_valid_ack(msg)) {
         this.chunk_sender.set_acked({

@@ -131,7 +131,6 @@ class Fbintree {
         x.set_data(node.get_data());
         x = null;
       }
-
     }
 
     node.set_parent(y);
