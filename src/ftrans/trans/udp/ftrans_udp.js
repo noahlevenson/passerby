@@ -25,8 +25,8 @@ const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
 const { Ftrans_udp_ack } = require("./ftrans_udp_ack.js");
 const { Ftrans_udp_recv_buf } = require("./ftrans_udp_recv_buf.js");
-const { Ftrans_udp_ack_sender } = require("./ftrans_udp_ack_sender.js");
 const { Ftrans_udp_chunk_sender } = require("./ftrans_udp_chunk_sender.js");
+const { Ftrans_udp_socketable } = require("./ftrans_udp_socketable.js");
 
 /**
  * Thoughts about parameterization:
@@ -44,13 +44,12 @@ const { Ftrans_udp_chunk_sender } = require("./ftrans_udp_chunk_sender.js");
  */
 
 class Ftrans_udp extends Ftrans {
-  // Max outbound is in bytes, not bits
-  static MAX_OUTBOUND_PER_SEC = 262144;
+  static MAX_OUTBOUND_BYTES_PER_SEC = 131072;
+  static OUTBOUND_BYTES_PER_MS = Ftrans_udp.MAX_OUTBOUND_BYTES_PER_SEC / 1000;
   static OUTBOUND_HZ = 250;
   static INBOUND_HZ = 100;
   static T_SEND_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
   static T_RECV_TICK = 1000 / Ftrans_udp.INBOUND_HZ;
-  static OUTBOUND_TICK_BUDGET = Ftrans_udp.MAX_OUTBOUND_PER_SEC / Ftrans_udp.OUTBOUND_HZ;
   // How long do incomplete inbound chunks live til we garbage collect them? Here we assume a 
   // minimum inbound rate of 8k/sec, i.e. we give up on an incomplete 256k chunk after 32 seconds
   static T_INBOUND_TTL = 1000 * (Ftrans_udp_slice.MAX_CHUNK_SZ / 8192);
@@ -61,9 +60,7 @@ class Ftrans_udp extends Ftrans {
   pubkey;
   udp4;
   udp6;
-  ack_sender;
   chunk_sender;
-  sender_map;
   chunk_recv_buf;
   recv_queue;
   outbound_budget;
@@ -74,9 +71,7 @@ class Ftrans_udp extends Ftrans {
   // TODO: UDP6 is disabled by default and we haven't tested IPv6 for a loooooooooong time
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
     super();
-    this.ack_sender = new Ftrans_udp_ack_sender();
     this.chunk_sender = new Ftrans_udp_chunk_sender();
-    this.sender_map = new Map([[true, this.ack_sender], [false, this.chunk_sender]]);
     this.chunk_recv_buf = new Map();
     this.recv_queue = new Fbintree();
     this.port = port;
@@ -102,7 +97,7 @@ class Ftrans_udp extends Ftrans {
     this.socket.bind(this.port);
     
     Flog.log(`[FTRANS] UDP service starting on port ${this.port}, ` +
-      `max ${Ftrans_udp.MAX_OUTBOUND_PER_SEC / 1024}k/sec outbound`);
+      `max ${Ftrans_udp.MAX_OUTBOUND_BYTES_PER_SEC / 1024}kbytes/sec outbound`);
 
     await this._listening();
     this._recv_handler();
@@ -179,63 +174,42 @@ class Ftrans_udp extends Ftrans {
     }, Ftrans_udp.T_RECV_TICK);
   }
 
-  // TODO: this can be designed better... here's why it's excessively complex: each iteration of
-  // the while loop, we don't know how much we've spent until after we've already sent it, which
-  // means that we could be sending way more data than we've budgeted per tick! To compensate, 
-  // we let outbound_budget go negative and pause transmission if we overspent in the previous tick.
-  // A smarter design would invert this: check the bytes required to send each packet before popping
-  // it off the queue, and exit the loop if we would exceed our budget by sending it.
-  _send_handler() {
+  /**
+   * In the worst case, one call to _send_handler can result in MAX_OUTBOUND_BYTES_PER_SEC / SLICE_SZ
+   * slices being sent. You might also recognize that we imprecisely estimate our budget overhead 
+   * based on the maximum slice size, so some ticks will let overhead go unused. It's also notable
+   * that our acks, which are much smaller packets, are not serialized through this controller, but
+   * ARE factored into our outbound data budget. I contemplate whether a more chad approach might
+   * use a priority queue for all outbound packets, mixing slices and acks together such that we
+   * have more control over when we send data; however, the most logical prioritization is by
+   * time of insertion -- which is obviously monotonically increasing, meaning we will almost always
+   * create the worst case BST which consists of one long branch.
+   */
+  _send_handler(t1 = Date.now()) {
     this.send_timeout = setTimeout(() => {
-      if (this.outbound_budget > 0) {
-        let spent = 0;
-        let prioritize_ack = true;
-    
-        while (spent < Ftrans_udp.OUTBOUND_TICK_BUDGET && 
-          !(this.chunk_sender.length() === 0 && this.ack_sender.length() === 0)) {
-          let socketable;
-
-          if (this.chunk_sender.length() === 0) {
-            socketable = this.ack_sender.next();
-          } else if (this.ack_sender.length() === 0) {
-            socketable = this.chunk_sender.next();
-          } else {
-            socketable = this.sender_map.get(prioritize_ack).next();
-            prioritize_ack = !prioritize_ack;
-          }
-
-          this.socket.send(
-            socketable.buf, 
-            0, 
-            socketable.buf.length, 
-            socketable.port, 
-            socketable.address, 
-            (err) => {
-              if (err) {
-                Flog.log(`[FTRANS] UDP send error ${socketable.address}:${socketable.port} (${err})`);
-              }
-            }
-          );
-
-          spent += socketable.buf.length;
-        }
-
-        this.outbound_budget -= spent;
-      }
+      const dt = Date.now() - t1;
 
       this.outbound_budget = Math.min(
-        this.outbound_budget + Ftrans_udp.OUTBOUND_TICK_BUDGET, 
-        Ftrans_udp.MAX_OUTBOUND_PER_SEC
+        dt * Ftrans_udp.OUTBOUND_BYTES_PER_MS + this.outbound_budget, 
+        Ftrans_udp.MAX_OUTBOUND_BYTES_PER_SEC
       );
 
-      this._send_handler();
+      const to_send = Math.min(
+        this.chunk_sender.length(), 
+        Math.floor(Math.max(this.outbound_budget, 0) / Ftrans_udp_slice.SLICE_SZ)
+      );
+
+      for (let i = 0; i < to_send; i += 1) {
+        this._to_socket(this.chunk_sender.next());
+      }
+
+      this._send_handler(Date.now());
     }, Ftrans_udp.T_SEND_TICK);
   }
 
   async _on_network(msg, rinfo) {
     // msg is a slice, an ack, or some garbage we shouldn't have been sent
     // TODO: is_valid_slice and is_valid_ack may error when used on the opposite msg type
-
     try {
       if (Ftrans_udp_slice.is_valid_slice(msg)) {
         const chunk_id = Ftrans_udp_slice.get_chunk_id(msg);
@@ -244,10 +218,12 @@ class Ftrans_udp extends Ftrans {
         const chunk_key = `${rinfo.address}:${rinfo.port}:${chunk_id},${nslices}`;
         let r_buf = this.chunk_recv_buf.get(chunk_key);
 
-        // If we don't yet have a recv buffer for this chunk, or if there's an existing incomplete
-        // chunk in progress but with a different checksum, create a new recv buffer for this chunk
-        // TODO: if we include checksum in chunk_key, we don't need this Buffer compare... compare
-        // 2 4-byte Buffers vs stringify 1 4-byte Buffer, what's the megachad micro optimization here?
+        /**
+         * If we don't yet have a recv buffer for this chunk, or if there's an existing incomplete
+         * chunk in progress with a different checksum, create a new recv buffer for this chunk.
+         * TODO: if we include the checksum in chunk_key, we don't need this Buffer comparison...
+         * compare two 4-byte Buffers vs. stringify one 4-byte Buffer, what's the megachad optimization?
+         */ 
         if (!r_buf || Buffer.compare(r_buf.checksum, checksum) !== 0) {
           r_buf = new Ftrans_udp_recv_buf({chunk_id: chunk_id, nslices: nslices, checksum: checksum});
           this.chunk_recv_buf.set(chunk_key, r_buf);
@@ -255,14 +231,13 @@ class Ftrans_udp extends Ftrans {
 
         r_buf.add(msg);
 
-        const ack = Ftrans_udp_ack.new({
-          chunk_id: chunk_id,
-          nslices: nslices,
-          acked: r_buf.get_acked()
-        });       
-        
-        this.ack_sender.add({ack: ack, rinfo: rinfo});
-    
+        // Send an ack immediately; in the worst case, we briefly exceed our data budget by ACK_SZ
+        this._to_socket(new Ftrans_udp_socketable({
+          buf: Ftrans_udp_ack.new({chunk_id: chunk_id, nslices: nslices, acked: r_buf.get_acked()}), 
+          address: rinfo.address, 
+          port: rinfo.port
+        }));
+
         if (r_buf.is_complete()) {
           const reassembled = r_buf.reassemble_unsafe();
           this.chunk_recv_buf.delete(chunk_key);
@@ -295,6 +270,23 @@ class Ftrans_udp extends Ftrans {
     } catch(err) {
       // Do nothing
     }
+  }
+
+  _to_socket(socketable) {
+    this.socket.send(
+      socketable.buf, 
+      0, 
+      socketable.buf.length, 
+      socketable.port, 
+      socketable.address, 
+      (err) => {
+        if (err) {
+          Flog.log(`[FTRANS] UDP send error ${socketable.address}:${socketable.port} (${err})`);
+        }
+      }
+    );
+
+    this.outbound_budget -= socketable.buf.length;
   }
 
   async _send(msg, msg_type, ftrans_rinfo) {

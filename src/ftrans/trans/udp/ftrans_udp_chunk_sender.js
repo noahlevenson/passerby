@@ -1,31 +1,29 @@
 /** 
 * FTRANS_UDP_CHUNK_SENDER
-* Implements the Ftrans_udp_sender interface
-* over an outbound chunk buffer, abstracting
-* the complexity of state management for all 
-* outbound chunks
+* Abstracts the complexity of the chunk -> slice
+* relationship; keeps state for outgoing chunks
+* and provides a nice interface for accessing
+* sendable slices in an orderly fashion
 * 
 * 
 */ 
 
 "use strict";
 
-const { Ftrans_udp_sender } = require("./ftrans_udp_sender.js");
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
 const { Ftrans_udp_socketable } = require("./ftrans_udp_socketable.js");
 const { Ftrans_udp_send_state } = require("./ftrans_udp_send_state.js");
 const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
 
-class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
-  static MAX_RETRIES = 2;
-  static WAIT_UNTIL_RETRY = 500;
+class Ftrans_udp_chunk_sender {
+  static MAX_RETRIES = 5;
+  static WAIT_UNTIL_RETRY = 100;
 
   send_buf;
   replacement_buf;
   wr_ptr;
 
   constructor() {
-    super();
     this.send_buf = new Map();
     this.replacement_buf = new Map();
     this.wr_ptr = 0;
@@ -97,21 +95,21 @@ class Ftrans_udp_chunk_sender extends Ftrans_udp_sender {
   }
 
   /**
-   * We want Ftrans_udp_sender subclasses to enforce the following contract: if length() returns > 0,
-   * then a call to next() will return a socketable object in O(1). For our chunk sender, this is 
-   * made considerably more complex by the fact that we also want to enforce a minimum duration to
-   * wait before retransmitting a given slice. Our solution is this hack: after transmission, slices
-   * which are eligible to be retransmitted are transferred to a replacement buffer; each call to
-   * length() checks the time that we last sent the oldest slice in the replacement buffer, and, 
-   * if said slice may now be retransmitted, silently transfers it back to the send buffer.
+   * We want to enforce the following contract: if length() returns > 0, then a call to next() will
+   * return an Ftrans_udp_socketable in O(1). This is made considerably more complex by the fact 
+   * that we also want to enforce a minimum duration to wait before retransmitting a given slice.
+   * Our solution is this hack: after transmission, slices which are eligible to be retransmitted
+   * are transferred to a replacement buffer; each call to length() checks the time we last sent
+   * the oldest slice in the replacement buffer, and, if said slice may now be retransmitted, 
+   * silently transfers it back to the send buffer and returns the new length.
    */
   length() {
     if (this.replacement_buf.size > 0) {
       const [rep_key, rep_send_state] = this.replacement_buf.entries().next().value;
 
       if (rep_send_state.last_sent < Date.now() - Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
-        this.replacement_buf.delete(rep_key);
         this.send_buf.set(rep_key, rep_send_state);
+        this.replacement_buf.delete(rep_key);
       }
     }
   
