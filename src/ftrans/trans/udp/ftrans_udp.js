@@ -185,7 +185,7 @@ class Ftrans_udp extends Ftrans {
    * time of insertion -- which is obviously monotonically increasing, meaning we will almost always
    * create the worst case BST which consists of one long branch.
    */
-  _send_handler(t1 = Date.now()) {
+  _send_handler(t1 = 0) {
     this.send_timeout = setTimeout(() => {
       const dt = Date.now() - t1;
 
