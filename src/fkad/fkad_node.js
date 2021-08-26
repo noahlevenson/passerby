@@ -703,22 +703,16 @@ class Fkad_node {
 
     // Do a node lookup on myself, refresh every k-bucket further away from my closest neighbor
     const lookup_res = await this._node_lookup(this.node_id);
-    const closest_nodes = lookup_res.payload;
-    let i = 0;
+    const closest_nodes = lookup_res.payload.filter(node_info => !node_info.node_id.equals(this.node_id));
+    const our_bucket = this.find_kbucket_for_id(this.node_id).get_data();
 
-    while (i < closest_nodes.length - 1 && closest_nodes[i].node_id.equals(this.node_id)) {
-      i += 1;
+    for (let i = 1; i < closest_nodes.length; i += 1) {
+      const bucket = this.find_kbucket_for_id(closest_nodes[i].node_id).get_data();
+
+      if (bucket !== our_bucket) {
+        this._refresh_kbucket(bucket);
+      }
     }
-
-    i += 1
-    const buckets = new Set();
-
-    while (i < closest_nodes.length) {
-      buckets.add(this.find_kbucket_for_id(closest_nodes[i].node_id).get_data());
-      i += 1
-    } 
-
-    buckets.forEach(bucket => this._refresh_kbucket(bucket));
 
     const npeers = this._get_nodes_closest_to({
       key: this.node_id, 
