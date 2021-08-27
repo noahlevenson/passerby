@@ -433,7 +433,14 @@ class Fkad_node {
     this.eng._send(msg, node_info, success, timeout, ttl);
   }
 
-  _req_store(key, val, node_info, success, timeout, ttl) {
+  /**
+   * In our network, STORE RPCs are always bearing PHT nodes, and so they're likely to be among the
+   * largest data objects sent over the wire. Since peers defer the processing of large chunks of 
+   * data until periods of downtime, we uniquely set a very long TTL here; if the recipient is very
+   * busy, it might them a few seconds to get to it and send us a RES. TODO: see the roadmap for 
+   * discussion about a future system to compute TTL based on outbound message size.
+   */
+  _req_store(key, val, node_info, success, timeout, ttl = 10000) {
     const msg = new Fkad_msg({
       rpc: Fkad_msg.RPC.STORE,
       from: new Fkad_node_info(this.node_info),
@@ -549,7 +556,7 @@ class Fkad_node {
 
   _on_req(msg) {
     const res = this.RPC_RES_EXEC.get(msg.rpc).bind(this)(msg);
-    this.eng._send(res, msg.from)
+    this.eng._send(res, msg.from);
   }
 
   // Very unoptimized: just collect all the nodes we know about by traversing the entire routing
