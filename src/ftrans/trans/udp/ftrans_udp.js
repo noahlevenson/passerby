@@ -29,27 +29,25 @@ const { Ftrans_udp_chunk_sender } = require("./ftrans_udp_chunk_sender.js");
 const { Ftrans_udp_socketable } = require("./ftrans_udp_socketable.js");
 
 /**
- * Thoughts about parameterization:
- * Each tick, the network controller will try to send as much data as it can while respecting 
- * the outbound tick budget. The result: slower tick rates, by budgeting more data per tick, give
- * you a higher burst rate at the expense of less consistent execution time -- while faster tick
- * rates, by reducing how many packets can be sent per tick, give you a lower burst rate but keep
- * the send handler's computational complexity relatively consistent across invocations. This stuff
- * matters on resource constrained mobile devices. Always consider your outbound tick budget wrt 
- * your slice size; you probably want to be able to send at least one slice per tick. Another 
- * consideration is how often you'll wrap the outbound chunk buffer: with a max outbound rate of 
- * 256kbytes, a slice size of 1024 bytes, and a tick rate of 250 Hz, you can send 1 slice per tick 
- * (the tick budget is ~1048 bytes). Given these parameters, in the worst case where each chunk 
- * consists of only one slice, you'll wrap the chunk buffer in ~262 seconds (65536 / 250 = 262.144).
- */
+ * On parameterization:
+ * When MAX_OUTBOUND_BYTES_PER_SEC >= OUTBOUND_HZ * SLICE_SZ, the max slices you can send per
+ * second is equal to OUTBOUND_HZ. For example: when MAX_OUTBOUND_BYTES_PER_SEC = 131072, 
+ * SLICE_SZ = 1024, and OUTBOUND_HZ = 100, you can transmit 102400 bytes (1024 * 100) worth of 
+ * slices per second; the remaining overhead will be used to transmit acks. Conversely, setting
+ * MAX_OUTBOUND_BYTES_PER_SEC to a value smaller than OUTBOUND_HZ * SLICE_SZ will limit your max
+ * slices per second to MAX_OUTBOUND_BYTES_PER_SEC / SLICE_SZ.
+ */ 
 
 class Ftrans_udp extends Ftrans {
   static MAX_OUTBOUND_BYTES_PER_SEC = 131072;
-  static OUTBOUND_BYTES_PER_MS = Ftrans_udp.MAX_OUTBOUND_BYTES_PER_SEC / 1000;
-  static OUTBOUND_HZ = 250;
+  static OUTBOUND_HZ = 100;
   static INBOUND_HZ = 100;
+
+  // Don't mess with these
   static T_SEND_TICK = 1000 / Ftrans_udp.OUTBOUND_HZ;
   static T_RECV_TICK = 1000 / Ftrans_udp.INBOUND_HZ;
+  static OUTBOUND_BYTES_PER_MS = Ftrans_udp.MAX_OUTBOUND_BYTES_PER_SEC / 1000;
+
   // How long do incomplete inbound chunks live til we garbage collect them? Here we assume a 
   // minimum inbound rate of 8k/sec, i.e. we give up on an incomplete 256k chunk after 32 seconds
   static T_INBOUND_TTL = 1000 * (Ftrans_udp_slice.MAX_CHUNK_SZ / 8192);
@@ -175,32 +173,27 @@ class Ftrans_udp extends Ftrans {
   }
 
   /**
-   * In the worst case, one call to _send_handler can result in MAX_OUTBOUND_BYTES_PER_SEC / SLICE_SZ
-   * slices being sent. You might also recognize that we imprecisely estimate our budget overhead 
-   * based on the maximum slice size, so some ticks will let overhead go unused. It's also notable
-   * that our acks, which are much smaller packets, are not serialized through this controller, but
-   * ARE factored into our outbound data budget. I contemplate whether a more chad approach might
-   * use a priority queue for all outbound packets, mixing slices and acks together such that we
-   * have more control over when we send data; however, the most logical prioritization is by
-   * time of insertion -- which is obviously monotonically increasing, meaning we will almost always
-   * create the worst case BST which consists of one long branch.
+   * You might recognize that we imprecisely estimate our budget overhead based on the maximum 
+   * slice size, so some ticks will let overhead go unused. It's also notable that our acks, which 
+   * are much smaller packets, are not serialized through this controller, but ARE factored into 
+   * our outbound data budget. 
    */
   _send_handler(t1 = 0) {
     this.send_timeout = setTimeout(() => {
       const dt = Date.now() - t1;
+      this.chunk_sender.tick();
 
       this.outbound_budget = Math.min(
         dt * Ftrans_udp.OUTBOUND_BYTES_PER_MS + this.outbound_budget, 
         Ftrans_udp.MAX_OUTBOUND_BYTES_PER_SEC
       );
 
-      const to_send = Math.min(
-        this.chunk_sender.length(), 
-        Math.floor(Math.max(this.outbound_budget, 0) / Ftrans_udp_slice.SLICE_SZ)
-      );
+      if (this.outbound_budget > Ftrans_udp_slice.SLICE_SZ) {
+        const socketable = this.chunk_sender.next();
 
-      for (let i = 0; i < to_send; i += 1) {
-        this._to_socket(this.chunk_sender.next());
+        if (socketable !== null) {
+          this._to_socket(socketable);
+        }
       }
 
       this._send_handler(Date.now());
