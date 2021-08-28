@@ -406,9 +406,8 @@ class Fkad_node {
 
     if (val) {
       if (val[1] !== null) {
-        this._req_store(key, val[0][0], val[1].get_data(), (res, ctx) => {
-          Flog.log(`[FKAD] Stored ${key} to node ${val[1].get_data().node_id}`);
-        });
+        Flog.log(`[FKAD] Storing ${key} to keyspace owner ${val[1].get_data().node_id}`);
+        this._req_store(key, val[0][0], val[1].get_data());
       }
 
       return new Fkad_data({type: Fkad_data.TYPE.VAL, payload: val[0]});
@@ -496,12 +495,15 @@ class Fkad_node {
       const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
       const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
       const ttl = Fkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
+      const key = req.data.payload[0].toString();
 
       this.network_data.put({
-        key: req.data.payload[0].toString(),
+        key: key,
         val: req.data.payload[1],
         ttl: ttl
       });
+
+      Flog.log(`[FKAD] Added ${key} to local storage from ${req.from.node_id}`);
     });
     
     return new Fkad_msg({
