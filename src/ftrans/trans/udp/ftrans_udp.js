@@ -103,11 +103,7 @@ class Ftrans_udp extends Ftrans {
     this._gc_handler();
   }
 
-  _stop() {
-    this.socket.on("close", () => {
-      Flog.log(`[FTRANS] UDP service stopped`);
-    });
-
+  async _stop() {
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
     clearTimeout(this.send_timeout);
     clearTimeout(this.recv_timeout);
@@ -116,7 +112,18 @@ class Ftrans_udp extends Ftrans {
     this.recv_timeout = null;
     this.gc_timeout = null;
     this.outbound_budget = 0;
+    Flog.log(`[FTRANS] Stopping UDP service...`);
     this.socket.close();
+    await this._closed();
+  }
+
+  _closed() {
+    return new Promise((resolve, reject) => {
+      this.socket.on("close", () => {
+        Flog.log(`[FTRANS] UDP service stopped`);
+        resolve();
+      });
+    });
   }
 
   _listening() {
