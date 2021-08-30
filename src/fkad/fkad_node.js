@@ -290,7 +290,7 @@ class Fkad_node {
   }
 
   // Congratulations, you have achieved 100% code complexity
-  async _node_lookup(key, rpc = this._req_find_node) {
+  async _node_lookup(key, rpc = this._req_find_node, cb = (n_active, n_inactive) => {}) {
     // BST comparator for insertion: sort by both XOR distance and lexicographical distance of its 
     // concatenated addr and port -- i.e., keep our node_info BST sorted by distance while also 
     // allowing for items which share the same key but have different network info bc of churn
@@ -402,6 +402,8 @@ class Fkad_node {
         lc = c;
         val = await _do_node_lookup.bind(this, active, inactive)();
       }
+
+      cb(active.size(), isz);
     }
 
     if (val) {
@@ -710,8 +712,23 @@ class Fkad_node {
     const bucket = this.find_kbucket_for_id(ping_res.node_id).get_data();
     bucket.enqueue(new Fkad_kbucket_rec({node_info: ping_res}));
 
+    let last_active = 0;
+    let last_inactive = 0;
+
     // Do a node lookup on myself, refresh every k-bucket further away from my closest neighbor
-    const lookup_res = await this._node_lookup(this.node_id);
+    const lookup_res = await this._node_lookup(
+      this.node_id, 
+      this._req_find_node, 
+      (n_active, n_inactive) => {
+        if (n_active !== last_active || n_inactive !== last_inactive) {
+          Flog.log(`[FKAD] Node lookup: found ${n_active} peers, ${n_inactive} to query`);
+        }
+
+        last_active = n_active;
+        last_inactive = n_inactive;
+      }
+    );
+    
     const closest_nodes = lookup_res.payload.filter(node_info => !node_info.node_id.equals(this.node_id));
     const our_bucket = this.find_kbucket_for_id(this.node_id).get_data();
 
