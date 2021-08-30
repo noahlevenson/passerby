@@ -15,6 +15,20 @@ const { Ftrans_udp_socketable } = require("./ftrans_udp_socketable.js");
 const { Ftrans_udp_send_state } = require("./ftrans_udp_send_state.js");
 const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
 
+/**
+ * A few words about the chunk sender:
+ * Maintaining state for outbound slices is an annoying job. If we imagine that all of our outbound
+ * slices at any moment comprise a LIFO data structure, then the UDP network controller should
+ * loop over that data structure, sending new slices in the order they were created, and resending
+ * slices that had previously been sent but haven't yet been acked. Making things difficult is the
+ * fact that slices may be acked, and therefore disqualified for sending, in arbitrary order; this
+ * makes a data structure like a ring buffer much less appealing. Here we exploit the fact that 
+ * JavaScript's Map type provides arbitrary O(1) insertions and deletions while also enabling 
+ * us to iterate through the collection in insertion order; however, it's unclear whether our 
+ * frequent insertions and deletions are resulting in time complexity degradation to something
+ * closer to O(n) for some of these operations.
+ */ 
+
 class Ftrans_udp_chunk_sender {
   static MAX_RETRIES = 5;
   static WAIT_UNTIL_RETRY = 100;
