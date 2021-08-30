@@ -254,7 +254,7 @@ class Fpht {
     let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH));
 
     if (leaf === null) {
-      leaf = await this.lookup_lin(k.to_bin_str(Fpht.BIT_DEPTH));
+      leaf = await this.lookup_lin(key.to_bin_str(Fpht.BIT_DEPTH));
     }
 
     // If we can't find the leaf node for a key, our graph is likely corrupted
