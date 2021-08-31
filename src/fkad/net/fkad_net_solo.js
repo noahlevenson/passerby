@@ -51,13 +51,15 @@ class Fkad_net_solo extends Fkad_net {
   }
 
   _out(fkad_msg, node_info) {
-    // Loopback case
+    /* Loopback case
+    
     if (node_info.addr === this.node.addr && node_info.port === this.node.port &&
       node_info.node_id.equals(this.node.node_id)) {
       
       this._in(fkad_msg);
       return;
     }
+    */
 
     this.trans._send(fkad_msg, Ftrans_msg.TYPE.FKAD, new Ftrans_rinfo({
       address: node_info.addr, 
