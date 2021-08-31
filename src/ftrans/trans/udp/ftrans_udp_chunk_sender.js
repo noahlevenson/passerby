@@ -30,7 +30,7 @@ const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
  */ 
 
 class Ftrans_udp_chunk_sender {
-  static MAX_RETRIES = 5;
+  static MAX_RETRIES = 20;
   static WAIT_UNTIL_RETRY = 100;
 
   send_map;
