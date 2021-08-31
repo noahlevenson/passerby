@@ -79,12 +79,17 @@ class Ftrans_udp_chunk_sender {
    */ 
   tick() {
     // Process the acks that arrived since the last tick
-    this.acked_queue.forEach((pair) => {
-      const [chunk_id, acked] = pair;
-
+    this.acked_queue.forEach((tuple) => {
+      const [chunk_id, acked, rinfo] = tuple;
+      
       acked.forEach((state, i) => {
         if (state) {
-          this.send_map.delete(this._get_key({chunk_id: chunk_id, slice_id: i}));
+          this.send_map.delete(this._get_key({
+            chunk_id: chunk_id, 
+            slice_id: i, 
+            address: rinfo.address,
+            port: rinfo.port
+          }));
         }
       });
     });
@@ -92,12 +97,17 @@ class Ftrans_udp_chunk_sender {
     this.acked_queue = [];
 
     // Add the chunks that arrived since the last tick
-    this.chunk_queue.forEach((pair) => {
-      const [chunk, rinfo] = pair;
-
+    this.chunk_queue.forEach((tuple) => {
+      const [chunk, rinfo] = tuple;
+      
       Ftrans_udp_chunk_sender._make_slices(chunk, this.wr_ptr).map(s => 
         new Ftrans_udp_send_state({slice: s, rinfo: rinfo})).forEach((send_state, i) => {
-          this.send_map.set(this._get_key({chunk_id: this.wr_ptr, slice_id: i}), send_state);
+          this.send_map.set(this._get_key({
+            chunk_id: this.wr_ptr, 
+            slice_id: i, 
+            address: rinfo.address,
+            port: rinfo.port
+          }), send_state);
         });
 
       this._incr_wr_ptr();
@@ -133,16 +143,25 @@ class Ftrans_udp_chunk_sender {
     return null;
   }
 
-  set_acked({chunk_id, acked}) {
-    this.acked_queue.push([chunk_id, acked]); 
+  set_acked({chunk_id, acked, rinfo}) {
+    this.acked_queue.push([chunk_id, acked, rinfo]);
   }
 
   add({chunk, rinfo} = {}) {
     this.chunk_queue.push([chunk, rinfo]);
   }
 
-  _get_key({chunk_id, slice_id} = {}) {
-    return `${chunk_id}:${slice_id}`;
+  /** 
+   * Perhaps you're wondering why we include network info in the key, given that network info is 
+   * included as part of the Ftrans_send_state fetched as the value? This is to simplify the process 
+   * at ack time, since our slices are stored in a 1D data structure and we don't know where their 
+   * parent chunks begin and end. In other words: given an ack referencing n slices, we don't want 
+   * to fetch all n slices from the send_map just to compare each of their network info against the
+   * network info of the ack sender, and then delete the appropriate slices. Instead, we include the 
+   * network info in the key, skip the fetch and just idempotently delete each slice.
+   */ 
+  _get_key({chunk_id, slice_id, address, port} = {}) {
+    return `${chunk_id}:${slice_id}:${address}:${port}`;
   }
 
   _incr_wr_ptr() {

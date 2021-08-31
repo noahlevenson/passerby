@@ -264,7 +264,8 @@ class Ftrans_udp extends Ftrans {
       } else if (Ftrans_udp_ack.is_valid_ack(msg)) {
         this.chunk_sender.set_acked({
           chunk_id: Ftrans_udp_ack.get_chunk_id(msg), 
-          acked: Ftrans_udp_ack.get_acked(msg)
+          acked: Ftrans_udp_ack.get_acked(msg),
+          rinfo: rinfo
         });
       }
     } catch(err) {
