@@ -148,7 +148,7 @@ class Ftrans_udp extends Ftrans {
         }
       });
 
-      Flog.log(`[FTRANS] UDP network controller: deleted ${stale} stale chunks`);
+      Flog.log(`[FTRANS] Net stat: ${stale} stale chunks, ${this.chunk_sender.size()} outbound slices`);
 
       this._gc_handler();
     }, Ftrans_udp.T_GARBAGE_COLLECT);

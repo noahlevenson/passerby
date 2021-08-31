@@ -117,6 +117,13 @@ class Ftrans_udp_chunk_sender {
   }
 
   /**
+   * Size is guaranteed until the next tick
+   */ 
+  size() {
+    return this.send_map.size;
+  }
+
+  /**
    * To avoid sending re-sending slices too quickly, this is worst case linear search over all the
    * slices that are currently in play...
    */ 
@@ -153,7 +160,7 @@ class Ftrans_udp_chunk_sender {
 
   /** 
    * Perhaps you're wondering why we include network info in the key, given that network info is 
-   * included as part of the Ftrans_send_state fetched as the value? This is to simplify the process 
+   * included as part of the Ftrans_udp_send_state fetched as the value? This is to simplify the process 
    * at ack time, since our slices are stored in a 1D data structure and we don't know where their 
    * parent chunks begin and end. In other words: given an ack referencing n slices, we don't want 
    * to fetch all n slices from the send_map just to compare each of their network info against the
