@@ -358,6 +358,8 @@ class Fpht {
 
     if (leaf.size() + sibling_node.size() > Fpht.B) {
       // Easy case: leaf + its sibling node contains more than B keys, so the invariant is maintained
+      await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(leaf.label), leaf);
+
       Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
         `${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
     } else {

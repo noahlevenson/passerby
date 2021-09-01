@@ -418,6 +418,11 @@ class Fapp {
     await this.fpht.insert(this.get_location().linearize(), bboard);
   }
 
+  // Delete any data on the network that's associated with our location key
+  async delete() {
+    await this.fpht.delete(this.get_location().linearize());
+  }
+
   // High level method to retrieve a list of nearby restaurant peers
   async get_local_resources() {
     const loc = this.get_location();
