@@ -24,8 +24,8 @@ const { Ftrans_msg } = require("../../ftrans_msg.js");
 const { Ftrans_rinfo } = require("../../ftrans_rinfo.js");
 const { Ftrans_udp_slice } = require("./ftrans_udp_slice.js");
 const { Ftrans_udp_ack } = require("./ftrans_udp_ack.js");
-const { Ftrans_udp_recv_buf } = require("./ftrans_udp_recv_buf.js");
 const { Ftrans_udp_chunk_sender } = require("./ftrans_udp_chunk_sender.js");
+const { Ftrans_udp_chunk_receiver } = require("./ftrans_udp_chunk_receiver.js");
 const { Ftrans_udp_socketable } = require("./ftrans_udp_socketable.js");
 
 /**
@@ -59,7 +59,7 @@ class Ftrans_udp extends Ftrans {
   udp4;
   udp6;
   chunk_sender;
-  chunk_recv_buf;
+  chunk_receiver;
   recv_queue;
   outbound_budget;
   send_timeout;
@@ -70,7 +70,7 @@ class Ftrans_udp extends Ftrans {
   constructor({port = 27500, pubkey = null, udp4 = true, udp6 = false} = {}) {
     super();
     this.chunk_sender = new Ftrans_udp_chunk_sender();
-    this.chunk_recv_buf = new Map();
+    this.chunk_receiver = new Ftrans_udp_chunk_receiver();
     this.recv_queue = new Fbintree();
     this.port = port;
     this.pubkey = pubkey;
@@ -138,18 +138,8 @@ class Ftrans_udp extends Ftrans {
 
   _gc_handler() {
     this.gc_timeout = setTimeout(() => {
-      const t_expiry = Date.now() - Ftrans_udp.T_INBOUND_TTL;
-      let stale = 0;
-
-      Array.from(this.chunk_recv_buf.entries()).forEach((pair) => {
-        if (pair[1].at < t_expiry) {
-          this.chunk_recv_buf.delete(pair[0]);
-          stale += 1;
-        }
-      });
-
-      Flog.log(`[FTRANS] Net stat: ${stale} stale chunks, ${this.chunk_sender.size()} outbound slices`);
-
+      const n_stale = this.chunk_receiver.gc(Date.now() - Ftrans_udp.T_INBOUND_TTL);
+      Flog.log(`[FTRANS] Net stat: ${n_stale} stale chunks, ${this.chunk_sender.size()} outbound slices`);
       this._gc_handler();
     }, Ftrans_udp.T_GARBAGE_COLLECT);
   }
@@ -212,43 +202,27 @@ class Ftrans_udp extends Ftrans {
     // TODO: is_valid_slice and is_valid_ack may error when used on the opposite msg type
     try {
       if (Ftrans_udp_slice.is_valid_slice(msg)) {
-        const chunk_id = Ftrans_udp_slice.get_chunk_id(msg);
-        const nslices = Ftrans_udp_slice.get_nslices(msg);
-        const checksum = Ftrans_udp_slice.get_checksum(msg);
-        const chunk_key = `${rinfo.address}:${rinfo.port}:${chunk_id},${nslices}`;
-        let r_buf = this.chunk_recv_buf.get(chunk_key);
-
-        /**
-         * If we don't yet have a recv buffer for this chunk, or if there's an existing incomplete
-         * chunk in progress with a different checksum, create a new recv buffer for this chunk.
-         * TODO: if we include the checksum in chunk_key, we don't need this Buffer comparison...
-         * compare two 4-byte Buffers vs. stringify one 4-byte Buffer, what's the megachad optimization?
-         */ 
-        if (!r_buf || Buffer.compare(r_buf.checksum, checksum) !== 0) {
-          r_buf = new Ftrans_udp_recv_buf({chunk_id: chunk_id, nslices: nslices, checksum: checksum});
-          this.chunk_recv_buf.set(chunk_key, r_buf);
-        }
-
-        r_buf.add(msg);
+        const [acked, reassembled] = this.chunk_receiver.add({slice: msg, rinfo: rinfo});
 
         // Send an ack immediately; in the worst case, we briefly exceed our data budget by ACK_SZ
         this._to_socket(new Ftrans_udp_socketable({
-          buf: Ftrans_udp_ack.new({chunk_id: chunk_id, nslices: nslices, acked: r_buf.get_acked()}), 
+          buf: Ftrans_udp_ack.new({
+            chunk_id: Ftrans_udp_slice.get_chunk_id(msg), 
+            nslices: Ftrans_udp_slice.get_nslices(msg), 
+            acked: acked
+          }), 
           address: rinfo.address, 
           port: rinfo.port
         }));
 
-        if (r_buf.is_complete()) {
-          const reassembled = r_buf.reassemble_unsafe();
-          this.chunk_recv_buf.delete(chunk_key);
-
-          /**
-           * Deserialization and decryption are expensive, so we defer that stuff to _recv_handler...
-           * This BST comparator function encapsulates v0.0 of our inbound prioritization logic:
-           * just prioritize small messages over large messages. This is based on the idea that peers
-           * should always ensure an orderly flow of administrative messages by deferring the 
-           * processing of large chunks of inbound data to periods of downtime.
-           */
+        /**
+         * Deserialization and decryption are expensive, so we defer that stuff to _recv_handler...
+         * This BST comparator function encapsulates v0.0 of our inbound prioritization logic:
+         * just prioritize small messages over large messages. This is based on the idea that peers
+         * should always ensure an orderly flow of administrative messages by deferring the 
+         * processing of large chunks of inbound data to periods of downtime.
+         */
+        if (reassembled !== null) {
           this.recv_queue.bst_insert(new Fbintree_node({data: [reassembled, rinfo]}), (node, oldnode) => {
             if (node.data[0].length < oldnode.data[0].length) {
               return -1
