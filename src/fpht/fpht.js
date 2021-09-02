@@ -27,24 +27,24 @@ const { Fkad_data } = require("../fkad/fkad_data.js");
 const { Fpht_node } = require("./fpht_node.js");
 
 class Fpht {
-  // BIT_DEPTH is the size of our input keys (our Fgeo linearizations are currently 80 bits)
   static BIT_DEPTH = 80;
-  // B is block size, aka max keys per leaf
   static B = 2;
 
-  // reference to the DHT node associated with this PHT interface
+  /**
+   * index_attr: A unique string to identify the attribute we're indexing with this PHT interface
+   * dht_node: reference to the DHT node associated with this PHT interface
+   * dht_lookup_func: reference to the above node's lookup function
+   * dht_ttl: TTL to inherit from the DHT
+   * dht_lookup_args: args to pass the DHT lookup function to make it perform a value-based lookup
+   */
+
   dht_node;
-  // reference to the above node's lookup function
   dht_lookup_func;
-  // array of args to pass to above DHT lookup function to make it perform a value-based lookup
   dht_lookup_args;
-  // Some unique string identifier for the attribute that we're indexing with this PHT interface
   index_attr;
-  // Replicable data, the data we have inserted into the PHT and are responsible for republishing
   rp_data;
-  // TTL computed from the DHT's TTL
   ttl;
-  refresh_interval_handle;
+  refresh_interval;
   
   constructor({
     index_attr = null, 
@@ -54,20 +54,20 @@ class Fpht {
     dht_lookup_args = []
   } = {}) {
     if (typeof index_attr !== "string") {
-      throw new TypeError("Argument index_attr must be a string");
+      throw new TypeError("Argument 'index_attr' must be a string");
     } 
 
     if (typeof dht_lookup_func !== "function") {
-      throw new TypeError("Argument dht_lookup must be a function");
+      throw new TypeError("Argument 'dht_lookup' must be a function");
     }
 
     if (typeof dht_ttl !== "number") {
-      throw new TypeError("Argument dht_ttl must be a number");
+      throw new TypeError("Argument 'dht_ttl' must be a number");
 
     }
 
     if (!Array.isArray(dht_lookup_args)) {
-      throw new TypeError("Argument dht_lookup_args must be an Array");
+      throw new TypeError("Argument 'dht_lookup_args' must be an array");
     }
     
     this.dht_node = dht_node;
@@ -76,55 +76,12 @@ class Fpht {
     this.ttl = Math.floor(dht_ttl / 2);
     this.index_attr = index_attr;
     this.rp_data = new Map();
-    this.refresh_interval_handle = null;
+    this.refresh_interval = null;
   }
 
-  // Print PHT stats: walk the whole tree and print everything we know about it
-  async _debug_print_stats() {
-    async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
-      if (!Fpht_node.is_leaf(pht_node)) {
-        const child0 = await this._dht_lookup(pht_node.children[0x00]);
-        const child1 = await this._dht_lookup(pht_node.children[0x01]);
-
-        if (child0 === null || child1 === null) {
-          throw new Error("Fatal PHT graph error");
-        }
-
-        ({nodes, keys, leaves} = await _walk.bind(this)(child0, nodes, keys, leaves));
-        ({nodes, keys, leaves} = await _walk.bind(this)(child1, nodes, keys, leaves));
-      }
-
-      Flog.log(`[FPHT] ${this.index_attr}${pht_node.label} ${Fpht_node.is_leaf(pht_node) ? 
-        "<- LEAF, " + Fpht_node.size(pht_node) + " KEYS" : ""}`);
-
-      keys += Fpht_node.size(pht_node);
-      nodes += 1;
-
-      if (Fpht_node.is_leaf(pht_node)) {
-        leaves += 1;
-      }
-
-      return {nodes: nodes, keys: keys, leaves: leaves};
-    }
-
-    const root_node = await this._debug_get_root_node();
-
-    if (root_node === null) {
-      Flog.log(`[FPHT] Stats error: no root node found!`);
-      return null;
-    }
-
-    Flog.log(`[FPHT] DEBUG - PHT STRUCTURE (INVERTED):`, true);
-    const res = await _walk.bind(this)(root_node);
-    Flog.log(`[FPHT] TOTAL STATS - nodes: ${res.nodes}, leaves: ${res.leaves}, keys: ${res.keys}\n`); 
-  }
-
-  // Get the root node, or null if we can't find it
-  async _debug_get_root_node() {
-    return await this._dht_lookup();
-  }
-
-  // Retrieve a PHT node from the DHT, returns null if not found
+  /**
+   * Retrieve a PHT node by its label, returns null if not found
+   */ 
   async _dht_lookup(label = "") {
     if (label === null) {
       return null;
@@ -133,17 +90,20 @@ class Fpht {
     const label_hash = this._get_label_hash(label);
     const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
-    // TODO: This assumes that dht lookups always return an Fkad_data type, is MAYBE true?
+    // TODO: This assumes that dht lookups always return an Fkad_data type, which is MAYBE true?
     const data = new Fkad_data(res);
+    const payload = data.get_payload()[0];
 
-    if (data.get_type() !== Fkad_data.TYPE.VAL || !Fpht_node.valid_magic(data.get_payload()[0])) {
+    if (data.get_type() !== Fkad_data.TYPE.VAL || !Fpht_node.valid_magic(payload)) {
       return null;
     }
     
-    return data.get_payload()[0];
+    return payload;
   }
 
-  // Compute the hash of a PHT node label; pass no arg to get the label hash of the root node
+  /**
+   * Compute the hash of a PHT node label; pass no arg to get the label hash of the root node
+   */ 
   _get_label_hash(data = "") {
     if (typeof data !== "string") {
       throw new TypeError("Argument 'data' must be string");
@@ -152,12 +112,36 @@ class Fpht {
     return new Fbigint(Fcrypto.sha1(`${this.index_attr}${data}`));
   }
 
-  // Idempotently init a new PHT structure, indexing on index_attr, and kick off the refresh interval
+  /**
+   * Idempotently init a new PHT structure indexing on index_attr, kick off the refresh interval
+   */ 
   async init() {
-    if (this.refresh_interval_handle === null) {
-      this.refresh_interval_handle = setInterval(() => {
+    this._init_intervals();
+    Flog.log(`[FPHT] Key refresh interval: ${(this.ttl / 1000 / 60).toFixed(1)} minutes`);
+
+    Flog.log(`[FPHT] Looking up root node for index attr ${this.index_attr}...`);
+    const data = await this._dht_lookup();
+
+    if (data !== null) {
+      Flog.log(`[FPHT] Root node found! Created ${new Date(data.created)}`);
+      return;
+    }
+
+    Flog.log(`[FPHT] No root node found! Creating new root for index attr ${this.index_attr}...`);
+    const root = new Fpht_node({label: ""});
+    const res = await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root);
+
+    if (!res) {
+      Flog.log(`[FPHT] WARNING! COULD NOT CREATE NEW ROOT FOR INDEX ATTR ${this.index_attr}!`);
+    }
+  }
+
+  _init_intervals() {
+    if (this.refresh_interval === null) {
+      this.refresh_interval = setInterval(() => {
         const t1 = Date.now();
 
+        // TODO: this has never been tested and is clearly nonworking, can't use async in a forEach
         this.rp_data.forEach(async (val, key) => {
           Flog.log(`[FPHT] Refreshing key ${key}`);
           const k = new Fbigint(key);
@@ -170,7 +154,7 @@ class Fpht {
           }
 
           if (leaf === null) {
-            throw new Error("Fatal PHT graph error");
+            throw new Error("Fatal PHT error");
           }
 
           let plabel = Fpht_node.get_parent_label(leaf);
@@ -179,7 +163,7 @@ class Fpht {
             let parent = await this._dht_lookup(plabel);
 
             if (parent === null) {
-              throw new Error("Fatal PHT graph error");
+              throw new Error("Fatal PHT error");
             }
 
             if (t1 > Fpht.get_created(parent) + this.ttl) {
@@ -196,53 +180,39 @@ class Fpht {
         });
       }, this.ttl);
     }
-
-    Flog.log(`[FPHT] Key refresh interval: ${(this.ttl / 60 / 60 / 1000).toFixed(1)} hours`);
-
-    Flog.log(`[FPHT] Looking up root node for index attr ${this.index_attr}...`);
-    const data = await this._dht_lookup();
-
-    if (data !== null) {
-      Flog.log(`[FPHT] Root node found! Created ${new Date(data.created)}`);
-      return;
-    }
-
-    Flog.log(`[FPHT] No root node found! Creating new root structure for index attr ${this.index_attr}...`);
-    const root = new Fpht_node({label: ""});
-    const res = await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root);
-
-    if (!res) {
-      Flog.log(`[FPHT] WARNING! COULD NOT CREATE NEW ROOT STRUCTURE FOR INDEX ATTR ${this.index_attr}!`);
-    }
   }
 
-  // Find the PHT node responsible for a given key, linear search edition
-  // Returns null if there's no node associated with that key
+  /**
+   * Find the PHT node responsible for a given key, linear search edition
+   * Returns null if there's no node associated with that key
+   */
   async lookup_lin(key_str) {
     for (let i = 0; i < key_str.length; i += 1) {
-      const pht_node = await this._dht_lookup(key_str.substring(0, i));
+      const node = await this._dht_lookup(key_str.substring(0, i));
       
-      if (pht_node !== null && Fpht_node.is_leaf(pht_node)) {
-        return pht_node;
+      if (node !== null && Fpht_node.is_leaf(node)) {
+        return node;
       }
     }
 
     return null;
   } 
 
-  // Find the PHT node responsible for a given key, binary search edition
-  // Returns null if there's no node associated with that key
+  /**
+   * Find the PHT node responsible for a given key, binary search edition
+   * Returns null if there's no node associated with that key
+   */
   async lookup_bin(key_str) {
     let p = 0;
     let r = Fpht.BIT_DEPTH - 1;
 
     while (p <= r) {
       let q = Math.floor((p + r) / 2);  
-      const pht_node = await this._dht_lookup(key_str.substring(0, q));
+      const node = await this._dht_lookup(key_str.substring(0, q));
 
-      if (pht_node !== null && Fpht_node.is_leaf(pht_node)) {
-        return pht_node;
-      } else if (pht_node !== null && Fpht_node.valid_magic(pht_node)) {
+      if (node !== null && Fpht_node.is_leaf(node)) {
+        return node;
+      } else if (node !== null && Fpht_node.valid_magic(node)) {
         p = q + 1;
       } else {
         r = q - 1;
@@ -252,21 +222,35 @@ class Fpht {
     return null;
   }
 
-  // Insert a (key, value) pair into the PHT
-  async insert(key, val) {
+  async full_search(key) {
     let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH));
 
     if (leaf === null) {
       leaf = await this.lookup_lin(key.to_bin_str(Fpht.BIT_DEPTH));
     }
 
-    // If we can't find the leaf node for a key, our graph is likely corrupted
-    // TODO: disable this for production
+    return leaf;
+  }
+
+  /**
+   * Insert a (key, value) pair into the PHT
+   */
+  async insert(key, val) {
+    const leaf = await this.full_search(key);
+
+     /**
+     * If we can't find the leaf node for a key, our trie is likely corrupted
+     * TODO: disable this for production
+     */
     if (leaf === null) {
-      throw new Error("Fatal PHT graph error");
+      throw new Error("Fatal PHT error");
     }
 
     if (Fpht_node.get({node: leaf, key: key}) || Fpht_node.size(leaf) < Fpht.B) {
+      /**
+       * The easy case: if we're stomping a value or this insertion won't exceed block size,
+       * just insert the value and be done
+       */ 
       Fpht_node.put({node: leaf, key: key, val: val});
       const label_hash = this._get_label_hash(leaf.label);
       await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
@@ -274,81 +258,107 @@ class Fpht {
       Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ` +
         `${leaf.label.length > 0 ? leaf.label : "[root]"} (DHT key ${label_hash})`);
     } else {
-      // This is the non-chad "unlimited split" version of bucket splitting
-      // TODO: implement the "staggered updates" version
-      const pairs = Fpht_node.get_all_pairs(leaf).map(pair => 
-        [new Fbigint(pair[0]), pair[1]]).concat([[key, val]]);
+      /**
+       * The hard case: we have to split the bucket. This is the non-chad "unlimited split" version
+       * of bucket splitting. TODO: implement the "staggered updates" version
+       */
+      const pairs = Fpht_node.get_all_pairs(leaf).map((pair) => {
+        const [old_key, old_val] = pair;
+        return [new Fbigint(old_key), old_val];
+      }).concat([[key, val]]);
 
-      const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
-      const lcp = Futil.get_lcp(key_bin_strings, false);
-      const i = lcp.length;
+      const lcp = Futil.get_lcp(
+        pairs.map((pair) => {
+          const [new_key, new_val] = pair;
+          return new_key.to_bin_str(Fpht.BIT_DEPTH);
+        }),
+        false
+      );
 
-
-      // Our new child nodes must be 1 level deeper than the length of the lcp of all B + 1 keys
-      let child0, child1;
+      /**
+       * Our new child nodes must be one level deeper than the length of the lcp of all B + 1 keys
+       * (Don't forget the root node is d = 0)
+       */ 
+      let child_0, child_1;
       let old_leaf = leaf;
-      let d = leaf.label.length; 
+      let d = Fpht_node.get_label(leaf).length;
 
-      while (d <= i) {
-        child0 = new Fpht_node({label: `${old_leaf.label}0`});
-        child1 = new Fpht_node({label: `${old_leaf.label}1`});
+      while (d <= lcp.length) {
+        child_0 = new Fpht_node({label: `${Fpht_node.get_label(old_leaf)}0`});
+        child_1 = new Fpht_node({label: `${Fpht_node.get_label(old_leaf)}1`});
 
         Flog.log(`[FPHT] Split ${old_leaf.label.length > 0 ? old_leaf.label : "[root]"} ` +
-          `-> ${child0.label} + ${child1.label}`)
+          `-> ${Fpht_node.get_label(child_0)} + ${Fpht_node.get_label(child_1)}`)
 
         Fpht_node.set_ptrs({
-          node: child0, 
+          node: child_0, 
           left: Fpht_node.ptr_left(old_leaf), 
-          right: Fpht_node.get_label(child1)
+          right: Fpht_node.get_label(child_1)
         });
         
         Fpht_node.set_ptrs({
-          node: child1,
-          left: Fpht_node.get_label(child0),
+          node: child_1,
+          left: Fpht_node.get_label(child_0),
           right: Fpht_node.ptr_right(old_leaf)
         });
         
-        const interior_node = new Fpht_node({label: old_leaf.label});
-        interior_node.children[0x00] = child0.label;
-        interior_node.children[0x01] = child1.label;
+        const int_node = new Fpht_node({
+          label: Fpht_node.get_label(old_leaf), 
+          children: {0x00: Fpht_node.get_label(child_0), 0x01: Fpht_node.get_label(child_1)}
+        });
+        
+        /**
+         * Reached our final depth? Then the children are leaf nodes, so distribute the keys to them
+         */ 
+        if (d === lcp.length) {
+          pairs.forEach((pair) => {
+            const [new_key, new_val] = pair;
 
-        // Reached our final depth? Then the children are leaf nodes, so distribute the keys to them
-        if (d === i) {
-          pairs.forEach((pair, idx, arr) => {
-            // Sort them into the new children by their ith bit
-            // TODO: It's brittle and noobish to use the parallel bin string array
-            const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
-            Fpht_node.put({node: child_ref, key: pair[0], val: pair[1]});
-      
-            Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} -> ${this.index_attr} ` + 
-              `${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
+            /**
+             * A [key, val] pair is distributed to the 0 or 1 child based on the bit that comes 
+             * after the lcp computed over all the [key, val] pairs; e.g., for group of pairs 
+             * with a lcp of 6 bits, the 6th bit (0-indexed) determines which child to sort to...
+             */ 
+            const dest = new_key.to_bin_str(Fpht.BIT_DEPTH)[lcp.length] === "0" ? child_0 : child_1;
+
+            Fpht_node.put({
+              node: dest,
+              key: new_key,
+              val: new_val
+            });
+
+            Flog.log(`[FPHT] Redistributed key ${new_key.toString()} -> ${this.index_attr} ` + 
+              `${Fpht_node.get_label(dest)} (DHT key ${this._get_label_hash(Fpht_node.get_label(dest))})`);
           });
         }
 
-        // PUT the new child leaf nodes and stomp the old leaf node, which is now an interior node
-        // TODO: Alert the caller if any of the PUTs failed?
-        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child0.label), child0);
-        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(child1.label), child1);
-        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(interior_node.label), interior_node);
+        // TODO: Alert the caller if any of these PUTs fail?
+        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(child_0)), child_0);
+        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(child_1)), child_1);
+        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(int_node)), int_node);
 
-        // For the next iteration, old_leaf must be the child node from above that has the label 
-        // equal to the lcp of the keys (or just the last digit of the longest common prefix, right?)
-        old_leaf = child0.label[d] === lcp[d] ? child0 : child1;
+        /**
+         * If we must iterate again, which branch do we follow downward? Well, of the two child
+         * nodes we just created, we want to jump to the one with the label that has the longer 
+         * common prefix of the lcp of all keys.
+         */
+        if (Futil.get_lcp([lcp, Fpht_node.get_label(child_0)], true) > 
+          Futil.get_lcp([lcp, Fpht_node.get_label(child_1)], true)) {
+          old_leaf = child_0;
+        } else {
+          old_leaf = child_1;
+        }
+
         d += 1;
       }
     }
 
     this.rp_data.set(key.toString(), val);
-    // TODO: return success/failure?
   }
   
   // Delete some data from the network
   async delete(key) {
-    let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH));
-
-    if (leaf === null) {
-      leaf = await this.lookup_lin(key.to_bin_str(Fpht.BIT_DEPTH));
-    }
+    const leaf = await this.full_search(key);
 
     // Key not found
     if (leaf === null) {
@@ -362,10 +372,10 @@ class Fpht {
 
     const sibling_node = await this._dht_lookup(Fpht_node.get_sibling_label(leaf));
 
-    // If we can't find the sibling to a leaf node, our graph is likely corrupted
+    // If we can't find the sibling to a leaf node, our trie is likely corrupted
     // TODO: disable this for production
     if (sibling_node === null) {
-      throw new Error("Fatal PHT graph error");
+      throw new Error("Fatal PHT error");
     }
 
     if (Fpht_node.size(leaf) + Fpht_node.size(sibling_node) > Fpht.B) {
@@ -394,7 +404,7 @@ class Fpht {
         const parent_node = await this._dht_lookup(Fpht_node.get_parent_label(old_leaf));
 
         if (parent_node === null) {
-          throw new Error("Fatal PHT graph error");
+          throw new Error("Fatal PHT error");
         }
 
         parent_node.children[0x00] = null;
@@ -402,22 +412,22 @@ class Fpht {
 
         // Fixing up our parent node's pointers
         // We need to know if our leaf is a 0 or a 1 node (0 node is "left", 1 node is "right")
-        let child0, child1;
+        let child_0, child_1;
 
         if (Fpht_node.get_label(old_leaf)[Fpht_node.get_label(old_leaf).length - 1] === "0") {
-          child0 = old_leaf;
-          child1 = sibling_node;
+          child_0 = old_leaf;
+          child_1 = sibling_node;
         } else {
-          child0 = sibling_node;
-          child1 = old_leaf;
+          child_0 = sibling_node;
+          child_1 = old_leaf;
         }
 
         // Get the childrens' parent, get the left child's left neighbor, get the right child's 
         // right neighbor, set the left neighbor's right neighbor to parent, set the right 
         // neighbor's left neighbor to parent, no big deal
 
-        const left_neighbor = await this._dht_lookup(Fpht_node.ptr_left(child0));
-        const right_neighbor = await this._dht_lookup(Fpht_node.ptr_right(child1));
+        const left_neighbor = await this._dht_lookup(Fpht_node.ptr_left(child_0));
+        const right_neighbor = await this._dht_lookup(Fpht_node.ptr_right(child_1));
 
         // Neighbors can be null, that just means we reached the left or right terminus of the tree
 
@@ -530,7 +540,7 @@ class Fpht {
         const child_node = await this._dht_lookup(subtree0);
 
         if (child_node === null) {
-          throw new Error("Fatal PHT graph error");
+          throw new Error("Fatal PHT error");
         }
 
         data = await _do_range_query_2d.bind(this)(child_node, data);
@@ -540,7 +550,7 @@ class Fpht {
         const child_node = await this._dht_lookup(subtree1);
 
         if (child_node === null) {
-          throw new Error("Fatal PHT graph error");
+          throw new Error("Fatal PHT error");
         }
 
         data = await _do_range_query_2d.bind(this)(child_node, data);
@@ -575,15 +585,11 @@ class Fpht {
     let start_node = await this._dht_lookup(lcp);
 
     if (start_node === null) {
-      let start_node = await this.lookup_bin(lcp);
+      start_node = await this.full_search(lcp);
     }
 
     if (start_node === null) {
-      start_node = await this.lookup_lin(lcp);
-    }
-
-    if (start_node === null) {
-      throw new Error("Fatal PHT graph error");
+      throw new Error("Fatal PHT error");
     }
 
     return await _do_range_query_2d.bind(this)(start_node);
