@@ -17,22 +17,6 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
 const net = require("net");
 
 class Futil {
-  // JSON serializer for JS Map type
-  static map_to_json() {
-    return JSON.stringify(Array.from(this.entries()));
-  }
-
-  // JSON deserializer for JS Map type
-  static map_from_json(json) {
-    const arr = JSON.parse(json);
-    
-    const deeply_parsed = arr.map((elem) => {
-      return JSON.parse(JSON.stringify(elem), Fbigint._json_revive);
-    });
-
-    return new Map(deeply_parsed);
-  }
-  
   static is_power2(n) {
     return (n & (n - 1)) === 0;
   }

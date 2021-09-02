@@ -82,7 +82,7 @@ class Fpht {
   // Print PHT stats: walk the whole tree and print everything we know about it
   async _debug_print_stats() {
     async function _walk(pht_node, nodes = 0, keys = 0, leaves = 0) {
-      if (!pht_node.is_leaf()) {
+      if (!Fpht_node.is_leaf(pht_node)) {
         const child0 = await this._dht_lookup(pht_node.children[0x00]);
         const child1 = await this._dht_lookup(pht_node.children[0x01]);
 
@@ -94,13 +94,13 @@ class Fpht {
         ({nodes, keys, leaves} = await _walk.bind(this)(child1, nodes, keys, leaves));
       }
 
-      Flog.log(`[FPHT] ${this.index_attr}${pht_node.label} ${pht_node.is_leaf() ? 
-        "<- LEAF, " + pht_node.size() + " KEYS" : ""}`);
+      Flog.log(`[FPHT] ${this.index_attr}${pht_node.label} ${Fpht_node.is_leaf(pht_node) ? 
+        "<- LEAF, " + Fpht_node.size(pht_node) + " KEYS" : ""}`);
 
-      keys += pht_node.size();
+      keys += Fpht_node.size(pht_node);
       nodes += 1;
 
-      if (pht_node.is_leaf()) {
+      if (Fpht_node.is_leaf(pht_node)) {
         leaves += 1;
       }
 
@@ -124,7 +124,7 @@ class Fpht {
     return await this._dht_lookup();
   }
 
-  // Retrieve a PHT node from the DHT; rehydrates and returns the node if found, null if not
+  // Retrieve a PHT node from the DHT, returns null if not found
   async _dht_lookup(label = "") {
     if (label === null) {
       return null;
@@ -139,8 +139,8 @@ class Fpht {
     if (data.get_type() !== Fkad_data.TYPE.VAL || !Fpht_node.valid_magic(data.get_payload()[0])) {
       return null;
     }
-
-    return new Fpht_node(data.get_payload()[0]);
+    
+    return data.get_payload()[0];
   }
 
   // Compute the hash of a PHT node label; pass no arg to get the label hash of the root node
@@ -173,7 +173,7 @@ class Fpht {
             throw new Error("Fatal PHT graph error");
           }
 
-          let plabel = leaf.get_parent_label();
+          let plabel = Fpht_node.get_parent_label(leaf);
 
           while (plabel !== null) {
             let parent = await this._dht_lookup(plabel);
@@ -182,13 +182,16 @@ class Fpht {
               throw new Error("Fatal PHT graph error");
             }
 
-            if (t1 > parent.get_created() + this.ttl) {
-              await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(parent.get_label()), parent);
+            if (t1 > Fpht.get_created(parent) + this.ttl) {
+              await this.dht_node.put.bind(this.dht_node)(
+                this._get_label_hash(Fpht_node.get_label(parent)),
+                parent
+              );
             } else {
               break;
             }
 
-            plabel = parent.get_parent_label();
+            plabel = Fpht_node.get_parent_label(parent);
           }
         });
       }, this.ttl);
@@ -219,7 +222,7 @@ class Fpht {
     for (let i = 0; i < key_str.length; i += 1) {
       const pht_node = await this._dht_lookup(key_str.substring(0, i));
       
-      if (pht_node !== null && pht_node.is_leaf()) {
+      if (pht_node !== null && Fpht_node.is_leaf(pht_node)) {
         return pht_node;
       }
     }
@@ -237,7 +240,7 @@ class Fpht {
       let q = Math.floor((p + r) / 2);  
       const pht_node = await this._dht_lookup(key_str.substring(0, q));
 
-      if (pht_node !== null && pht_node.is_leaf()) {
+      if (pht_node !== null && Fpht_node.is_leaf(pht_node)) {
         return pht_node;
       } else if (pht_node !== null && Fpht_node.valid_magic(pht_node)) {
         p = q + 1;
@@ -263,8 +266,8 @@ class Fpht {
       throw new Error("Fatal PHT graph error");
     }
 
-    if (leaf.get(key) || leaf.size() < Fpht.B) {
-      leaf.put(key, val);
+    if (Fpht_node.get({node: leaf, key: key}) || Fpht_node.size(leaf) < Fpht.B) {
+      Fpht_node.put({node: leaf, key: key, val: val});
       const label_hash = this._get_label_hash(leaf.label);
       await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
       
@@ -273,7 +276,7 @@ class Fpht {
     } else {
       // This is the non-chad "unlimited split" version of bucket splitting
       // TODO: implement the "staggered updates" version
-      const pairs = leaf.get_all_pairs().map(pair => 
+      const pairs = Fpht_node.get_all_pairs(leaf).map(pair => 
         [new Fbigint(pair[0]), pair[1]]).concat([[key, val]]);
 
       const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
@@ -293,9 +296,18 @@ class Fpht {
         Flog.log(`[FPHT] Split ${old_leaf.label.length > 0 ? old_leaf.label : "[root]"} ` +
           `-> ${child0.label} + ${child1.label}`)
 
-        child0.set_ptrs({left: old_leaf.ptr_left(), right: child1.get_label()});
-        child1.set_ptrs({left: child0.get_label(), right: old_leaf.ptr_right()});
-
+        Fpht_node.set_ptrs({
+          node: child0, 
+          left: Fpht_node.ptr_left(old_leaf), 
+          right: Fpht_node.get_label(child1)
+        });
+        
+        Fpht_node.set_ptrs({
+          node: child1,
+          left: Fpht_node.get_label(child0),
+          right: Fpht_node.ptr_right(old_leaf)
+        });
+        
         const interior_node = new Fpht_node({label: old_leaf.label});
         interior_node.children[0x00] = child0.label;
         interior_node.children[0x01] = child1.label;
@@ -306,8 +318,8 @@ class Fpht {
             // Sort them into the new children by their ith bit
             // TODO: It's brittle and noobish to use the parallel bin string array
             const child_ref = key_bin_strings[idx][i] === "0" ? child0 : child1;
-            child_ref.put(pair[0], pair[1]);
-
+            Fpht_node.put({node: child_ref, key: pair[0], val: pair[1]});
+      
             Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} -> ${this.index_attr} ` + 
               `${child_ref.label} (DHT key ${this._get_label_hash(child_ref.label)})`);
           });
@@ -344,11 +356,11 @@ class Fpht {
     }
 
     // Key not found in the leaf node
-    if (!leaf.delete(key)) {
+    if (!Fpht_node.delete({node: leaf, key: key})) {
       return;
     }
 
-    const sibling_node = await this._dht_lookup(leaf.get_sibling_label());
+    const sibling_node = await this._dht_lookup(Fpht_node.get_sibling_label(leaf));
 
     // If we can't find the sibling to a leaf node, our graph is likely corrupted
     // TODO: disable this for production
@@ -356,21 +368,21 @@ class Fpht {
       throw new Error("Fatal PHT graph error");
     }
 
-    if (leaf.size() + sibling_node.size() > Fpht.B) {
+    if (Fpht_node.size(leaf) + Fpht_node.size(sibling_node) > Fpht.B) {
       // Easy case: leaf + its sibling node contains more than B keys, so the invariant is maintained
       await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(leaf.label), leaf);
 
       Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
-        `${leaf.get_label()} (DHT key ${this._get_label_hash(leaf.get_label())})`);
+        `${Fpht_node.get_label(leaf)} (DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
     } else {
       // Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
-      const pairs = leaf.get_all_pairs().concat(sibling_node.get_all_pairs()).map(pair => 
+      const pairs = Fpht_node.get_all_pairs(leaf).concat(Fpht_node.get_all_pairs(sibling_node)).map(pair => 
         [new Fbigint(pair[0]), pair[1]]);
 
       const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
 
       // Our current depth = the length of our label
-      let d = leaf.get_label().length;
+      let d = Fpht_node.get_label(leaf).length;
 
       // Length of the longest common prefix of all keys between leaf and its sibling
       const i = Futil.get_lcp(key_bin_strings, true);
@@ -379,7 +391,7 @@ class Fpht {
 
       // TODO: d > 0 ensures that we don't delete our level zero (root) node, but is that necessary?
       while (d > 0 && d > i) {
-        const parent_node = await this._dht_lookup(old_leaf.get_parent_label());
+        const parent_node = await this._dht_lookup(Fpht_node.get_parent_label(old_leaf));
 
         if (parent_node === null) {
           throw new Error("Fatal PHT graph error");
@@ -392,7 +404,7 @@ class Fpht {
         // We need to know if our leaf is a 0 or a 1 node (0 node is "left", 1 node is "right")
         let child0, child1;
 
-        if (old_leaf.get_label()[old_leaf.get_label().length - 1] === "0") {
+        if (Fpht_node.get_label(old_leaf)[Fpht_node.get_label(old_leaf).length - 1] === "0") {
           child0 = old_leaf;
           child1 = sibling_node;
         } else {
@@ -404,51 +416,61 @@ class Fpht {
         // right neighbor, set the left neighbor's right neighbor to parent, set the right 
         // neighbor's left neighbor to parent, no big deal
 
-        const left_neighbor = await this._dht_lookup(child0.ptr_left());
-        const right_neighbor = await this._dht_lookup(child1.ptr_right());
+        const left_neighbor = await this._dht_lookup(Fpht_node.ptr_left(child0));
+        const right_neighbor = await this._dht_lookup(Fpht_node.ptr_right(child1));
 
         // Neighbors can be null, that just means we reached the left or right terminus of the tree
 
         if (left_neighbor !== null) {
-          left_neighbor.set_ptrs({left: left_neighbor.ptr_left(), right: parent_node.get_label()});
+          Fpht_node.set_ptrs({
+            node: left_neighbor, 
+            left: Fpht_node.ptr_left(left_neighbor), 
+            right: Fpht_node.get_label(parent_node)
+          });
         }
 
         if (right_neighbor !== null) {
-          right_neighbor.set_ptrs({left: parent_node.get_label(), right: right_neighbor.ptr_right()});
+          Fpht_node.set_ptrs({
+            node: right_neighbor, 
+            left: Fpht_node.get_label(parent_node),
+            right: Fpht_node.ptr_right(right_neighbor)
+          });
         }
 
-        parent_node.set_ptrs({
-          left: left_neighbor !== null ? left_neighbor.get_label() : null, 
-          right: right_neighbor !== null ? right_neighbor.get_label() : null
+        Fpht_node.set_ptrs({
+          node: parent_node, 
+          left: left_neighbor !== null ? Fpht_node.get_label(left_neighbor) : null, 
+          right: right_neighbor !== null ? Fpht_node.get_label(right_neighbor) : null
         });
 
         // We've reached our final depth, so redistribute keys to the parent node
         if (d - i === 1) {
           pairs.forEach((pair, idx, arr) => {
-            parent_node.put(pair[0], pair[1]);
-
+            Fpht_node.put({node: parent_node, key: pair[0], val: pair[1]});
+            
             Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} -> ${this.index_attr} ` + 
-              `${parent_node.get_label()} (DHT key ${this._get_label_hash(parent_node.get_label())})`);
+              `${Fpht_node.get_label(parent_node)} (DHT key ` + 
+                `${this._get_label_hash(Fpht_node.get_label(parent_node))})`);
           });
         }
 
         // PUT the new leaf node (the parent node) and its non-null right and left neighbors 
         // TODO: Alert the caller if any of the PUTs failed?
         await this.dht_node.put.bind(this.dht_node)(
-          this._get_label_hash(parent_node.get_label()), 
+          this._get_label_hash(Fpht_node.get_label(parent_node)), 
           parent_node
         );
 
         if (left_neighbor !== null) {
           await this.dht_node.put.bind(this.dht_node)(
-            this._get_label_hash(left_neighbor.get_label()), 
+            this._get_label_hash(Fpht_node.get_label(left_neighbor)), 
             left_neighbor
           );
         }
 
         if (right_neighbor !== null) {
           await this.dht_node.put.bind(this.dht_node)(
-            this._get_label_hash(right_neighbor.get_label()), 
+            this._get_label_hash(Fpht_node.get_label(right_neighbor)), 
             right_neighbor
           );
         }
@@ -472,8 +494,8 @@ class Fpht {
   async range_query_2d(minkey, maxkey) {
     async function _do_range_query_2d(pht_node, data = []) {
       // Base case: it's a leaf node
-      if (pht_node.is_leaf()) {
-        const valid_pairs = pht_node.get_all_pairs().filter((pair) => {
+      if (Fpht_node.is_leaf(pht_node)) {
+        const valid_pairs = Fpht_node.get_all_pairs(pht_node).filter((pair) => {
           const zvalue = new Fbigint(pair[0]);
           const zvalue_2d = Futil.z_delinearize_2d(zvalue, Fpht.BIT_DEPTH / 2);
           

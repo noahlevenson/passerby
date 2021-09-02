@@ -103,14 +103,12 @@ class Fkad_node {
   static async _is_valid_storable(data) {
     try {
       // We only store PHT nodes to our DHT
+      // TODO: we obviously need a more robust way of validating a PHT node by schema
       if (!Fpht_node.valid_magic(data)) {
         return false;
       }
 
-      // TODO: there should be a Fpht_node static method for this,
-      // and Fpht_nodes shouldn't have any instance methods at all
-      const pht_node = new Fpht_node(data);
-      const pairs = pht_node.get_all_pairs();
+      const pairs = Fpht_node.get_all_pairs(data);
 
       for (let i = 0; i < pairs.length; i += 1) {
         const location_key = pairs[i][0];

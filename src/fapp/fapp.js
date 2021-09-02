@@ -93,15 +93,6 @@ class Fapp {
     keepalive = true,
     t_keepalive = 20000
   } = {}) {
-    // Give JavaScript's Map a serializer and a deserializer
-    Object.defineProperty(global.Map.prototype, "toJSON", {
-      value: Futil.map_to_json
-    });
-
-    Object.defineProperty(global.Map, "from_json", {
-      value: Futil.map_from_json
-    });
-
     this.bootstrap_nodes = bootstrap_nodes.map(node => new Ftrans_rinfo({
       address: node[0], 
       port: node[1], 

@@ -1,6 +1,6 @@
 /** 
 * FPHT_NODE
-* A PHT node
+* A serializable PHT node
 *
 *
 *
@@ -15,31 +15,22 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 
 class Fpht_node {
-  static MAGIC_VAL = `${Buffer.from([0x19, 0x81]).toString()}v3ryrar3`;
+  static MAGIC_VAL = `FR33F00D`;
   
-  created;
   label;
   children;
   ptrs;
   data;
+  created;
   magic;
 
   constructor({
     label = null, 
     children = {0x00: null, 0x01: null}, 
     ptrs = {"left": null, "right": null}, 
-    data = null
+    data = {}
   } = {}) {
-    if (typeof label !== "string") {
-      throw new TypeError("Argument 'label' must be string");
-    }
-
-    if (data === null) {
-      this.data = new Map();
-    } else {
-      this.data = data instanceof Map ? data : Map.from_json(data);
-    }
-
+    this.data = data;
     this.label = label;
     this.created = Date.now();
     this.children = children;
@@ -47,16 +38,15 @@ class Fpht_node {
     this.magic = Fpht_node.MAGIC_VAL.slice(0);
   } 
 
-  // Currently this magic cookie is the only way we discern a valid PHT node from other data
-  static valid_magic(obj) {
+  static valid_magic(node) {
     try {
-      return obj.magic === Fpht_node.MAGIC_VAL ? true : false;
+      return node.magic === Fpht_node.MAGIC_VAL ? true : false;
     } catch(err) {
       return false;
     }
   }
-  
-  set_ptrs({left = null, right = null} = {}) {
+
+  static set_ptrs({node, left = null, right = null} = {}) {
     if (typeof left !== "string" && left !== null) {
       throw new TypeError("Argument 'left' must be string or null");
     }
@@ -65,73 +55,85 @@ class Fpht_node {
       throw new TypeError("Argument 'left' must be string or null");
     }
 
-    this.ptrs.left = left;
-    this.ptrs.right = right;
+    node.ptrs.left = left;
+    node.ptrs.right = right;
+  }
+  
+  static ptr_left(node) {
+    return node.ptrs.left;
   }
 
-  ptr_left() {
-    return this.ptrs.left;
+  static ptr_right(node) {
+    return node.ptrs.right;
   }
 
-  ptr_right() {
-    return this.ptrs.right;
+  static get_label(node) {
+    return node.label;
   }
 
-  get_label() {
-    return this.label;
-  }
+  /**
+   * TODO: for get_sibling_label() and get_parent_label(), we dangerously assume that our labels
+   * are binary strings. Our labels are supposed to be binary strings, but there's no validation...
+   */
 
-  // TODO: maybe it's sketchy to assume that our labels are binary strings, since we allow the
-  // assignment of any old string at construction time...
-  get_sibling_label() {
-    return `${this.label.substring(0, this.label.length - 1)}` +
-      `${this.label[this.label.length - 1] === "0" ? "1" : "0"}`;
-  }
-
-  // TODO: maybe it's sketchy to assume that our labels are binary strings, since we allow the
-  // assignment of any old string at construction time...
-  get_parent_label() {
-    if (this.label.length < 1) {
+  static get_sibling_label(node) {
+    if (node.label.length === 0) {
       return null;
     }
 
-    return this.label.substring(0, this.label.length - 1);
+    return `${node.label.substring(0, node.label.length - 1)}` +
+      `${node.label[node.label.length - 1] === "0" ? "1" : "0"}`;
   }
 
-  is_leaf() {
-    return (this.children[0x00] === null && this.children[0x01] === null);
+  static get_parent_label(node) {
+    if (node.label.length === 0) {
+      return null;
+    }
+
+    return node.label.substring(0, node.label.length - 1);
   }
 
-  size() {
-    return this.data.size;
+  static is_leaf(node) {
+    return node.children[0x00] === null && node.children[0x01] === null;
   }
 
-  put(key, val) {
+  static size(node) {
+    return Object.keys(node.data).length;
+  }
+
+  static put({node, key, val} = {}) {
     if (!(key instanceof Fbigint)) {
       throw new TypeError("Argument 'key' must be Fbigint");
     }
 
-    return this.data.set(key.toString(), val);
+    node.data[key.toString()] = val;
   }
 
-  get(key) {
+  static get({node, key} = {}) {
     if (!(key instanceof Fbigint)) {
       throw new TypeError("Argument 'key' must be Fbigint");
     }
 
-    return this.data.get(key.toString());
+    return node.data[key.toString()];
   }
 
-  delete(key) {
-    return this.data.delete(key.toString());
+  static delete({node, key}) {
+    const key_str = key.toString();
+
+    if (node.data[key_str]) {
+      delete node.data[key_str];
+      return true;
+    }
+
+    return false;
   }
 
-  get_all_pairs() {
-    return Array.from(this.data.entries());
+  static get_all_pairs(node) {
+    return Object.entries(node.data);
   }
 
-  get_created() {
-    return this.created;
+  static get_created(node) {
+    return node.created;
   }
 }
 
