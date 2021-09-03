@@ -232,6 +232,88 @@ class Fpht {
     return leaf;
   }
 
+  async _do_split_insert({pairs, lcp, depth, leaf} = {}) {
+    async function _publish(child_0, child_1, int_node) {
+      // TODO: Alert the caller if any of these PUTs fail?
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(child_0)), 
+        child_0
+      );
+        
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(child_1)), 
+        child_1
+      );
+      
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(int_node)), 
+        int_node
+      );
+    }
+
+    const child_0 = new Fpht_node({label: `${Fpht_node.get_label(leaf)}0`});
+    const child_1 = new Fpht_node({label: `${Fpht_node.get_label(leaf)}1`});
+
+    Flog.log(`[FPHT] Split ${Fpht_node.get_label(leaf).length > 0 ? Fpht_node.get_label(leaf) : "[root]"} -> `
+      + `${Fpht_node.get_label(child_0)} + ${Fpht_node.get_label(child_1)}`);
+
+    Fpht_node.set_ptrs({
+      node: child_0, 
+      left: Fpht_node.ptr_left(leaf), 
+      right: Fpht_node.get_label(child_1)
+    });
+    
+    Fpht_node.set_ptrs({
+      node: child_1,
+      left: Fpht_node.get_label(child_0),
+      right: Fpht_node.ptr_right(leaf)
+    });
+    
+    const int_node = new Fpht_node({
+      label: Fpht_node.get_label(leaf), 
+      child_0: Fpht_node.get_label(child_0),
+      child_1: Fpht_node.get_label(child_1)
+    });
+
+    if (depth === lcp.length) {
+      /**
+       * Base case: we've reached our final depth. The children are leaf nodes, so distribute the 
+       * keys to them
+       */ 
+      pairs.forEach((pair) => {
+        const [key, val] = pair;
+
+        /**
+         * A [key, val] pair is distributed to the 0 or 1 child based on the bit that comes 
+         * after the lcp computed over all the [key, val] pairs; e.g., for group of pairs 
+         * with a lcp of 6 bits, the 6th bit (0-indexed) determines which child to sort to...
+         */ 
+        const dest = key.to_bin_str(Fpht.BIT_DEPTH)[lcp.length] === "0" ? child_0 : child_1;
+
+        Fpht_node.put({
+          node: dest,
+          key: key,
+          val: val
+        });
+
+        Flog.log(`[FPHT] Redistributed key ${key.toString()} -> ${this.index_attr} ` + 
+          `${Fpht_node.get_label(dest)} (DHT key ${this._get_label_hash(Fpht_node.get_label(dest))})`);
+      });
+
+      await _publish.bind(this)(child_0, child_1, int_node);
+    } else {
+      /**
+       * Recursive case: which branch do we follow downward? Well, of the two child
+       * nodes we just created, we want to jump to the one with the label that has the longer 
+       * common prefix of the lcp of all keys.
+       */
+      await _publish.bind(this)(child_0, child_1, int_node);
+      const next_node = Futil.get_lcp([lcp, Fpht_node.get_label(child_0)], true) > 
+        Futil.get_lcp([lcp, Fpht_node.get_label(child_1)], true) ? child_0 : child_1;
+      await this._do_split_insert({pairs: pairs, lcp: lcp, depth: depth + 1, leaf: next_node});
+    }
+  }
+  
   /**
    * Insert a (key, value) pair into the PHT
    */
@@ -252,11 +334,7 @@ class Fpht {
        * just insert the value and be done
        */ 
       Fpht_node.put({node: leaf, key: key, val: val});
-      const label_hash = this._get_label_hash(leaf.label);
-      await this.dht_node.put.bind(this.dht_node)(label_hash, leaf);
-      
-      Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ` +
-        `${leaf.label.length > 0 ? leaf.label : "[root]"} (DHT key ${label_hash})`);
+      await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(leaf)), leaf);
     } else {
       /**
        * The hard case: we have to split the bucket. This is the non-chad "unlimited split" version
@@ -275,84 +353,17 @@ class Fpht {
         false
       );
 
-      /**
-       * Our new child nodes must be one level deeper than the length of the lcp of all B + 1 keys
-       * (Don't forget the root node is d = 0)
-       */ 
-      let child_0, child_1;
-      let old_leaf = leaf;
-      let d = Fpht_node.get_label(leaf).length;
-
-      while (d <= lcp.length) {
-        child_0 = new Fpht_node({label: `${Fpht_node.get_label(old_leaf)}0`});
-        child_1 = new Fpht_node({label: `${Fpht_node.get_label(old_leaf)}1`});
-
-        Flog.log(`[FPHT] Split ${old_leaf.label.length > 0 ? old_leaf.label : "[root]"} ` +
-          `-> ${Fpht_node.get_label(child_0)} + ${Fpht_node.get_label(child_1)}`)
-
-        Fpht_node.set_ptrs({
-          node: child_0, 
-          left: Fpht_node.ptr_left(old_leaf), 
-          right: Fpht_node.get_label(child_1)
-        });
-        
-        Fpht_node.set_ptrs({
-          node: child_1,
-          left: Fpht_node.get_label(child_0),
-          right: Fpht_node.ptr_right(old_leaf)
-        });
-        
-        const int_node = new Fpht_node({
-          label: Fpht_node.get_label(old_leaf), 
-          child_0: Fpht_node.get_label(child_0),
-          child_1: Fpht_node.get_label(child_1)
-        });
-        
-        /**
-         * Reached our final depth? Then the children are leaf nodes, so distribute the keys to them
-         */ 
-        if (d === lcp.length) {
-          pairs.forEach((pair) => {
-            const [new_key, new_val] = pair;
-
-            /**
-             * A [key, val] pair is distributed to the 0 or 1 child based on the bit that comes 
-             * after the lcp computed over all the [key, val] pairs; e.g., for group of pairs 
-             * with a lcp of 6 bits, the 6th bit (0-indexed) determines which child to sort to...
-             */ 
-            const dest = new_key.to_bin_str(Fpht.BIT_DEPTH)[lcp.length] === "0" ? child_0 : child_1;
-
-            Fpht_node.put({
-              node: dest,
-              key: new_key,
-              val: new_val
-            });
-
-            Flog.log(`[FPHT] Redistributed key ${new_key.toString()} -> ${this.index_attr} ` + 
-              `${Fpht_node.get_label(dest)} (DHT key ${this._get_label_hash(Fpht_node.get_label(dest))})`);
-          });
-        }
-
-        // TODO: Alert the caller if any of these PUTs fail?
-        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(child_0)), child_0);
-        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(child_1)), child_1);
-        await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(int_node)), int_node);
-
-        /**
-         * If we must iterate again, which branch do we follow downward? Well, of the two child
-         * nodes we just created, we want to jump to the one with the label that has the longer 
-         * common prefix of the lcp of all keys.
-         */
-        if (Futil.get_lcp([lcp, Fpht_node.get_label(child_0)], true) > 
-          Futil.get_lcp([lcp, Fpht_node.get_label(child_1)], true)) {
-          old_leaf = child_0;
-        } else {
-          old_leaf = child_1;
-        }
-
-        d += 1;
-      }
+      await this._do_split_insert({
+        pairs: pairs, 
+        lcp: lcp, 
+        depth: Fpht_node.get_label(leaf).length,
+        leaf: leaf
+      });
     }
+
+    Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ` +
+      `${Fpht_node.get_label(leaf).length > 0 ? Fpht_node.get_label(leaf) : "[root]"} ` +
+        `(DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
 
     this.rp_data.set(key.toString(), val);
   }
