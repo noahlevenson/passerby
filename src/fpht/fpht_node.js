@@ -60,6 +60,11 @@ class Fpht_node {
     node.ptrs.left = left;
     node.ptrs.right = right;
   }
+
+  static set_children({node, child_0 = null, child_1 = null}) {
+    node.children[0x00] = child_0;
+    node.children[0x01] = child_1;
+  }
   
   static ptr_left(node) {
     return node.ptrs.left;

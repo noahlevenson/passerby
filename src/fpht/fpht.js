@@ -222,11 +222,11 @@ class Fpht {
     return null;
   }
 
-  async full_search(key) {
-    let leaf = await this.lookup_bin(key.to_bin_str(Fpht.BIT_DEPTH));
+  async full_search(key_str) {
+    let leaf = await this.lookup_bin(key_str);
 
     if (leaf === null) {
-      leaf = await this.lookup_lin(key.to_bin_str(Fpht.BIT_DEPTH));
+      leaf = await this.lookup_lin(key_str);
     }
 
     return leaf;
@@ -318,7 +318,7 @@ class Fpht {
    * Insert a (key, value) pair into the PHT
    */
   async insert(key, val) {
-    const leaf = await this.full_search(key);
+    const leaf = await this.full_search(key.to_bin_str(Fpht.BIT_DEPTH));
 
      /**
      * If we can't find the leaf node for a key, our trie is likely corrupted
@@ -367,149 +367,164 @@ class Fpht {
 
     this.rp_data.set(key.toString(), val);
   }
-  
-  // Delete some data from the network
-  async delete(key) {
-    const leaf = await this.full_search(key);
 
-    // Key not found
-    if (leaf === null) {
-      return false;
-    }
+  async _do_merge_delete({pairs, leaf, sib} = {}) {
+    async function _publish(parent, l_nbr, r_nbr) {
+      // TODO: Alert the caller if any of these PUTs fail?
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(parent)), 
+        parent
+      );
 
-    // Key not found in the leaf node
-    if (!Fpht_node.delete({node: leaf, key: key})) {
-      return;
-    }
-
-    const sibling_node = await this._dht_lookup(Fpht_node.get_sibling_label(leaf));
-
-    // If we can't find the sibling to a leaf node, our trie is likely corrupted
-    // TODO: disable this for production
-    if (sibling_node === null) {
-      throw new Error("Fatal PHT error");
-    }
-
-    if (Fpht_node.size(leaf) + Fpht_node.size(sibling_node) > Fpht.B) {
-      // Easy case: leaf + its sibling node contains more than B keys, so the invariant is maintained
-      await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(leaf.label), leaf);
-
-      Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
-        `${Fpht_node.get_label(leaf)} (DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
-    } else {
-      // Hard case: leaf + its sibling nodes contain <= B keys, so we can do a merge 
-      const pairs = Fpht_node.get_all_pairs(leaf).concat(Fpht_node.get_all_pairs(sibling_node)).map(pair => 
-        [new Fbigint(pair[0]), pair[1]]);
-
-      const key_bin_strings = pairs.map(pair => pair[0].to_bin_str(Fpht.BIT_DEPTH));
-
-      // Our current depth = the length of our label
-      let d = Fpht_node.get_label(leaf).length;
-
-      // Length of the longest common prefix of all keys between leaf and its sibling
-      const i = Futil.get_lcp(key_bin_strings, true);
-
-      let old_leaf = leaf;
-
-      // TODO: d > 0 ensures that we don't delete our level zero (root) node, but is that necessary?
-      while (d > 0 && d > i) {
-        const parent_node = await this._dht_lookup(Fpht_node.get_parent_label(old_leaf));
-
-        if (parent_node === null) {
-          throw new Error("Fatal PHT error");
-        }
-
-        parent_node.children[0x00] = null;
-        parent_node.children[0x01] = null;
-
-        // Fixing up our parent node's pointers
-        // We need to know if our leaf is a 0 or a 1 node (0 node is "left", 1 node is "right")
-        let child_0, child_1;
-
-        if (Fpht_node.get_label(old_leaf)[Fpht_node.get_label(old_leaf).length - 1] === "0") {
-          child_0 = old_leaf;
-          child_1 = sibling_node;
-        } else {
-          child_0 = sibling_node;
-          child_1 = old_leaf;
-        }
-
-        // Get the childrens' parent, get the left child's left neighbor, get the right child's 
-        // right neighbor, set the left neighbor's right neighbor to parent, set the right 
-        // neighbor's left neighbor to parent, no big deal
-
-        const left_neighbor = await this._dht_lookup(Fpht_node.ptr_left(child_0));
-        const right_neighbor = await this._dht_lookup(Fpht_node.ptr_right(child_1));
-
-        // Neighbors can be null, that just means we reached the left or right terminus of the tree
-
-        if (left_neighbor !== null) {
-          Fpht_node.set_ptrs({
-            node: left_neighbor, 
-            left: Fpht_node.ptr_left(left_neighbor), 
-            right: Fpht_node.get_label(parent_node)
-          });
-        }
-
-        if (right_neighbor !== null) {
-          Fpht_node.set_ptrs({
-            node: right_neighbor, 
-            left: Fpht_node.get_label(parent_node),
-            right: Fpht_node.ptr_right(right_neighbor)
-          });
-        }
-
+      if (l_nbr !== null) {
         Fpht_node.set_ptrs({
-          node: parent_node, 
-          left: left_neighbor !== null ? Fpht_node.get_label(left_neighbor) : null, 
-          right: right_neighbor !== null ? Fpht_node.get_label(right_neighbor) : null
+          node: l_nbr, 
+          left: Fpht_node.ptr_left(l_nbr), 
+          right: Fpht_node.get_label(parent)
         });
 
-        // We've reached our final depth, so redistribute keys to the parent node
-        if (d - i === 1) {
-          pairs.forEach((pair, idx, arr) => {
-            Fpht_node.put({node: parent_node, key: pair[0], val: pair[1]});
-            
-            Flog.log(`[FPHT] Redistributed key ${pair[0].toString()} -> ${this.index_attr} ` + 
-              `${Fpht_node.get_label(parent_node)} (DHT key ` + 
-                `${this._get_label_hash(Fpht_node.get_label(parent_node))})`);
-          });
-        }
-
-        // PUT the new leaf node (the parent node) and its non-null right and left neighbors 
-        // TODO: Alert the caller if any of the PUTs failed?
         await this.dht_node.put.bind(this.dht_node)(
-          this._get_label_hash(Fpht_node.get_label(parent_node)), 
-          parent_node
+          this._get_label_hash(Fpht_node.get_label(l_nbr)), 
+          l_nbr
         );
+      }
 
-        if (left_neighbor !== null) {
-          await this.dht_node.put.bind(this.dht_node)(
-            this._get_label_hash(Fpht_node.get_label(left_neighbor)), 
-            left_neighbor
-          );
-        }
+      if (r_nbr !== null) {
+        Fpht_node.set_ptrs({
+          node: r_nbr, 
+          left: Fpht_node.get_label(parent),
+          right: Fpht_node.ptr_right(r_nbr)
+        });
 
-        if (right_neighbor !== null) {
-          await this.dht_node.put.bind(this.dht_node)(
-            this._get_label_hash(Fpht_node.get_label(right_neighbor)), 
-            right_neighbor
-          );
-        }
-
-        // For the next iteration, old_leaf must be the parent
-        old_leaf = parent_node;
-        d -= 1;
+        await this.dht_node.put.bind(this.dht_node)(
+          this._get_label_hash(Fpht_node.get_label(r_nbr)), 
+          r_nbr
+        );
       }
     }
 
-    this.rp_data.delete(key.toString());
-    // TODO: return success/failure?
+    const parent = await this._dht_lookup(Fpht_node.get_parent_label(leaf));
+
+    /**
+     * If we can't find the parent node, our trie is likely corrupted
+     * TODO: disable this for production
+     */
+    if (parent === null) {
+      throw new Error("Fatal PHT error");
+    }
+
+    /**
+     * Parent node becomes a leaf node...
+     */
+    Fpht_node.set_children({node: parent, child_0: null, child_1: null});
+
+    /**
+     * Now we must update the parent node's pointers. If the former leaf node was a 0 node,
+     * then the parent node's left neighbor is the left neighbor of the former leaf node; if
+     * the former leaf node was a 1 node, then the parent node's left neighbor is the sibling of
+     * the former leaf node. This is inverted for the right neighbor.
+     */  
+    const l_nbr = await this._dht_lookup(
+      Fpht_node.ptr_left(Fpht_node.get_label(leaf)[Fpht_node.get_label(leaf).length - 1] === "0" ? leaf : sib)
+    );
+
+    const r_nbr = await this._dht_lookup(
+      Fpht_node.ptr_right(Fpht_node.get_label(leaf)[Fpht_node.get_label(leaf).length - 1] === "1" ? leaf : sib)
+    );
+
+    Fpht_node.set_ptrs({
+      node: parent, 
+      left: l_nbr !== null ? Fpht_node.get_label(l_nbr) : null, 
+      right: r_nbr !== null ? Fpht_node.get_label(r_nbr) : null
+    });
+
+    /**
+     * (Since the neighbors might be null [at the left/right terminus of the trie], we'll determine
+     * whether to update their pointers when we _publish() the nodes from this round)
+     */
+
+    /**
+     * Base case: we've reached our final depth, either because the parent node is the root node or
+     * because the sum of keys destined for the parent and its sibling now maintain the invariant. 
+     * So let's distribute our keys to this parent...
+     */
+    const parent_sib = await this._dht_lookup(Fpht_node.get_sibling_label(parent));
+
+    if (parent_sib === null || pairs.length + Fpht_node.size(parent_sib) > Fpht.B){
+      pairs.forEach((pair) => {
+        const [key, val] = pair;
+        Fpht_node.put({node: parent, key: key, val: val});  
+        Flog.log(`[FPHT] Redistributed key ${key.toString()} -> ${this.index_attr} ` + 
+          `${Fpht_node.get_label(parent)} (DHT key ` + 
+            `${this._get_label_hash(Fpht_node.get_label(parent))})`);
+      });
+
+      await _publish.bind(this)(parent, l_nbr, r_nbr);
+    } else {
+      /**
+       * Recursive case: we jump to the parent
+       */
+      await _publish.bind(this)(parent, l_nbr, r_nbr);
+      
+      await this._do_merge_delete({
+        pairs: pairs,
+        leaf: parent, 
+        sib: parent_sib
+      });
+    }
   }
+  
+  /**
+   * Delete a key from the PHT
+   */
+  async delete(key) {
+    const leaf = await this.full_search(key.to_bin_str(Fpht.BIT_DEPTH));
 
-  // TODO: implement me
-  async range_query_1d(minkey, maxkey) {
+    /**
+     * If we can't find the leaf node for a key, our trie is likely corrupted
+     * TODO: disable this for production
+     */
+    if (leaf === null) {
+      throw new Error("Fatal PHT error");
+    }
 
+    const res = Fpht_node.delete({node: leaf, key: key});
+
+    /**
+     * The data you want to delete doesn't exist
+     */ 
+    if (!res) {
+      return;
+    }
+
+    const sib = await this._dht_lookup(Fpht_node.get_sibling_label(leaf));
+
+    if (sib === null || Fpht_node.size(leaf) + Fpht_node.size(sib) > Fpht.B) {
+      /**
+       * The easy case: the data was found in the root node, so there's no possibility of a merge...
+       * or, more likely, leaf + its sibling contain more than B keys, so the invariant is maintained
+       */ 
+      await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(leaf)), leaf);
+    } else {
+      /**
+       * The hard case: leaf + its sibling contain <= B keys, so we must perform a merge
+       */ 
+      const pairs = Fpht_node.get_all_pairs(leaf).concat(Fpht_node.get_all_pairs(sib)).map((pair) => {
+        const [key, val] = pair;
+        return [new Fbigint(key), val];
+      });
+
+      await this._do_merge_delete({
+        pairs: pairs,
+        leaf: leaf,
+        sib: sib
+      });
+    }
+
+    Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
+        `${Fpht_node.get_label(leaf)} (DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
+
+    this.rp_data.delete(key.toString());
   }
 
   // Assumes that minkey and maxkey are both linearizations of some 2D data
