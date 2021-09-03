@@ -26,15 +26,17 @@ class Fpht_node {
 
   constructor({
     label = null, 
-    children = {0x00: null, 0x01: null}, 
-    ptrs = {"left": null, "right": null}, 
+    child_0 = null,
+    child_1 = null,
+    l_ptr = null,
+    r_ptr = null,
     data = {}
   } = {}) {
     this.data = data;
     this.label = label;
     this.created = Date.now();
-    this.children = children;
-    this.ptrs = ptrs;
+    this.children = {0x00: child_0, 0x01: child_1};
+    this.ptrs = {left: l_ptr, right: r_ptr};
     this.magic = Fpht_node.MAGIC_VAL.slice(0);
   } 
 

@@ -304,7 +304,8 @@ class Fpht {
         
         const int_node = new Fpht_node({
           label: Fpht_node.get_label(old_leaf), 
-          children: {0x00: Fpht_node.get_label(child_0), 0x01: Fpht_node.get_label(child_1)}
+          child_0: Fpht_node.get_label(child_0),
+          child_1: Fpht_node.get_label(child_1)
         });
         
         /**
