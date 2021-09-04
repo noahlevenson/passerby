@@ -450,7 +450,7 @@ class Fpht {
      */
     const parent_sib = await this._dht_lookup(Fpht_node.get_sibling_label(parent));
 
-    if (parent_sib === null || pairs.length + Fpht_node.size(parent_sib) > Fpht.B){
+    if (parent_sib === null || pairs.length + Fpht_node.size(parent_sib) > Fpht.B) {
       pairs.forEach((pair) => {
         const [key, val] = pair;
         Fpht_node.put({node: parent, key: key, val: val});  
@@ -527,77 +527,88 @@ class Fpht {
     this.rp_data.delete(key.toString());
   }
 
-  // Assumes that minkey and maxkey are both linearizations of some 2D data
-  async range_query_2d(minkey, maxkey) {
-    async function _do_range_query_2d(pht_node, data = []) {
-      // Base case: it's a leaf node
-      if (Fpht_node.is_leaf(pht_node)) {
-        const valid_pairs = Fpht_node.get_all_pairs(pht_node).filter((pair) => {
-          const zvalue = new Fbigint(pair[0]);
-          const zvalue_2d = Futil.z_delinearize_2d(zvalue, Fpht.BIT_DEPTH / 2);
-          
-          return zvalue_2d.x.greater_equal(minkey_2d.x) && zvalue_2d.x.less(maxkey_2d.x) && 
-            zvalue_2d.y.greater_equal(minkey_2d.y) && zvalue_2d.y.less(maxkey_2d.y);
-        });
+  async _do_range_query_2d({pht_node, minkey_2d, maxkey_2d, data = []} = {}) {
+    /**
+     * Base case: it's a leaf node
+     */ 
+    if (Fpht_node.is_leaf(pht_node)) {
+      const valid_pairs = Fpht_node.get_all_pairs(pht_node).filter((pair) => {
+        const [key, val] = pair;
+        const zvalue = new Fbigint(key);
+        const zvalue_2d = Futil.z_delinearize_2d(zvalue, Fpht.BIT_DEPTH / 2);
+        return zvalue_2d.x.greater_equal(minkey_2d.x) && zvalue_2d.x.less(maxkey_2d.x) && 
+          zvalue_2d.y.greater_equal(minkey_2d.y) && zvalue_2d.y.less(maxkey_2d.y);
+      });
 
-        return data.concat(valid_pairs);
-      } 
+      return data.concat(valid_pairs);
+    } 
 
-      // Recursive case: it's an interior node
-      // TODO: This needs to be parallelized, parallelization is the whole point of this algo, bro
-      const subtree0 = `${pht_node.label}0`;
-      const subtree1 = `${pht_node.label}1`;
-      const subtree_0_zvalue = Fbigint.from_base2_str(subtree0);
-      const subtree_1_zvalue = Fbigint.from_base2_str(subtree1);
+    /**
+     * Recursive case: it's an internal node. TODO: this must be parallelized
+     */ 
+    const subtree_0 = `${pht_node.label}0`;
+    const subtree_1 = `${pht_node.label}1`;
+    const subtree_0_zvalue = Fbigint.from_base2_str(subtree_0);
+    const subtree_1_zvalue = Fbigint.from_base2_str(subtree_1);
+    const subtree_0_2d = Futil.z_delinearize_2d(subtree_0_zvalue, Fpht.BIT_DEPTH / 2);
+    const subtree_1_2d = Futil.z_delinearize_2d(subtree_1_zvalue, Fpht.BIT_DEPTH / 2);
+    
+    /**
+     * subtree_0_zvalue and subtree_1_zvalue are essentially new minimum values representing a 
+     * rectangular region for which we don't know the maximum value... i.e., they "anchor" a 
+     * rectangular region which may have some overlap with the region defined by minkey and maxkey
+     * see: https://en.wikipedia.org/wiki/Z-order_curve
+     * 
+     * So, does an anchored rectangle possibly overlap, depending on where its max value is?  
+     * It's easy to figure out: ANCHOR_Z_VALUE's x value must be less than your max search x value
+     * and ANCHOR_Z_VALUE's y value must be less than your max search y value
+     * lat (x) is odd bits, long (y) is even bits
+     */ 
+    if (subtree_0_2d.x.less(maxkey_2d.x) && subtree_0_2d.y.less(maxkey_2d.y)) {
+      const child_node = await this._dht_lookup(subtree_0);
 
-      const subtree_0_2d = Futil.z_delinearize_2d(subtree_0_zvalue, Fpht.BIT_DEPTH / 2);
-      const subtree_1_2d = Futil.z_delinearize_2d(subtree_1_zvalue, Fpht.BIT_DEPTH / 2);
-      
-      // subtree_0_zvalue and subtree_1_zvalue are essentially new minimum values representing a 
-      // rectangular region for which we don't know the maximum value... i.e., they "anchor" a 
-      // rectangular region which may have some overlay with the region defined by minkey and maxkey
-      // see: https://en.wikipedia.org/wiki/Z-order_curve
-
-      // So, does an anchored rectangle possibly overlap, depending on where its max value is?  
-      // it's easy to figure out: ANCHOR_Z_VALUE's x value must be less than your max search x value
-      // and ANCHOR_Z_VALUE's y value must be less than your max search y value
-      // lat (x) is odd bits, long (y) is even bits
-
-      if (subtree_0_2d.x.less(maxkey_2d.x) && subtree_0_2d.y.less(maxkey_2d.y)) {
-        const child_node = await this._dht_lookup(subtree0);
-
-        if (child_node === null) {
-          throw new Error("Fatal PHT error");
-        }
-
-        data = await _do_range_query_2d.bind(this)(child_node, data);
+      if (child_node === null) {
+        throw new Error("Fatal PHT error");
       }
 
-      if (subtree_1_2d.x.less(maxkey_2d.x) && subtree_1_2d.y.less(maxkey_2d.y)) {
-        const child_node = await this._dht_lookup(subtree1);
-
-        if (child_node === null) {
-          throw new Error("Fatal PHT error");
-        }
-
-        data = await _do_range_query_2d.bind(this)(child_node, data);
-      }
-
-      return data;
+      data = await this._do_range_query_2d.bind(this)({
+        pht_node: child_node,
+        minkey_2d: minkey_2d,
+        maxkey_2d: maxkey_2d,
+        data: data
+      });
     }
 
-    // *** BEGIN ***
+    if (subtree_1_2d.x.less(maxkey_2d.x) && subtree_1_2d.y.less(maxkey_2d.y)) {
+      const child_node = await this._dht_lookup(subtree_1);
+
+      if (child_node === null) {
+        throw new Error("Fatal PHT error");
+      }
+
+      data = await this._do_range_query_2d.bind(this)({
+        pht_node: child_node,
+        minkey_2d: minkey_2d,
+        maxkey_2d: maxkey_2d,
+        data: data
+      });
+    }
+
+    return data;
+  }
+
+  /**
+   * 2D range query, where minkey and maxkey are 2D values mapped to one dimension using a Morton
+   * order curve
+   */ 
+  async range_query_2d(minkey, maxkey) {
     if (!(minkey instanceof Fbigint) || !(maxkey instanceof Fbigint)) {
       throw new TypeError("Arguments 'minkey' and 'maxkey' must be Fbigint");
     }
 
     if (minkey.greater_equal(maxkey)) {
-      throw new RangeError("'minkey' must be less than 'maxkey'");
+      throw new RangeError("'maxkey' must be greater than 'minkey'");
     }
-
-    const lcp = Futil.get_lcp([minkey.to_bin_str(Fpht.BIT_DEPTH), maxkey.to_bin_str(Fpht.BIT_DEPTH)]);
-    const minkey_2d = Futil.z_delinearize_2d(minkey, Fpht.BIT_DEPTH / 2); 
-    const maxkey_2d = Futil.z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2); 
 
     /*
     * The range query search process follows the following idea: 
@@ -608,18 +619,26 @@ class Fpht {
     * held in just one leaf node, then we should be able to find that leaf node using the 
     * binary/linear search fallback method.
     */
+    const lcp = Futil.get_lcp([minkey.to_bin_str(Fpht.BIT_DEPTH), maxkey.to_bin_str(Fpht.BIT_DEPTH)]);
+    let start = await this._dht_lookup(lcp);
 
-    let start_node = await this._dht_lookup(lcp);
-
-    if (start_node === null) {
-      start_node = await this.full_search(lcp);
+    if (start === null) {
+      start = await this.full_search(lcp);
     }
 
-    if (start_node === null) {
+    /**
+     * If we can't find a start node, our trie is likely corrupted
+     * TODO: disable this for production
+     */
+    if (start === null) {
       throw new Error("Fatal PHT error");
     }
-
-    return await _do_range_query_2d.bind(this)(start_node);
+  
+    return await this._do_range_query_2d.bind(this)({
+      pht_node: start,
+      minkey_2d: Futil.z_delinearize_2d(minkey, Fpht.BIT_DEPTH / 2),
+      maxkey_2d: Futil.z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2)
+    });
   }
 }
 
