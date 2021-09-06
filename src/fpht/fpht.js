@@ -34,7 +34,6 @@ class Fpht {
    * index_attr: A unique string to identify the attribute we're indexing with this PHT interface
    * dht_node: reference to the DHT node associated with this PHT interface
    * dht_lookup_func: reference to the above node's lookup function
-   * dht_ttl: TTL to inherit from the DHT
    * dht_lookup_args: args to pass the DHT lookup function to make it perform a value-based lookup
    */
 
@@ -42,16 +41,12 @@ class Fpht {
   dht_lookup_func;
   dht_lookup_args;
   index_attr;
-  rp_data;
-  ttl;
-  refresh_interval;
   
   constructor({
-    index_attr = null, 
     dht_node = null, 
     dht_lookup_func = null, 
-    dht_ttl = null, 
-    dht_lookup_args = []
+    dht_lookup_args = [],
+    index_attr = null, 
   } = {}) {
     if (typeof index_attr !== "string") {
       throw new TypeError("Argument 'index_attr' must be a string");
@@ -60,23 +55,11 @@ class Fpht {
     if (typeof dht_lookup_func !== "function") {
       throw new TypeError("Argument 'dht_lookup' must be a function");
     }
-
-    if (typeof dht_ttl !== "number") {
-      throw new TypeError("Argument 'dht_ttl' must be a number");
-
-    }
-
-    if (!Array.isArray(dht_lookup_args)) {
-      throw new TypeError("Argument 'dht_lookup_args' must be an array");
-    }
-    
+  
     this.dht_node = dht_node;
     this.dht_lookup_func = dht_lookup_func;
     this.dht_lookup_args = dht_lookup_args;
-    this.ttl = Math.floor(dht_ttl / 2);
     this.index_attr = index_attr;
-    this.rp_data = new Map();
-    this.refresh_interval = null;
   }
 
   /**
@@ -116,9 +99,6 @@ class Fpht {
    * Idempotently init a new PHT structure indexing on index_attr, kick off the refresh interval
    */ 
   async init() {
-    this._init_intervals();
-    Flog.log(`[FPHT] Key refresh interval: ${(this.ttl / 1000 / 60).toFixed(1)} minutes`);
-
     Flog.log(`[FPHT] Looking up root node for index attr ${this.index_attr}...`);
     const data = await this._dht_lookup();
 
@@ -133,52 +113,7 @@ class Fpht {
 
     if (!res) {
       Flog.log(`[FPHT] WARNING! COULD NOT CREATE NEW ROOT FOR INDEX ATTR ${this.index_attr}!`);
-    }
-  }
-
-  _init_intervals() {
-    if (this.refresh_interval === null) {
-      this.refresh_interval = setInterval(() => {
-        const t1 = Date.now();
-
-        // TODO: this has never been tested and is clearly nonworking, can't use async in a forEach
-        this.rp_data.forEach(async (val, key) => {
-          Flog.log(`[FPHT] Refreshing key ${key}`);
-          const k = new Fbigint(key);
-          await this.insert(k, val);
-
-          let leaf = await this.lookup_bin(k.to_bin_str(Fpht.BIT_DEPTH));
-
-          if (leaf === null) {
-            leaf = await this.lookup_lin(k.to_bin_str(Fpht.BIT_DEPTH));
-          }
-
-          if (leaf === null) {
-            throw new Error("Fatal PHT error");
-          }
-
-          let plabel = Fpht_node.get_parent_label(leaf);
-
-          while (plabel !== null) {
-            let parent = await this._dht_lookup(plabel);
-
-            if (parent === null) {
-              throw new Error("Fatal PHT error");
-            }
-
-            if (t1 > Fpht.get_created(parent) + this.ttl) {
-              await this.dht_node.put.bind(this.dht_node)(
-                this._get_label_hash(Fpht_node.get_label(parent)),
-                parent
-              );
-            } else {
-              break;
-            }
-
-            plabel = Fpht_node.get_parent_label(parent);
-          }
-        });
-      }, this.ttl);
+      return;
     }
   }
 
@@ -237,17 +172,17 @@ class Fpht {
       // TODO: Alert the caller if any of these PUTs fail?
       await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(child_0)), 
-        child_0
+        new Fpht_node(child_0)
       );
         
       await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(child_1)), 
-        child_1
+        new Fpht_node(child_1)
       );
       
       await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(int_node)), 
-        int_node
+        new Fpht_node(int_node)
       );
     }
 
@@ -331,10 +266,13 @@ class Fpht {
     if (Fpht_node.get({node: leaf, key: key}) || Fpht_node.size(leaf) < Fpht.B) {
       /**
        * The easy case: if we're stomping a value or this insertion won't exceed block size,
-       * just insert the value and be done
+       * just insert the value in a new Fpht_node to update the created time.
        */ 
       Fpht_node.put({node: leaf, key: key, val: val});
-      await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(leaf)), leaf);
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(leaf)), 
+        new Fpht_node(leaf)
+      );
     } else {
       /**
        * The hard case: we have to split the bucket. This is the non-chad "unlimited split" version
@@ -364,16 +302,27 @@ class Fpht {
     Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ` +
       `${Fpht_node.get_label(leaf).length > 0 ? Fpht_node.get_label(leaf) : "[root]"} ` +
         `(DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
-
-    this.rp_data.set(key.toString(), val);
   }
 
   async _do_merge_delete({pairs, leaf, sib} = {}) {
-    async function _publish(parent, l_nbr, r_nbr) {
+    async function _publish(parent, leaf, l_nbr, r_nbr) {
+      /**
+       * At deletion time, we do not update the created time of nodes that we put back to 
+       * the trie; since we no longer own a key in this branch, it's not our problem. Our deletion
+       * has caused the topology of the tree to change, but peers who still own keys located 
+       * somewhere in the new topology will find and refresh them at refresh time.
+       */
+
       // TODO: Alert the caller if any of these PUTs fail?
       await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(parent)), 
         parent
+      );
+
+      // Immediately delete the leaf node from the topology
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(leaf)),
+        null
       );
 
       if (l_nbr !== null) {
@@ -459,12 +408,12 @@ class Fpht {
             `${this._get_label_hash(Fpht_node.get_label(parent))})`);
       });
 
-      await _publish.bind(this)(parent, l_nbr, r_nbr);
+      await _publish.bind(this)(parent, leaf, l_nbr, r_nbr);
     } else {
       /**
        * Recursive case: we jump to the parent
        */
-      await _publish.bind(this)(parent, l_nbr, r_nbr);
+      await _publish.bind(this)(parent, leaf, l_nbr, r_nbr);
       
       await this._do_merge_delete({
         pairs: pairs,
@@ -504,7 +453,10 @@ class Fpht {
        * The easy case: the data was found in the root node, so there's no possibility of a merge...
        * or, more likely, leaf + its sibling contain more than B keys, so the invariant is maintained
        */ 
-      await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(Fpht_node.get_label(leaf)), leaf);
+      await this.dht_node.put.bind(this.dht_node)(
+        this._get_label_hash(Fpht_node.get_label(leaf)), 
+        leaf
+      );
     } else {
       /**
        * The hard case: leaf + its sibling contain <= B keys, so we must perform a merge
@@ -523,8 +475,6 @@ class Fpht {
 
     Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
         `${Fpht_node.get_label(leaf)} (DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
-
-    this.rp_data.delete(key.toString());
   }
 
   async _do_range_query_2d({pht_node, minkey_2d, maxkey_2d, data = []} = {}) {

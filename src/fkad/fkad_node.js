@@ -32,18 +32,21 @@ const { Fgeo_coord } = require("../fgeo/fgeo_coord.js");
 const { Fpht_node } = require("../fpht/fpht_node.js");
 
 class Fkad_node {
+  /**
+   * T_KBUCKET_REFRESH: How frequently to force a refresh on stale k-buckets? (default is 1 hour, 
+   * but very frequent refreshes help with churn in small networks)
+   * T_DATA_TTL: How long does data live before expiring?
+   * T_REPUBLISH: How often do we republish all of our originally published data?
+   * T_REPLICATE: How often do we republish our partition of the keyspace?
+   */ 
+
   static DHT_BIT_WIDTH = 160;
   static ID_LEN = this.DHT_BIT_WIDTH / cfg.SYS_BYTE_WIDTH;
   static K_SIZE = 20;
   static ALPHA = 3;
-  // T_KBUCKET_REFRESH: How frequently to force a refresh on stale k-buckets?
-  // 1000 * 60 * 60 is default, but very frequent refreshes help with churn in tiny networks
   static T_KBUCKET_REFRESH = 1000 * 5;
-  // T_DATA_TTL: How long does data live on this network?
-  static T_DATA_TTL = (1000 * 60 * 60 * 24) + (1000 * 20);
-  // T_REPUBLISH: How often do we republish our owned data? 
+  static T_DATA_TTL = 1000 * 60 * 60 * 25;
   static T_REPUBLISH = 1000 * 60 * 60 * 24;
-  // T_REPLICATE: How often do we republish our entire data store?
   static T_REPLICATE = 1000 * 60 * 60;
 
   net;
@@ -55,6 +58,7 @@ class Fkad_node {
   republish_interval_handle;
   replicate_interval_handle;
   data;
+  published;
 
   RPC_RES_EXEC = new Map([
     [Fkad_msg.RPC.PING, this._res_ping],
@@ -63,7 +67,12 @@ class Fkad_node {
     [Fkad_msg.RPC.FIND_VALUE, this._res_find_value]
   ]);
 
-  // net as an Fkad_net module, eng as an Fkad_eng module, addr and port must solve NAT
+  /**
+   * net: an Fkad_net module
+   * eng: an Fkad_eng module
+   * 
+   * addr and port must be your external network info, resolved with STUN or similar
+   */ 
   constructor({net = null, eng = null, addr = null, port = null, pubkey = null} = {}) {
     if (!(net instanceof Fkad_net)) {
       throw new TypeError("Argument 'net' must be instance of Fkad_net");
@@ -91,9 +100,8 @@ class Fkad_node {
       data: new Fkad_kbucket({max_size: Fkad_node.K_SIZE, prefix: ""})
     }));
 
-    this.network_data = new Fkad_ds();
-    this.rp_data = new Fkad_ds();
-
+    this.data = new Fkad_ds();
+    this.published = new Map();
     this.eng.node = this;
     this.net.node = this;
   }
@@ -229,7 +237,7 @@ class Fkad_node {
       bucket.enqueue(new_kbucket_rec);
 
       // Replicate any of our data that is appropriate to this new node
-      this.network_data.entries().forEach((pair) => {
+      this.data.entries().forEach((pair) => {
         const key = new Fbigint(pair[0]);
         const cnodes = this._get_nodes_closest_to({key: key});
 
@@ -486,24 +494,42 @@ class Fkad_node {
   }
 
   _res_store(req) {
-    Fkad_node._is_valid_storable(req.data.payload[1]).then((res) => {
+    const [key, val] = req.data.payload;
+
+    /**
+     * We currently honor deletions from any peer by passing a null value. This functionality exists
+     * solely to enable PHT merge operations to immediately remove trimmed nodes from the
+     * topology. TODO: the deletion case should be moved into _is_valid_storable and should require
+     * all the usual proofs of trustworthiness from the requester...
+     */ 
+    if (val === null) {
+      this.data.delete(key);
+      Flog.log(`[FKAD] Deleted ${key.toString()} from local storage via ${req.from.node_id}`);
+      return;
+    }
+
+    Fkad_node._is_valid_storable(val).then((res) => {
       if (!res) {
         return;
       }
 
-      // # of nodes between us and the key is approximated from the tree depth of their buckets
+      /**
+       * To determine TTL for this value, we estimate the number of nodes between us and the key.
+       * What tree depth is the k-bucket for our node ID? What tree depth is the k-bucket for the
+       * key? The difference betwen those depths approximates our distance from the key wrt the 
+       * current topology of the routing table.
+       */ 
       const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
-      const d2 = this.find_kbucket_for_id(req.data.payload[0]).get_data().get_prefix().length;
+      const d2 = this.find_kbucket_for_id(key).get_data().get_prefix().length;
       const ttl = Fkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
-      const key = req.data.payload[0].toString();
 
-      this.network_data.put({
+      this.data.put({
         key: key,
-        val: req.data.payload[1],
+        val: val,
         ttl: ttl
       });
 
-      Flog.log(`[FKAD] Added ${key} to local storage from ${req.from.node_id}`);
+      Flog.log(`[FKAD] Added ${key.toString()} to local storage from ${req.from.node_id}`);
     });
     
     return new Fkad_msg({
@@ -531,11 +557,11 @@ class Fkad_node {
     let payload;
     let type;
 
-    let ds_rec = this.network_data.get(req.data.payload[0].toString());
+    let ds_rec = this.data.get(req.data.payload[0]);
 
     // Lazy deletion: the requested data exists but has expired, so delete it from our data store
     if (ds_rec && Date.now() > (ds_rec.get_created() + ds_rec.get_ttl())) {
-      this.network_data.delete(req.data.payload[0].toString());
+      this.data.delete(req.data.payload[0]);
       ds_rec = undefined;
     }
 
@@ -622,14 +648,12 @@ class Fkad_node {
     }
 
     Flog.log(`[FKAD] K-bucket refresh interval: ` + 
-      `${(Fkad_node.T_KBUCKET_REFRESH / 60 / 60 / 1000).toFixed(1)} hours`);
+      `${(Fkad_node.T_KBUCKET_REFRESH / 60 / 1000).toFixed(1)} minutes`);
 
     // Idempotently start the data republish interval
     if (this.republish_interval_handle === null) {
-      this.republish_interval_handle = setInterval(() => {
-        this.rp_data.entries().forEach((pair) => {
-          this.put(new Fbigint(pair[0]), pair[1].get_data(), true);
-        });
+      this.republish_interval_handle = setInterval(async () => {
+        // TODO: write republication logic, or eliminate this entirely - see publish() below
       }, Fkad_node.T_REPUBLISH);
     }
 
@@ -639,7 +663,7 @@ class Fkad_node {
     // Idempotently start the data replication interval
     if (this.replicate_interval_handle === null) {
       this.replicate_interval_handle = setInterval(() => {
-        this.network_data.entries().forEach((pair) => {
+        this.data.entries().forEach((pair) => {
           const t1 = Date.now();
 
           // No one's issued a STORE on this data for a while? Let's do a PUT on it
@@ -750,17 +774,11 @@ class Fkad_node {
     return true;
   }
 
-  // Publish data to the peer network; if rp = true, we'll republish data every T_REPUBLISH ms 
-  // Data that is not republished will expire after T_DATA_TTL ms
-  async put(key, val, rp = false) {
-    if (rp) {
-      this.rp_data.put({
-        key: key,
-        val: val,
-        ttl: Number.POSITIVE_INFINITY
-      });
-    }
-
+  /**
+   * Put data to the distributed database; that is, issue a STORE RPC for some key/value pair to
+   * the K_SIZE closest peers who own that partition of the keyspace
+   */
+  async put(key, val) {
     const result = await this._node_lookup(key);
     const kclosest = result.payload;
     const resolutions = [];
@@ -781,15 +799,25 @@ class Fkad_node {
     return successful > 0 ? true : false;
   }
 
-  async get(key) {
-    const result = await this._node_lookup(key, this._req_find_value);
-    return result;
+  /** Publish data to the distributed database. When we publish data, we will thereafter consider
+   * ourselves the original publisher of that data, and we will accordingly maintain a record of
+   * that data; this may have implications wrt our regular republication strategy. Notable here:
+   * the Kademlia spec calls for publishers to re-publish their original data every 24 hours, but
+   * this would clearly create problems when used with a PHT. Since all of our data objects are 
+   * PHT nodes, and each PHT node on the network is subject to change (how many keys does it
+   * currently hold? Is it currently a leaf node or an internal node? Has it since been deleted from
+   * the topology entirely as a result of a merge operation?), republishing our original data will
+   * typically result in stomping a PHT node somewhere on the DHT with a stale version of itself.
+   * For our application, it's likely that publish() should be avoided in favor of put(), and 
+   * republication logic should be deferred to the PHT layer.
+   */
+  async publish(key, val) {
+    this.published.set(key.toString(), val);
+    await this.put(key, val);
   }
 
-  // Unpublish data that you originally published; deleted data will start to disappear from
-  // the network after T_DATA_TTL ms
-  delete(key) {
-    return this.rp_data.delete(key);
+  async get(key) {
+    return await this._node_lookup(key, this._req_find_value);
   }
 }
 

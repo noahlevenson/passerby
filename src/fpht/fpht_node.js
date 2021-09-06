@@ -18,10 +18,11 @@ class Fpht_node {
   static MAGIC_VAL = `FR33F00D`;
   
   label;
-  children;
-  ptrs;
+  child_0;
+  child_1;
+  l_ptr;
+  r_ptr;
   data;
-  created;
   magic;
 
   constructor({
@@ -32,11 +33,12 @@ class Fpht_node {
     r_ptr = null,
     data = {}
   } = {}) {
-    this.data = data;
     this.label = label;
-    this.created = Date.now();
-    this.children = {0x00: child_0, 0x01: child_1};
-    this.ptrs = {left: l_ptr, right: r_ptr};
+    this.child_0 = child_0;
+    this.child_1 = child_1;
+    this.l_ptr = l_ptr;
+    this.r_ptr = r_ptr;
+    this.data = data;
     this.magic = Fpht_node.MAGIC_VAL.slice(0);
   } 
 
@@ -57,21 +59,21 @@ class Fpht_node {
       throw new TypeError("Argument 'left' must be string or null");
     }
 
-    node.ptrs.left = left;
-    node.ptrs.right = right;
+    node.l_ptr = left;
+    node.r_ptr = right;
   }
 
   static set_children({node, child_0 = null, child_1 = null}) {
-    node.children[0x00] = child_0;
-    node.children[0x01] = child_1;
+    node.child_0 = child_0;
+    node.child_1 = child_1;
   }
   
   static ptr_left(node) {
-    return node.ptrs.left;
+    return node.l_ptr;
   }
 
   static ptr_right(node) {
-    return node.ptrs.right;
+    return node.r_ptr;
   }
 
   static get_label(node) {
@@ -101,7 +103,7 @@ class Fpht_node {
   }
 
   static is_leaf(node) {
-    return node.children[0x00] === null && node.children[0x01] === null;
+    return node.child_0 === null && node.child_1 === null;
   }
 
   static size(node) {
@@ -137,10 +139,6 @@ class Fpht_node {
 
   static get_all_pairs(node) {
     return Object.entries(node.data);
-  }
-
-  static get_created(node) {
-    return node.created;
   }
 }
 

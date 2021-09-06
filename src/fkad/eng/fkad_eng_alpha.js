@@ -12,6 +12,7 @@
 const EventEmitter = require("events");
 const { Fkad_eng } = require("./fkad_eng.js");
 const { Fkad_msg } = require("../fkad_msg.js");
+const { Fkad_node_info } = require("../fkad_node_info.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
   static DEFAULT_TIMEOUT = 4000;
@@ -55,13 +56,21 @@ class Fkad_eng_alpha extends Fkad_eng {
           resolve();
         });
       }).catch((reason) => {
-        const bucket = this.node.find_kbucket_for_id(node_info.node_id).get_data();
-        const kbucket_rec = bucket.exists(node_info);
+        /**
+         * Currently we are prohibited from locking ourselves, mostly to avoid cases where network
+         * issues might result in our locking every contact in our routing table. TODO: this is 
+         * implemented largely (solely?) to prevent the case where a call to _get_nodes_closest_to() 
+         * returns zero contacts. There's likely a better way to do this.
+         */ 
+        if (!Fkad_node_info.compare(node_info, this.node.node_info)) {
+          const bucket = this.node.find_kbucket_for_id(node_info.node_id).get_data();
+          const kbucket_rec = bucket.exists(node_info);
 
-        if (kbucket_rec !== null && !kbucket_rec.is_locked()) {
-          kbucket_rec.lock();
+          if (kbucket_rec !== null && !kbucket_rec.is_locked()) {
+            kbucket_rec.lock();
+          }
         }
-
+        
         if (typeof timeout === "function") {
           timeout();
         }

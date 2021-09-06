@@ -24,11 +24,11 @@ class Fkad_ds {
       data: val
     });
 
-    this.data.set(key, rec);
+    this.data.set(key.toString(), rec);
   }
 
   get(key) {
-    return this.data.get(key);
+    return this.data.get(key.toString());
   }
 
   // Get a 2D array of all [key, val] pairs
@@ -37,7 +37,7 @@ class Fkad_ds {
   }
 
   delete(key) {
-    return this.data.delete(key);
+    return this.data.delete(key.toString());
   }
 }
 
