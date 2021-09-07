@@ -15,20 +15,28 @@ class Fapp_bboard {
   cred;
   img_cred_base64;
   form;
+  last_active;
   sig;
-  
-  constructor({cred = null, img_cred_base64 = null, form = null, sig = null}  = {}) {
-    if (!Array.isArray(form.data)) {
-      throw new Error("form.data isn't an array - are you sure you're publishing a frozen form?");
-    }
 
-    // Generalization of a identity credential, most likely a Fid_pub object
+  /**
+   * cred: An object representing your credentialed identity; most likely a Fid_pub
+   * img_cred_base64: Base64 encoded image credential supporting the identity data in cred
+   * form: Order form; most likely an Fbuy_menu
+   * last_active: Resource providers much touch this regularly, otherwise we'll consider them idle
+   * sig: Cryptographic signature 
+   */ 
+  
+  constructor({
+    cred = null, 
+    img_cred_base64 = null, 
+    form = null, 
+    last_active = Date.now(),
+    sig = null
+  }  = {}) {
     this.cred = cred; 
-    // A base64 encoded image correlating your real world identity with the one named in cred
     this.img_cred_base64 = img_cred_base64; 
-    // Generalization of a food menu
     this.form = form;
-    // Cryptographic signature
+    this.last_active = last_active;
     this.sig = sig;
   }
 

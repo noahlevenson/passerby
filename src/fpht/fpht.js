@@ -96,14 +96,14 @@ class Fpht {
   }
 
   /**
-   * Idempotently init a new PHT structure indexing on index_attr, kick off the refresh interval
+   * Idempotently init a new PHT structure indexing on index_attr
    */ 
   async init() {
     Flog.log(`[FPHT] Looking up root node for index attr ${this.index_attr}...`);
     const data = await this._dht_lookup();
 
     if (data !== null) {
-      Flog.log(`[FPHT] Root node found! Created ${new Date(data.created)}`);
+      Flog.log(`[FPHT] Root node found! DHT key ${this._get_label_hash()}`);
       return;
     }
 
@@ -306,13 +306,6 @@ class Fpht {
 
   async _do_merge_delete({pairs, leaf, sib} = {}) {
     async function _publish(parent, leaf, l_nbr, r_nbr) {
-      /**
-       * At deletion time, we do not update the created time of nodes that we put back to 
-       * the trie; since we no longer own a key in this branch, it's not our problem. Our deletion
-       * has caused the topology of the tree to change, but peers who still own keys located 
-       * somewhere in the new topology will find and refresh them at refresh time.
-       */
-
       // TODO: Alert the caller if any of these PUTs fail?
       await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(parent)), 

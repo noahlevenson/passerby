@@ -50,6 +50,7 @@ class Fapp {
   static KEYSERVER_APP_ID = "k";
   static KEYSERVER_BLOCK_RATE = [10000, 20000];
   static SEARCH_DIST_MILES = 2.0;
+  static T_IDLE = 10 * 60 * 1000;
  
   static GEOCODING_METHOD = {
     NOMINATIM: 0
@@ -419,11 +420,17 @@ class Fapp {
     const loc = this.get_location();
     const search_window = Fgeo.get_exts(loc, Fapp.SEARCH_DIST_MILES);
     const res = await this.geosearch(search_window);
+    const t_expiry = Date.now() - Fapp.T_IDLE;
+    
+    const active = res.filter((res) => {
+      const [key, bboard] = res;
+      return bboard.last_active > t_expiry;
+    });
     
     Flog.log(`[FAPP] Searched ${Fapp.SEARCH_DIST_MILES.toFixed(1)} miles from ` + 
-      `${loc.lat}, ${loc.long}; resources discovered: ${res.length}`);
-    
-    return res;
+      `${loc.lat}, ${loc.long}; resources discovered: ${res.length} (${active.length} active)`);
+
+    return active;
   }
 
   // Search the network for data within a geographic window defined by an Fgeo_rect
