@@ -13,7 +13,7 @@ const { Flog } = require("../flog/flog.js");
 
 class Fkad_kbucket_rec {
   static MAX_LOCK_ATTEMPTS = 4;
-  static LOCK_BASE_SECONDS = 10;
+  static LOCK_BASE_SECONDS = 100;
   static BACKOFF_FUNC = x => (Fkad_kbucket_rec.LOCK_BASE_SECONDS ** x) * 1000;
 
   node_info;

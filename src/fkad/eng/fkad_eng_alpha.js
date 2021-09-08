@@ -15,7 +15,7 @@ const { Fkad_msg } = require("../fkad_msg.js");
 const { Fkad_node_info } = require("../fkad_node_info.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
-  static DEFAULT_TIMEOUT = 4000;
+  static DEFAULT_TIMEOUT = 5000;
   static RES_EVENT_PREFIX = "r+";
   
   res;
