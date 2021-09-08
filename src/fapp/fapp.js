@@ -77,6 +77,7 @@ class Fapp {
   keepalive;
   t_keepalive;
   keepalive_interval;
+  anti_idle_interval;
   geocoding;
   is_keyserver_validator;
 
@@ -111,6 +112,7 @@ class Fapp {
     this.keepalive = keepalive;
     this.t_keepalive = t_keepalive;
     this.keepalive_interval = null;
+    this.anti_idle_interval = null;
     this.geocoding = geocoding;
     this.is_keyserver_validator = is_keyserver_validator;
   }
@@ -405,17 +407,62 @@ class Fapp {
     return null;
   }
 
-  // Publish a Fapp_bboard to the network under our location key
+  /**
+   * High level method to start serving a resource; form is a food menu or similar. To start service
+   * means that we will periodically update our status to avoid going idle; this function 
+   * idempotently kicks off that process...
+   */ 
+  async start_service(form) {
+    await this._touch(form);
+    
+    if (this.anti_idle_interval === null) {
+      this.anti_idle_interval = setInterval(async () => {
+        Flog.log(`[FAPP] Running anti-idle...`);
+        await this._touch(form);
+      }, Math.floor(Fapp.T_IDLE / 2));
+    }
+  }
+
+  async _touch(form, last_active) {
+    const privkey = await Fcrypto.get_privkey();
+
+    const bboard = await Fapp_bboard.sign(new Fapp_bboard({
+      cred: this.fid_pub,
+      form: form ? form.freeze() : null,
+      last_active: last_active
+    }), privkey.toString("hex"));
+
+    await this.put(bboard);
+  }
+
+  /**
+   * Stop serving a resource and go idle immediately
+   */ 
+  async stop_service() {
+    clearTimeout(this.anti_idle_interval);
+    this.anti_idle_interval = null;
+    await this._touch(null, -1);
+  }
+
+  /**
+   * Publish a Fapp_bboard to the network under our location key. This is a somewhat lower level 
+   * function; to start serving a resource, use start_service() above
+   */ 
   async put(bboard) {
     await this.fpht.insert(this.get_location().linearize(), bboard);
   }
 
-  // Delete any data on the network that's associated with our location key
+  /**
+   * Delete any data on the network that's associated with our location key
+   */ 
   async delete() {
     await this.fpht.delete(this.get_location().linearize());
   }
 
-  // High level method to retrieve a list of nearby restaurant peers
+  /**
+   * High level method to retrieve a list of nearby resource providers. If you're a resource 
+   * consumer, this is probably what you want to use to populate your resource list...
+   */ 
   async get_local_resources() {
     const loc = this.get_location();
     const search_window = Fgeo.get_exts(loc, Fapp.SEARCH_DIST_MILES);
@@ -433,15 +480,19 @@ class Fapp {
     return active;
   }
 
-  // Search the network for data within a geographic window defined by an Fgeo_rect
-  // This is a lower level function, for doing a standard search, use get_local_resources above
+  /**
+   * Search the network for data within a geographic window defined by an Fgeo_rect
+   * This is a lower level function; for doing a regular search, use get_local_resources() above
+   */ 
   async geosearch(rect) {
     return await this.fpht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
   }
 
-  // Boot this instance and join the network
-  // If we're a bootstrap node, specify a public addr and port; if we're a regular node, leave
-  // them unspecified and we'll first ask a bootstrap node to resolve our network info using STUN
+  /**
+   * Boot this instance and join the network. If we're a bootstrap node, specify a public addr and 
+   * port; if we're a regular node, leave them unspecified and we'll first ask a bootstrap node to 
+   * resolve our network info using STUN
+   */ 
   async start({addr = null, port = null} = {}) {
     // Create and boot a UDP transport module
     const fapp_udp_trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
