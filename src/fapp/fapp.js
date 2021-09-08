@@ -410,7 +410,29 @@ class Fapp {
   /**
    * High level method to start serving a resource; form is a food menu or similar. To start service
    * means that we will periodically update our status to avoid going idle; this function 
-   * idempotently kicks off that process...
+   * idempotently kicks off that process.
+   * 
+   * What's this idle system all about? Well, on the Free Food network, we need to solve for two
+   * concerns: One, we want to have a high resolution idea of when a restaurant was last active,
+   * such that we can avoid surfacing restaurants which seem to have disappeared due to connection
+   * issues or whatever. And two, we need to have some way to delete old restaurant info completely
+   * from the PHT, such that we can prevent the trie from growing unboundedly.
+   * 
+   * While solving for these concerns, we want to update the topology of the trie as infrequently 
+   * as we can, because topological updates (merge/split operations) are very expensive.
+   * 
+   * We arrive at this idea: Restaurants must overwrite their contact info on some high frequency 
+   * interval (~10 min) to touch their last_active time. Overwriting guarantees a lightweight update
+   * with no split. Restaurant info "expires" on a much lower frequency interval (24 - 72 hours),
+   * at which point it will be deleted from the trie, perhaps resulting in a merge. TODO: write 
+   * garbage collection to do this!
+   * 
+   * The intended outcome: A new restaurant, upon signing up for Free Food, performs one heavyweight
+   * insertion operation which may result in a split. Their contact info remains in medium-term
+   * storage on the trie; during business hours, they periodically stomp their last_active time
+   * to surface themselves to diners. Assuming the restaurant logs in every day day or so, they 
+   * will never perform another heavyweight insertion. Should a restaurant go MIA for a few days,
+   * we wipe their contact info and merge down the trie. They will simply re-insert it if they reappear. 
    */ 
   async start_service(form) {
     await this._touch(form);
