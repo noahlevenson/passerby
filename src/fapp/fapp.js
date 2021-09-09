@@ -78,6 +78,7 @@ class Fapp {
   t_keepalive;
   keepalive_interval;
   anti_idle_interval;
+  crud_ops;
   geocoding;
   is_keyserver_validator;
 
@@ -113,6 +114,7 @@ class Fapp {
     this.t_keepalive = t_keepalive;
     this.keepalive_interval = null;
     this.anti_idle_interval = null;
+    this.crud_ops = Promise.resolve();
     this.geocoding = geocoding;
     this.is_keyserver_validator = is_keyserver_validator;
   }
@@ -467,18 +469,32 @@ class Fapp {
   }
 
   /**
-   * Publish a Fapp_bboard to the network under our location key. This is a somewhat lower level 
+   * Here at the public API layer, we serialize PHT updates using Promise chaining. In other words: 
+   * use Fapp.put() and Fapp.delete() to do your CRUD operations and you don't have to worry about 
+   * accidental concurrency. TODO: there's prob a nice memory leak in here somewhere
+   */ 
+
+  /**
+   * Publish a Fapp_bboard to the network under our location key. This is a lower level 
    * function; to start serving a resource, use start_service() above
    */ 
   async put(bboard) {
-    await this.fpht.insert(this.get_location().linearize(), bboard);
+    this.crud_ops = this.crud_ops.then(async () => {
+      await this.fpht.insert(this.get_location().linearize(), bboard);
+    });
+
+    await this.crud_ops;
   }
 
   /**
    * Delete any data on the network that's associated with our location key
    */ 
   async delete() {
-    await this.fpht.delete(this.get_location().linearize());
+    this.crud_ops = this.crud_ops.then(async () => {
+      await this.fpht.delete(this.get_location().linearize());
+    });
+
+    await this.crud_ops;
   }
 
   /**
