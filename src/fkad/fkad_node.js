@@ -776,18 +776,19 @@ class Fkad_node {
 
   /**
    * Put data to the distributed database; that is, issue a STORE RPC for some key/value pair to
-   * the K_SIZE closest peers who own that partition of the keyspace
+   * the K_SIZE closest peers who own that partition of the keyspace. Returns the number of peers
+   * that successfully stored the data.
    */
   async put(key, val) {
     const result = await this._node_lookup(key);
     const kclosest = result.payload;
-    const resolutions = [];
-    let successful = 0;
+    const p = [];
+    let succ = 0;
 
     kclosest.forEach((node_info) => {
-      resolutions.push(new Promise((resolve, reject) => {
+      p.push(new Promise((resolve, reject) => {
         this._req_store(key, val, node_info, (res, ctx) => {
-          successful += 1;
+          succ += 1;
           resolve();
         }, () => {
           resolve();
@@ -795,8 +796,8 @@ class Fkad_node {
       }));
     });
 
-    await Promise.all(resolutions);
-    return successful > 0 ? true : false;
+    await Promise.all(p);
+    return succ;
   }
 
   /** Publish data to the distributed database. When we publish data, we will thereafter consider

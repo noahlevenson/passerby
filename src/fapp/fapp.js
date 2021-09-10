@@ -447,6 +447,15 @@ class Fapp {
     }
   }
 
+  /**
+   * Stop serving a resource and go idle immediately
+   */ 
+  async stop_service() {
+    clearTimeout(this.anti_idle_interval);
+    this.anti_idle_interval = null;
+    await this._touch(null, -1);
+  }
+
   async _touch(form, last_active) {
     const privkey = await Fcrypto.get_privkey();
 
@@ -457,15 +466,6 @@ class Fapp {
     }), privkey.toString("hex"));
 
     await this.put(bboard);
-  }
-
-  /**
-   * Stop serving a resource and go idle immediately
-   */ 
-  async stop_service() {
-    clearTimeout(this.anti_idle_interval);
-    this.anti_idle_interval = null;
-    await this._touch(null, -1);
   }
 
   /**
