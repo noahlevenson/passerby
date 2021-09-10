@@ -71,13 +71,12 @@ class Fpht {
     }
 
     const label_hash = this._get_label_hash(label);
-    const res = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
+    const data = await this.dht_lookup_func.bind(this.dht_node)(label_hash, ...this.dht_lookup_args);
 
     // TODO: This assumes that dht lookups always return an Fkad_data type, which is MAYBE true?
-    const data = new Fkad_data(res);
-    const payload = data.get_payload()[0];
-
-    if (data.get_type() !== Fkad_data.TYPE.VAL || !Fpht_node.valid_magic(payload)) {
+    const payload = Fkad_data.get_payload(data)[0];
+  
+    if (Fkad_data.get_type(data) !== Fkad_data.TYPE.VAL || !Fpht_node.valid_magic(payload)) {
       return null;
     }
     

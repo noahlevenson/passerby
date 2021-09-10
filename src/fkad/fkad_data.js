@@ -30,12 +30,12 @@ class Fkad_data {
     this.payload = payload;
   }
 
-  get_type() {
-    return this.type;
+  static get_type(data) {
+    return data.type;
   }
 
-  get_payload() {
-    return this.payload;
+  static get_payload(data) {
+    return [...data.payload];
   }
 }
 
