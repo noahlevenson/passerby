@@ -73,7 +73,7 @@ class Fstun_hdr {
       throw new Error("buf must be Buffer with a length > 0");
     }
 
-    if (Futil.get_bit(buf, 0, 6) !== 0 || Futil.get_bit(buf, 0, 7) !== 0) {
+    if (Futil.get_bit(buf, 0, 6) || Futil.get_bit(buf, 0, 7)) {
       return false;
     }
 
@@ -81,7 +81,7 @@ class Fstun_hdr {
   }
 
   static _isValidMagic(magic) {
-    return Futil.compare_buf(magic, this.K_MAGIC);
+    return Buffer.compare(magic, this.K_MAGIC) === 0 ? true : false;
   }
 
   static _decType(type) {
@@ -124,7 +124,7 @@ class Fstun_hdr {
       throw new Error("len must be number");
     }
     
-    return Futil.int2buf16(len); 
+    return Futil.wbuf_uint16be(len); 
   }
 
   serialize() {

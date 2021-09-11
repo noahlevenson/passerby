@@ -13,30 +13,22 @@ const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
 const cfg = require("../../libfood.json");
 const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
-// TODO: We currently have no React Native or browser implementation for 'net'
-const net = require("net");
 
 class Futil {
-  static is_power2(n) {
-    return (n & (n - 1)) === 0;
-  }
-
-  static is_hex_str(str) {
-    const reg = /^[A-Fa-f0-9]+$/;
-    return reg.test(str);
-  }
-
-  // Normalize positive float f to an integer of bit depth b, where fmax is the largest poss value of f
+  /**
+   * Rescale positive float f to an integer of bit depth b, where fmax is the largest possible value
+   * for f. TODO: validate inputs and catch overflow
+   */
   static float_to_normalized_int(f, fmax, b) {
-    // TODO: Validate inputs and watch out for overflow
     const max = (Math.pow(2, b) - 1) / fmax;
     return Math.floor(f * max);
   }
 
-  // Compute 2D Morton order linearization for positive values x and y, where b is the bit depth of 
-  // each dimension (x becomes odd bits, y becomes even bits)
+  /**
+   * Map 2D abscissa x and ordinate y to one dimension using a Morton order curve. b is the
+   * bit depth to consider. Returns an Fbigint. TODO: validate inputs
+   */ 
   static z_linearize_2d(x, y, b) {
-    // TODO: Validate inputs
     let xx = new Fbigint(x);
     let yy = new Fbigint(y);
 
@@ -52,7 +44,10 @@ class Futil {
     return l;
   }
 
-  // Invert z_linearize_2d
+  /**
+   * Inverse function to z_linearize_2d(); given some z-value as an Fbigint, return the abscissa 
+   * and ordinate. b is the bit depth to consider.
+   */ 
   static z_delinearize_2d(key, b) {
     let x = "";
     let y = "";
@@ -68,14 +63,29 @@ class Futil {
     return {x: Fbigint.from_base2_str(x), y: Fbigint.from_base2_str(y)};
   }
 
-  // Compute the longest common prefix of an array of strings
-  // if len = true, return the length of the lcp instead of the lcp itself
-  // TODO: there's a more alpha way to do this with binary search
-  static get_lcp(strings = [], len = false) {
-    const shortest_len = Math.min(...strings.map(str => str.length));
+  /**
+   * Check whether a number is a power of 2
+   */ 
+  static is_power2(n) {
+    return (n & (n - 1)) === 0;
+  }
+
+  /**
+   * Check whether a string appears to be a valid hexidecimal value
+   */ 
+  static is_hex_str(str) {
+    const reg = /^[A-Fa-f0-9]+$/;
+    return reg.test(str);
+  }
+
+  /**
+   * Compute the longest common prefix over an array of strings. TODO: there's a binary search way...
+   */ 
+  static get_lcp(strings = []) {
+    const min_len = Math.min(...strings.map(str => str.length));
     let i = 0;
-    
-    while (i < shortest_len) {
+  
+    while (i < min_len) {
       if (!strings.every(str => str[i] === strings[0][i])) {
         break;
       }
@@ -83,108 +93,59 @@ class Futil {
       i += 1;
     }
 
-    if (len) {
-      return i;
-    }
-
     return strings[0].substring(0, i);
   }
 
-  // TODO: Validation
-  // Network byte order (big endian)
-  static int2buf16(int) {
+  /**
+   * Fetch the bit from Buffer 'buf' at byte index 'idx' and bit offset 'off', little endian bit
+   * addressing. Returns a bool.
+   */ 
+  static get_bit(buf, idx, off) {
+    return (buf[idx] & (0x01 << off)) !== 0 ? true : false;
+  }
+
+  /**
+   * Convenience method to write an unsigned integer to a 16-bit Buffer, big endian. TODO: validation
+   */ 
+  static wbuf_uint16be(uint) {
     const buf = Buffer.alloc(2);
-
-    buf[0] = 0xFF & (int >>> cfg.SYS_BYTE_WIDTH);
-    buf[1] = 0xFF & int;
-
+    buf.writeUInt16BE(uint);
     return buf;
   }
 
-  // Little endian addressing
-  static get_bit(buffer, idx, off) {
-    let mask = Buffer.alloc(1);
-
-    mask[0] = 0x01;
-    mask[0] <<= off;
-
-    return (buffer[idx] & mask[0]) !== 0 ? 1 : 0;
+  /**
+   * Transform an IPv4 address string to a 32-bit Buffer. TODO: validation
+   */ 
+  static ipv4_str_to_buf32(str) {
+    return Buffer.from(str.split(".").map(n => parseInt(n)));
   }
 
-  static compare_buf(a, b) {
-    if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
-      return false
-    }
-
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (let i = 0; i < a.length; i += 1) {
-      if (a[i] != b[i]) {
-        return false;
-      }
-    } 
-
-    return true;
-  }
-
-  // TODO: Validation
-  static ipv4str2buf32(str) {
-    return Buffer.from(str.split(".").map((n) => { 
-      return parseInt(n); 
-    }));
-  }
-
-  // TODO: validation
-  static buf322ipv4str(buf) {
+  /**
+   * Inverse function to ipv4_str_to_buf32(); transform a 32-bit Buffer to an IPv4 address string.
+   * TODO: validation
+   */ 
+  static buf32_to_ipv4_str(buf) {
     return `${buf[0]}.${buf[1]}.${buf[2]}.${buf[3]}`;
   }
 
-  // TODO: Validation
-  static ipv6str2buf128(str) {   
-    const arr = str.split(":");
-    const len = arr.length - 1;
-
-    // It's an ipv4 mapped ipv6 address
-    if (net.isIPv4(arr[len]) && arr[len - 1].toUpperCase() === "FFFF") {
-      arr[len] = arr[len].split(".").map((n) => {
-        return parseInt(n).toString(16).padStart(2, "0");
-      }).join("");
-    }
-
-    const hs = arr.join("").padStart(16, "0");
-    const buf = Buffer.alloc(16);
-
-    let i = hs.length - 2;
-    let j = buf.length - 1;
-
-    while (i >= 0) {
-      buf[j] = parseInt(hs.substring(i, i + 2), 16);
-      i -= 2;
-      j -= 1;
-    }
-
-    return buf;
+  /**
+   * Transform an IPv6 address string to a 128-bit Buffer. TODO: this function was originally 
+   * inherited when we ported over ministun (https://github.com/noahlevenson/ministun) to form the 
+   * basis of FSTUN. The ministun implementations are pretty noob and rely on the Node.js net module,
+   * which sucks. To be rewritten when we start testing IPv6 again...
+   */ 
+  static ipv6_str_to_buf128(str) {   
+    throw new Error("Congratulations! You've discovered the missing ipv6_str_to_buf128 implementation");
   }
 
-  // TODO: validation
-  static buf1282ipv6str(buf) {
-    // It's an ipv4 mapped ipv6 address
-    if (buf.compare(Buffer.alloc(10), 0, 10, 0, 10) === 0 && 
-      buf.compare(Buffer.from([0xFF, 0xFF]), 0, 2, 10, 12) === 0) {
-      return `::FFFF:${Futil.buf322ipv4str(buf.slice(12, buf.length))}`;
-    }
-
-    let addr = "";
-
-    for (let i = 0; i < buf.length; i += 2) {
-      addr += `${buf[i].toString(16).padStart(2, "0")}${buf[i + 1].toString(16).padStart(2, "0")}:`;
-    }
-
-    // Just remove the last colon
-    return addr.substring(0, addr.length - 1);
+  /**
+   * Inverse function to ipv6_str_to_buf128(); transform a 128-bit Buffer to an IPv6 address string.
+   * Same TODO as above applies...
+   */ 
+  static buf128_to_ipv6_str(buf) {
+    throw new Error("Congratulations! You've discovered the missing buf128_to_ipv6_str implementation");
   }
+    
 }
 
 module.exports.Futil = Futil;

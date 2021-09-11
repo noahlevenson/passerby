@@ -131,18 +131,19 @@ class Fksrv {
     // Lock script: 
     // push2, len, recip pubkey, push2, len, sig, push2, len, nonce, push2, len, my pubkey
     // (push the recipient's pubkey to the stack just so we have it in the script)
+
     const lock_script = [].concat([
       Fdlt_vm.OPCODE.OP_PUSH2,
-      ...Array.from(Futil.int2buf16(peer_b_pubkey.length)),
+      ...Array.from(Futil.wbuf_uint16be(peer_b_pubkey.length)),
       ...peer_b_pubkey, 
       Fdlt_vm.OPCODE.OP_PUSH2,
-      ...Array.from(Futil.int2buf16(sig.length)),
+      ...Array.from(Futil.wbuf_uint16be(sig.length)),
       ...sig,
       Fdlt_vm.OPCODE.OP_PUSH2, 
-      ...Array.from(Futil.int2buf16(nonce.length)), 
+      ...Array.from(Futil.wbuf_uint16be(nonce.length)), 
       ...nonce, 
       Fdlt_vm.OPCODE.OP_PUSH2, 
-      ...Array.from(Futil.int2buf16(peer_a_pubkey.length)), 
+      ...Array.from(Futil.wbuf_uint16be(peer_a_pubkey.length)), 
       ...peer_a_pubkey
     ]);
 
@@ -174,16 +175,16 @@ class Fksrv {
     // (push the recipient's pubkey to the stack just so we have it in the script)
     const lock_script = [].concat([
       Fdlt_vm.OPCODE.OP_PUSH2,
-      ...Array.from(Futil.int2buf16(peer_b_pubkey.length)),
+      ...Array.from(Futil.wbuf_uint16be(peer_b_pubkey.length)),
       ...peer_b_pubkey, 
       Fdlt_vm.OPCODE.OP_PUSH2,
-      ...Array.from(Futil.int2buf16(sig.length)),
+      ...Array.from(Futil.wbuf_uint16be(sig.length)),
       ...sig,
       Fdlt_vm.OPCODE.OP_PUSH2, 
-      ...Array.from(Futil.int2buf16(nonce.length)), 
+      ...Array.from(Futil.wbuf_uint16be(nonce.length)), 
       ...nonce, 
       Fdlt_vm.OPCODE.OP_PUSH2, 
-      ...Array.from(Futil.int2buf16(peer_a_pubkey.length)), 
+      ...Array.from(Futil.wbuf_uint16be(peer_a_pubkey.length)), 
       ...peer_a_pubkey
     ]);
 

@@ -242,8 +242,8 @@ class Fpht {
        * common prefix of the lcp of all keys.
        */
       await _publish.bind(this)(child_0, child_1, int_node);
-      const next_node = Futil.get_lcp([lcp, Fpht_node.get_label(child_0)], true) > 
-        Futil.get_lcp([lcp, Fpht_node.get_label(child_1)], true) ? child_0 : child_1;
+      const next_node = Futil.get_lcp([lcp, Fpht_node.get_label(child_0)]).length > 
+        Futil.get_lcp([lcp, Fpht_node.get_label(child_1)]).length ? child_0 : child_1;
       await this._do_split_insert({pairs: pairs, lcp: lcp, depth: depth + 1, leaf: next_node});
     }
   }
@@ -286,8 +286,7 @@ class Fpht {
         pairs.map((pair) => {
           const [new_key, new_val] = pair;
           return new_key.to_bin_str(Fpht.BIT_DEPTH);
-        }),
-        false
+        })
       );
 
       await this._do_split_insert({
