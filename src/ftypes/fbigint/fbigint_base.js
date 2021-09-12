@@ -15,20 +15,54 @@ class Fbigint_base {
 
   data;
 
-  constructor() {
-    
+  /**
+   * There's 4 ways to construct an Fbigint:
+   * 1) Pass a hex string with NO SPECIAL PREFIX
+   * 2) Pass a JavaScript Number
+   * 3) Pass an Fbigint
+   * 4) Pass null, which will create an Fbigint with null data
+   * 
+   * You can also construct an Fbigint using the alternate from_base2_str() constructor
+   * by passing a base2 string with NO SPECIAL PREFIX. This is separated from the default 
+   * constructor to avoid confusion between hex and base2 strings.
+   */
+
+  constructor(input) {
+    if (typeof input === "string") {
+      this.data = this._data_from_hex_str(input);
+    } else if (typeof input === "number") {
+      this.data = this._data_from_number(input);
+    } else if (input instanceof Fbigint_base) {
+      this.data = this._data_from_fbigint(input);
+    } else if (input === null) {
+      this.data = null;
+    } else {
+      throw new TypeError("Argument 'input' must be string or Number");
+    }
   }
 
   static from_base2_str(str) {
     throw new Error("Subclasses must implement the from_base2_str() method");
   }
 
+  static unsafe_random(byte_len) {
+    throw new Error("Subclasses must implement the unsafe_random() method");
+  }
+
   static _json_revive(key, val) {
     throw new Error("Subclasses must implement the _json_revive() method");
   }
 
-  static unsafe_random(byte_len) {
-    throw new Error("Subclasses must implement the unsafe_random() method");
+  _data_from_hex_str(input) {
+    throw new Error("Subclasses must implement the _data_from_hex_str() method");
+  }
+
+  _data_from_number(input) {
+    throw new Error("Subclasses must implement the _data_from_number() method");
+  }
+
+  _data_from_fbigint(input) {
+    throw new Error("Subclasses must implement the _data_from_fbigint() method");
   }
 
   get() {
@@ -87,6 +121,10 @@ class Fbigint_base {
     throw new Error("Subclasses must implement the pow() method");
   }
 
+  /**
+   * Transform this Fbigint to a binary string, most significant bit on the left. b is the number
+   * of bits to consider, we'll pad with zeroes as required.
+   */ 
   to_bin_str(b) {
     throw new Error("Subclasses must implement the to_bin_str() method");
   }

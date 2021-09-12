@@ -1,6 +1,6 @@
 /** 
 * FBIGINT_NODE
-* Implementation of the FBIGINT_BASE interface for Node.js >= 12.?
+* Implementation of the Fbigint interface for Node.js >= 12.?
 * Uses native BigInt under the hood
 * 
 * 
@@ -12,30 +12,19 @@
 const { Fbigint_base } = require("./fbigint_base.js");
 
 class Fbigint extends Fbigint_base {
-  // A Fbigint can be constructed from a base16 string (no prefix), a JS number, or another Fbigint
   constructor(input) {
-    super();
-    
-    if (typeof input === "string") {
-      this.data = BigInt(`0x${input}`);
-    } else if (typeof input === "number") {
-      this.data = BigInt(input);
-    } else if (input instanceof Fbigint) {
-      this.data = BigInt(input.data);
-    } else if (input === null) {
-      // Special case - passing null will let you create an Fbigint with a null data
-      this.data = null;
-    } else {
-      throw new TypeError("Argument 'input' must be string or Number");
-    }
+    super(input);
   }
 
-  // Alternate constructor: create a Fbigint from a base2 string
-  // Just to avoid confusion around the radix of your string
   static from_base2_str(str) {
     const fbigint = new this(null);
     fbigint.data = BigInt(`0b${str}`);
     return fbigint;
+  }
+
+  static unsafe_random(byte_len) {
+    const rnds = Array(byte_len).fill().map(() => Math.floor(Math.random() * Fbigint.BYTE_SCALE_MAX));
+    return new Fbigint(Buffer.from(rnds).toString("hex"));
   }
 
   static _json_revive(key, val) {
@@ -46,9 +35,16 @@ class Fbigint extends Fbigint_base {
     return val;
   }
 
-  static unsafe_random(byte_len) {
-    const rnd_vals = Array(byte_len).fill().map(() => Math.floor(Math.random() * Fbigint.BYTE_SCALE_MAX));
-    return new Fbigint(Buffer.from(rnd_vals).toString("hex"));
+  _data_from_hex_str(input) {
+    return BigInt(`0x${input}`);
+  }
+
+  _data_from_number(input) {
+    return BigInt(input);
+  }
+
+  _data_from_fbigint(input) {
+    return BigInt(input.data);
   }
 
   get() {
@@ -107,13 +103,7 @@ class Fbigint extends Fbigint_base {
     return new Fbigint((this.data ** op.get()).toString(16));
   }
 
-  // Get binary string representation of this Fbigint, most significant bit on the left
-  // b is the number of bits to consider, we'll pad with zeros as required
   to_bin_str(b) {
-    if (!b) {
-      throw new Error("Must supply value for 'b'");
-    }
-
     return this.data.toString(2).padStart(b, "0");
   }
 
