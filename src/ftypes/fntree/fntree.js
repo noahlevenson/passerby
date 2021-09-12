@@ -23,7 +23,9 @@ class Fntree {
     this.root = root;
   }
 
-  // Factory function, construct an Fntree from its serialized representation
+  /**
+   * Factory function to construct an Fntree from its serialized representation
+   */ 
   static from_json(json) {
     const arr = JSON.parse(json);
     const tree = new this(new Fntree_node({data: arr[0]}));
@@ -41,7 +43,10 @@ class Fntree {
     return tree;
   }
 
-  // Simple serializer: serialize as a flat array of node data with null sentinels
+  /**
+   * Simple serializer: an Fntree is serialized as a flat array of node data in DFS preorder 
+   * traversal order, with null sentinels to indicate the end of a branch
+   */ 
   toJSON() {
     const arr = [];
 
@@ -58,8 +63,12 @@ class Fntree {
     return this.root;
   }
 
-  // Depth first search, calls visitation callback 'pre' where you want to call it for a preorder
-  // traversal, calls 'post' postorder -- returns array 'data'
+  /**
+   * Depth first search. Traversal order behavior is parameterizable: visitation callback 'pre' is 
+   * called in preorder position, 'post' is called in postorder position. i.e., to do a preorder
+   * traversal, pass a 'pre' visitation callback and no 'post' callback. 'data' array is passed as
+   * the second argument to the callbacks and returned at the termination of search.
+   */
   dfs(pre = () => {}, post = () => {}, node = this.get_root(), data = []) {
     pre(node, data);
 
@@ -71,9 +80,11 @@ class Fntree {
     return data;
   }
 
-  // Breadth first search, calls visitation callback 'visit' at each node... undirected = true will 
-  // consider the tree as an undirected graph and explore each node's parent as well as its children
-  // TODO: Why do we need DFS first? Noob activities detected
+  /**
+   * Breadth first search. Visitation callback 'visit' is executed for each node. Set 'undirected'
+   * to true to consider the tree as an undirected graph and explore each node's parent as well as
+   * its children. TODO: why are we doing DFS first? Noob activities detected
+   */
   bfs(visit = () => {}, node = this.get_root(), data = [], undirected = false) {
     // Get the nodes in a list so we can refer to them by index number
     const node_list = this.dfs((node, acc) => {

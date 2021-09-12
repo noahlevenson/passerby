@@ -1,7 +1,7 @@
 /** 
 * FBINTREE
-* Binary tree, with operations
-* to support binary search trees and Merkle trees
+* Binary tree, with operations to support binary 
+* search trees and Merkle trees
 * 
 *
 *
@@ -19,7 +19,9 @@ class Fbintree {
     this.root = root;
   }
 
-  // Factory function to build a Merkle tree from an array of data as strings
+  /**
+   * Factory function to construct a Merkle tree from an array of data as strings
+   */ 
   static build_merkle(data) {
     const q = data.map(d => new Fbintree_node({data: Fcrypto.sha256(d)})); // Leaf nodes
 
@@ -50,8 +52,11 @@ class Fbintree {
     return this.root;
   }
 
-  // Depth first search, vistation callback 'cb' is executed for every node in the tree
-  // Assumes the tree has > 0 nodes, returns array 'data'
+  /** 
+   * Depth first search, postorder traversal. Visition callback 'cb' is executed upon visiting each 
+   * node in the tree. Array 'data' is passed as the second argument to the callback (useful for 
+   * accumulation, etc.) Assumes the tree has > 0 nodes! 
+   */ 
   dfs(cb, node = this.get_root(), data = []) {
     if (node.get_left() !== null) {
       data = this.dfs(cb, node.get_left(), data);
@@ -64,8 +69,11 @@ class Fbintree {
     return cb(node, data);
   }
 
-  // Inorder traversal, visitation callback 'cb' is executed for every node in the tree
-  // Assumes the tree has > 0 nodes, returns array 'data'
+  /**
+   * Depth first search, inorder traversal. Visitation callback 'cb' is executed upon visiting each
+   * node in the tree. Array 'data' is passed as the second argument to the callback. Assumes the 
+   * tree has > 0 nodes!
+   */ 
   inorder(cb, node = this.get_root(), data = []) {
     if (node !== null) {
       data = this.inorder(cb, node.get_left(), data); 
@@ -76,7 +84,9 @@ class Fbintree {
     return data;
   }
 
-  // Get the number of nodes in this tree
+  /**
+   * Return the number of nodes in the tree in O(n)
+   */ 
   size() {
     if (this.get_root() === null) {
       return 0;
@@ -91,12 +101,14 @@ class Fbintree {
     return nodes;
   }
 
-  // Search a BST for key k using comparator function f(k, node)
-  // Comparator function must return:
-  // < 0 if k < node.k
-  // > 0 if k > node.k
-  // 0 if k === node.k
-  // Assumes you're maintaining the BST invariants and values are unique!
+  /**
+   * Search a BST for key k using comparator function f(k, node)
+   * Comparator function must return:
+   * < 0 if k < node.k
+   * > 0 if k > node.k
+   * 0 if k === node.k
+   * Assumes you're maintaining the BST invariants and values are unique!
+   */ 
   bst_search(f, k, node = this.get_root()) {
     if (node === null || f(k, node) === 0) {
       return node;
@@ -109,12 +121,14 @@ class Fbintree {
     }
   }
 
-  // Insert a node into a BST using comparator function f(node, oldnode)
-  // Comparator function must return:
-  // < 0 if node.data < oldnode.data
-  // > 0 if node.data > oldnode.data
-  // 0 if node.data === oldnode.data
-  // Assumes you're maintaining the BST invariants and values are unique!
+  /**
+   * Insert a node into a BST using comparator function f(node, oldnode)
+   * Comparator function must return:
+   * < 0 if node.data < oldnode.data
+   * > 0 if node.data > oldnode.data
+   * 0 if node.data === oldnode.data
+   * Assumes you're maintaining the BST invariants and values are unique!
+   */ 
   bst_insert(node, f) {
     let y = null;
     let x = this.get_root();
@@ -179,9 +193,11 @@ class Fbintree {
     }
   }
 
-  // Get minimum value in a BST
-  // Assumes you're maintaining the BST invariants!
-  // Returns the node containing the minimum value
+  /**
+   * Get minimum value in a BST
+   * Assumes you're maintaining the BST invariants!
+   * Returns the node containing the minimum value
+   */ 
   bst_min(node = this.get_root()) {
     if (node === null) {
       return null;
@@ -194,9 +210,11 @@ class Fbintree {
     return node;
   }
 
-  // Get maximum value in a BST
-  // Assumes you're maintaining the BST invariants!
-  // Returns the node containing the maximum value
+  /**
+   * Get maximum value in a BST
+   * Assumes you're maintaining the BST invariants!
+   * Returns the node containing the maximum value
+   */ 
   bst_max(node = this.get_root()) {
     if (node === null) {
       return null
@@ -209,9 +227,11 @@ class Fbintree {
     return node;
   }
 
-  // Get the successor to a node in a BST
-  // Assumes you're maintaining the BST invariants!
-  // Returns the successor node
+  /**
+   * Get the successor to a node in a BST
+   * Assumes you're maintaining the BST invariants!
+   * Returns the successor node
+   */ 
   bst_successor(node) {
     if (node.get_right() !== null) {
       return this.bst_min(node.get_right());

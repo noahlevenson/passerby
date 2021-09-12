@@ -37,12 +37,13 @@ class Fntree_node {
     return this.children.splice(this.children.indexOf(node), 1)[0];
   }
 
-  // Get child by index or undefined if out of range
+  /**
+   * Get child by index, returns undefined if out of range
+   */ 
   get_child(i) {
     return this.children[i];
   }
 
-  // Get a shallow copy of this node's children as an array
   get_all_children() {
     return [...this.children];
   }

@@ -32,7 +32,9 @@ class Fbintree_node {
     this.data = data;
   }
 
-  // Alias to get the left or right child by specifying a bit: 0 = left, 1 = right
+  /**
+   * Alias to get the left or right child by specifying a bit as a Number: 0 = left, 1 = right
+   */ 
   get_child_bin(b) {
     return this.children[b];
   }

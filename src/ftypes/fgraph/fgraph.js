@@ -18,14 +18,35 @@ class Fgraph {
     this.data = new Map();
   }
 
-  // Idempotently add a vertex with label v, assumes v as string
+  /** 
+   * Compute the transpose of this Fgraph and return it as a new Fgraph
+   */ 
+  t() {
+    const gt = new Fgraph();
+
+    Array.from(this.data.entries()).forEach((pair) => {
+      const [key, val] = pair;
+      val.forEach(e => gt.add_edge(e, key));
+
+      // If there's a vertex in this Fgraph with no inedges we still want it in the transpose
+      gt.add_vertex(key);
+    });
+
+    return gt;
+  }
+
+  /**
+   * Idempotently add a vertex with label v, assumes v as string
+   */ 
   add_vertex(v) {
     if (!this.data.has(v)) {
       this.data.set(v, []);
     }
   }
 
-  // Delete a vertex with label v and clean up dangling edges, assumes v as string
+  /**
+   * Delete a vertex with label v and clean up dangling edges, assumes v as string
+   */ 
   del_vertex(v) {
     if (this.data.has(v)) {
       this.data.delete(v);
@@ -33,8 +54,10 @@ class Fgraph {
     }
   }
 
-  // Idempotently add an edge from vertex label v to vertex label u
-  // this will create vertices v and u if they don't already exist, assumes labels as strings
+  /**
+   * Idempotently add an edge from vertex label v to vertex label u. This will create vertices v 
+   * and u if they don't already exist. Assumes labels as strings.
+   */ 
   add_edge(v, u) {
     this.add_vertex(v);
     this.add_vertex(u);
@@ -45,7 +68,9 @@ class Fgraph {
     }
   }
 
-  // Idempotently remove an edge from vertex label v to vertex label u, assumes labels as strings
+  /**
+   * Idempotently remove an edge from vertex label v to vertex label u. Assumes labels as strings.
+   */ 
   del_edge(v, u) {
     const e = this.data.get(v);
 
@@ -54,8 +79,10 @@ class Fgraph {
     }
   }
 
-  // Depth first search, returns a depth first forest as a predecessor subgraph
-  // represented as a Map of vertex properties parallel to this Fgraph
+  /**
+   * Depth first search. Returns a depth first forest as a predecessor subgraph represented as a 
+   * Map of vertex properties parallel to this Fgraph
+   */ 
   dfs(visit_order = Array.from(this.data.keys())) {
     const vprops = new Map();
     
@@ -91,22 +118,10 @@ class Fgraph {
     return current_v.f;
   }
 
-  // Compute the transpose of this Fgraph and return it as a new Fgraph
-  t() {
-    const gt = new Fgraph();
-
-    Array.from(this.data.entries()).forEach((pair) => {
-      pair[1].forEach(e => gt.add_edge(e, pair[0]));
-
-      // If there's a vertex in this Fgraph with no inedges we still want it in the transpose
-      gt.add_vertex(pair[0]);
-    });
-
-    return gt;
-  }
-
-  // Strongly connected components, returns a 2D array of vertex labels 
-  // where each arr[i] is a strongly connected component
+  /** 
+   * Compute the strongly connected components of this Fgraph. Returns a 2D array of vertex labels 
+   * where each array of labels represents a strongly connected component.
+   */ 
   scc() {
     const vprops = this.dfs();
     const gt = this.t();
