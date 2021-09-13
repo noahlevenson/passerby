@@ -9,6 +9,14 @@
 
 "use strict";
 
+/**
+ * TODO: Fstun was originally ported over from ministun (https://github.com/noahlevenson/ministun)
+ * and it still bears code style from that project which is inconsistent with the libfood code 
+ * style. Two notable inconsistencies are its use of camelcase and the old school 'K' prefix on
+ * constants. We're trying to make code revisions using the correct libfood style, so stuff's 
+ * probably very mixed up in here right now...
+ */ 
+
 const EventEmitter = require("events");
 const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
 const cfg = require("../../libfood.json");
@@ -27,6 +35,11 @@ class Fstun {
   sw;
   res;
 
+  MSG_HANDLER = new Map([
+    [Fstun_hdr.K_MSG_TYPE.BINDING_REQUEST, this._res_binding],
+    [Fstun_hdr.K_MSG_TYPE.BINDING_SUCCESS_RESPONSE, this._res_binding_success]
+  ]);
+
   constructor({net = null, sw = false} = {}) {
     this.sw = sw;
     this.net = net;
@@ -35,12 +48,15 @@ class Fstun {
     Flog.log(`[FSTUN] Online`);
   }
 
-  // TODO: This is the only client function we implement, but it kinda breaks our architectural 
-  // pattern to handle state management with a Promise in here... do we need an eng module like FKAD?
+  /**
+   * TODO: This is the only STUN client function we implement. We handle state management for the 
+   * outgoing message right here, which is inconsistent with the architectural pattern used for FKAD.
+   * (In FKAD, message state management is delegated to an ENG module, simply because we originally 
+   * thought it might be a useful abstraction for later optimization efforts.) It's not clear that
+   * the FKAD ENG pattern is all that useful, but we should make a decision and be consistent.
+   */
   _binding_req(addr, port, pubkey) {
     return new Promise((resolve, reject) => {
-      // TODO: figure out what we to do about retransmission if the transport layer doesn't do it
-
       const id_string = Fbigint.unsafe_random(Fstun_hdr.K_ID_LEN).toString(16);
       const id = Buffer.from(id_string, "hex");
 
@@ -81,8 +97,10 @@ class Fstun {
       `${Object.keys(Fstun_hdr.K_MSG_TYPE)[Fstun_hdr._decType(inMsg.hdr.type).type]} ` +
       `from ${rinfo.address}:${rinfo.port}`);
 
-    // For compliance with RFCs 5389 + 3489, return an error response for any unknown 
-    // comprehension required attrs
+    /**
+     * For compliance with RFCs 5389 and 3489, return an error response for any unknown 
+     * comprehension required attributes
+     */ 
     const badAttrTypes = [];
 
     inMsg.attrs.forEach((attr) => {
@@ -118,9 +136,15 @@ class Fstun {
       this._send(outMsg, rinfo);
     }
 
-    // TODO: We should have a Map of handler functions associated with their K_MSG_TYPE
-    if (Fstun_hdr._decType(inMsg.hdr.type).type === Fstun_hdr.K_MSG_TYPE.BINDING_REQUEST) {
-      const mtype = !inMsg.rfc3489 ? 
+    const handler = this.MSG_HANDLER.get(Fstun_hdr._decType(inMsg.hdr.type).type);
+
+    if (handler) {
+      handler.bind(this)(inMsg, rinfo);
+    }
+  }
+
+  _res_binding(inMsg, rinfo) {
+    const mtype = !inMsg.rfc3489 ? 
         Fstun_attr.K_ATTR_TYPE.XOR_MAPPED_ADDRESS : Fstun_attr.K_ATTR_TYPE.MAPPED_ADDRESS;
 
       const attrs = [
@@ -146,19 +170,14 @@ class Fstun {
         id: inMsg.hdr.id
       });
 
-      const outMsg = new Fstun_msg({
-        hdr: outHdr, 
-        attrs: attrs
-      });
+      this._send(new Fstun_msg({hdr: outHdr, attrs: attrs}), rinfo);   
+  }
 
-      this._send(outMsg, rinfo);
-    } else if (Fstun_hdr._decType(inMsg.hdr.type).type === 
-        Fstun_hdr.K_MSG_TYPE.BINDING_SUCCESS_RESPONSE) {
-      // TODO: confirm that this has the correct type attr, either XOR_MAPPED_ADDRESS or MAPPED_ADDRESS?
-      const decoded = Fstun_attr._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
-      Flog.log(`[FSTUN] Binding response received: ${decoded[0]}:${decoded[1]}`)
-      this.res.emit(inMsg.hdr.id.toString("hex"), decoded);
-    }
+  _res_binding_success(inMsg, rinfo) {
+    // TODO: confirm that this has the correct type attr, either XOR_MAPPED_ADDRESS or MAPPED_ADDRESS?
+    const [addr, port] = Fstun_attr._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
+    Flog.log(`[FSTUN] Binding response received: ${addr}:${port}`)
+    this.res.emit(inMsg.hdr.id.toString("hex"), [addr, port]);
   }
 
   _send(stunMsgObj, rinfo) {

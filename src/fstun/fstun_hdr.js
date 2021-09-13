@@ -103,11 +103,7 @@ class Fstun_hdr {
       throw new Error("len must be Buffer with length of 2");
     }
 
-    const buf = Uint8Array.from(len);
-    buf.reverse();
-    
-    const view = new Uint16Array(buf.buffer);
-    return view[0];
+    return len.readUInt16BE();
   }
 
   static _enType(type) {

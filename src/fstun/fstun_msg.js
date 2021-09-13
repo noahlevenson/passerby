@@ -80,9 +80,7 @@ class Fstun_msg {
   }
 
   serialize() {
-    return Buffer.concat([this.hdr.serialize(), Buffer.concat(this.attrs.map((attr) => { 
-      return attr.serialize(); 
-    }))]);
+    return Buffer.concat([this.hdr.serialize(), Buffer.concat(this.attrs.map(attr => attr.serialize()))]);
   }
 }
 

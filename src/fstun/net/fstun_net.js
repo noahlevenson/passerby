@@ -2,7 +2,7 @@
 * FSTUN_NET
 * Base class for an FSTUN net module
 * Net modules are FSTUN's IO layer: a net module subscribes to some
-* FTRANS module(s) incoming network data events, determine whether incoming
+* FTRANS module(s) incoming network data events, determines whether incoming
 * data is intended for FSTUN, deserializes & validates the data -- and, for
 * outbound data, preps and sends it to FTRANS for transmission
 */  
