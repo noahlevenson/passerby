@@ -1,4 +1,7 @@
-// TODO: is there a better way to do this
+/**
+ * TODO: This must be replaced with the name of your React Native project. We should come up with
+ * a way for the build tools to populate this at build time.
+ */ 
 package com.REPLACE_ME_WITH_YOUR_APP_NAME;
 
 import com.facebook.react.bridge.NativeModule;
@@ -43,17 +46,25 @@ import javax.crypto.IllegalBlockSizeException;
 import java.io.IOException;
 
 public class FNativeCrypto extends ReactContextBaseJavaModule {
-  // TODO: Are these optimal?
+  /**
+   * SALT_LEN_BYTES and ITERATIONS - are we using optimal values?
+   * Make sure SIG_ALG comports with Fcrypto.SIG_ALGORITHM!
+   */ 
+
   public static final int SALT_LEN_BYTES = 32;
   public static final int ITERATIONS = 250000;
-  public static final String SIG_ALG = "SHA256WithRSA"; // Make sure this vibes with Fid.SIG_ALGORITHM
+  public static final String SIG_ALG = "SHA256WithRSA";
 
-  // TODO: there's known issues with Java and PBES2 encryption
-  // we're using unsafe PBES1 here because that's what works
-  // there may be a workaround to get AES-256-CBC working to match Node/OpenSSL key encryption, but see:
-  // https://bugs.openjdk.java.net/browse/JDK-8245169
-  // https://bugs.openjdk.java.net/browse/JDK-8231581 
-  // https://android.googlesource.com/platform/libcore/+/92f87a4de2f7c360a44f0195ef748874a1f4378e/support/src/test/java/libcore/java/security/StandardNames.java
+  /**
+   * TODO: There are known issues with Java and PBES2 encryption wrt certain JDK versions. We're 
+   * using unsafe PBES1 here because that's what works. There may be a workaround to get AES-256-CBC
+   * working to match Node/OpenSSL key encryption, but see:
+   * 
+   * https://bugs.openjdk.java.net/browse/JDK-8245169
+   * https://bugs.openjdk.java.net/browse/JDK-8231581
+   * https://android.googlesource.com/platform/libcore/+/92f87a4de2f7c360a44f0195ef748874a1f4378e/support/src/test/java/libcore/java/security/StandardNames.java
+   */
+
   public static final String ALG = "PBEWithSHA1AndDESede";
   public static final String ALG_PARAMS = "PBEWithSHAAnd3-KEYTripleDES-CBC";
   public static final String ONE_TIME_KEY_CIPHER = "AES_256/CBC/PKCS5Padding";
@@ -80,47 +91,9 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
     return data;
   }
 
-  // data as hex string
-  // Returns an array representing a buffer
-  // @ReactMethod
-  // public void sha1(String data, Promise promise) {
-  //  try {
-  //    byte[] bytes = FNativeCrypto.hex_str_to_bytes(data);
-  //    MessageDigest digest = MessageDigest.getInstance("SHA1");
-  //    byte[] hash = digest.digest(bytes);
-  //    WritableArray ret = new WritableNativeArray();
-
-  //    for (byte b : hash) {
-  //      ret.pushInt(b);
-  //    }
-
-  //    promise.resolve(ret);
-  //  } catch (Exception e) {
-  //    promise.reject(e);
-  //  }
-  // }
-
-  // // data as hex string
-  // // Returns an array representing a buffer
-  // @ReactMethod
-  // public void sha256(String data, Promise promise) {
-  //  try {
-  //    byte[] bytes = FNativeCrypto.hex_str_to_bytes(data);
-  //    MessageDigest digest = MessageDigest.getInstance("SHA256");
-  //    byte[] hash = digest.digest(bytes);
-  //    WritableArray ret = new WritableNativeArray();
-
-  //    for (byte b : hash) {
-  //      ret.pushInt(b);
-  //    }
-
-  //    promise.resolve(ret);
-  //  } catch (Exception e) {
-  //    promise.reject(e);
-  //  }
-  // }
-
-  // Returns an array of random values
+  /**
+   * Returns an array of random values
+   */ 
   @ReactMethod
   public void randomBytes(double len, Promise promise) {
     try {
@@ -140,8 +113,10 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
     }
   }
 
-  // Returns a 2D array where arr[0] is the public key as DER byte array, spki encoded
-  // and arr[1] is the priate key as DER byte array, encrypted using passphrase and pkcs8 encoded
+  /**
+   * Returns a 2D array where each element[0] is the public key as DER byte array, spki encoded
+   * and element[1] is the private key as DER byte array, encrypted using passphrase and pkcs8 encoded
+   */ 
   @ReactMethod
   public void generateRSAKeyPair(double modulus_len, String passphrase, Promise promise) 
     throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
@@ -193,15 +168,16 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
       } 
   }
 
-  // privkey as hex string
-  // Returns an array representing the decrypted private key as buffer
+  /**
+   * Pass privkey as hex string. Returns an array representing the decrypted private key as buffer
+   */ 
   @ReactMethod
   public void decryptPrivateKeyRSA(String privkey, String passphrase, Promise promise)
     throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
     InvalidAlgorithmParameterException, NoSuchPaddingException, InvalidKeyException {
 
       try {
-        // *** decrypt and construct private key
+        // Decrypt and construct private key
         final byte[] privkey_bytes = FNativeCrypto.hex_str_to_bytes(privkey);
         final PBEKeySpec kspec = new PBEKeySpec(passphrase.toCharArray());
         final EncryptedPrivateKeyInfo pkinfo = new EncryptedPrivateKeyInfo(privkey_bytes);
@@ -228,22 +204,23 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
       }
   }
 
-  // data as hex string, privkey as hex string
-  // Returns an array representing the signature as buffer
+  /**
+   * Pass data as hex string, privkey as hex string. Returns an array representing the sig as buffer
+   */ 
   @ReactMethod
   public void signRSA(String data, String privkey, Promise promise)
     throws SignatureException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
     InvalidKeyException, InvalidKeySpecException, IOException, NoSuchPaddingException {
       
       try {
-        // *** construct private key
+        // Construct private key
         final byte[] privkey_bytes = FNativeCrypto.hex_str_to_bytes(privkey);
         
         PrivateKey key = KeyFactory.getInstance("RSA").generatePrivate(
           new PKCS8EncodedKeySpec(privkey_bytes)
         );
 
-        // *** make sig
+        // Make sig
         final Signature private_sig = Signature.getInstance(FNativeCrypto.SIG_ALG);
         private_sig.initSign(key);
         private_sig.update(FNativeCrypto.hex_str_to_bytes(data));
@@ -261,22 +238,23 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
       }
   }
 
-  // data as hex string, pubkey as hex string, sig as hex string
-  // Returns a bool
+  /**
+   * Pass data as hex string, pubkey as hex string, sig as hex string. Returns a bool
+   */ 
   @ReactMethod
   public void verifyRSA(String data, String pubkey, String sig, Promise promise) 
     throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException,
     SignatureException {
       
       try {
-        // *** construct public key
+        // Construct public key
         final byte[] pubkey_bytes = FNativeCrypto.hex_str_to_bytes(pubkey);
         
         final PublicKey key = KeyFactory.getInstance("RSA").generatePublic(
           new X509EncodedKeySpec(pubkey_bytes)
         );
 
-        // *** verify sig
+        // Verify sig
         final Signature public_sig = Signature.getInstance(FNativeCrypto.SIG_ALG);
         public_sig.initVerify(key);
         public_sig.update(FNativeCrypto.hex_str_to_bytes(data));
@@ -287,8 +265,10 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
       }
   }
 
-  // data as hex string, pubkey as hex string
-  // Returns an array representing the encrypted data as buffer
+  /**
+   * Pass data as hex string, pubkey as hex string. Returns an array representing the encrypted 
+   * data as buffer
+   */ 
   @ReactMethod
   public void publicEncryptRSA(String data, String pubkey, Promise promise) {
     try {
@@ -315,8 +295,10 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
     } 
   }
 
-  // data as hex string, privkey as hex string
-  // Returns an array representing the encrypted data as buffer
+  /**
+   * Pass data as hex string, privkey as hex string. Returns an array representing the encrypted 
+   * data as buffer
+   */ 
   @ReactMethod
   public void privateDecryptRSA(String data, String privkey, Promise promise) {
     try {
@@ -343,8 +325,10 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
     } 
   }
 
-  // data as hex string, one_time_key as hex string, iv as hex string
-  // Returns an array representing the encrypted data as buffer
+  /**
+   * Pass data as hex string, one_time_key as hex string, iv as hex string. Returns an array 
+   * representing the encrypted data as buffer
+   */ 
   @ReactMethod
   public void symmetricEncrypt(String data, String one_time_key, String iv, Promise promise) {
     try {
@@ -371,8 +355,10 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
     }
   }
 
-  // data as hex string, one_time_key as hex string, iv as hex string
-  // Returns an array representing the decrypted data as buffer
+  /**
+   * Pass data as hex string, one_time_key as hex string, iv as hex string. Returns an array 
+   * representing the decrypted data as buffer
+   */ 
   @ReactMethod
   public void symmetricDecrypt(String data, String one_time_key, String iv, Promise promise) {
     try {
@@ -398,4 +384,58 @@ public class FNativeCrypto extends ReactContextBaseJavaModule {
       promise.reject(e);
     }
   }
+
+  /**
+   * TODO: we really want to refactor Fcrypto to use these hash functions on React Native, which
+   * would eliminate one of our few RN dependencies. The problem: we also really don't want our
+   * hash functions to be asynchronous. (It's apparently inadvisable to turn these into synchronous
+   * versions of themselves, for reasons related to the RN bridge.) Leaving them here for some 
+   * future programmer who likes working on annoying things.
+   */ 
+
+  /**
+   * Pass data as hex string. Returns an array representing a buffer
+   */ 
+  /**
+  @ReactMethod
+  public void sha1(String data, Promise promise) {
+   try {
+     byte[] bytes = FNativeCrypto.hex_str_to_bytes(data);
+     MessageDigest digest = MessageDigest.getInstance("SHA1");
+     byte[] hash = digest.digest(bytes);
+     WritableArray ret = new WritableNativeArray();
+
+     for (byte b : hash) {
+       ret.pushInt(b);
+     }
+
+     promise.resolve(ret);
+   } catch (Exception e) {
+     promise.reject(e);
+   }
+  }
+  */
+
+  /**
+   * Pass data as hex string. Returns an array representing a buffer
+   */ 
+  /**
+  @ReactMethod
+  public void sha256(String data, Promise promise) {
+   try {
+     byte[] bytes = FNativeCrypto.hex_str_to_bytes(data);
+     MessageDigest digest = MessageDigest.getInstance("SHA256");
+     byte[] hash = digest.digest(bytes);
+     WritableArray ret = new WritableNativeArray();
+
+     for (byte b : hash) {
+       ret.pushInt(b);
+     }
+
+     promise.resolve(ret);
+   } catch (Exception e) {
+     promise.reject(e);
+   }
+  }
+  */
 }
