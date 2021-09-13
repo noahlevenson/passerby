@@ -27,12 +27,22 @@ class Ftrans_msg {
     FDLT: 3
   };
 
+  /**
+   * msg: the lower layer message to encapsulate
+   * type: from the Ftrans_msg.TYPE enum
+   * pubkey: sender's pubkey
+   * sig: cryptographic signature of the sender over msg
+   * key: one time symmetric key, must be encrypted
+   * iv: iv for one time key, send it in the clear
+   */ 
+
   msg;
   type;
   pubkey;
   sig;
   iv;
 
+  // TODO: Validation!
   constructor({
     msg = null, 
     type = null, 
@@ -41,20 +51,17 @@ class Ftrans_msg {
     key = null, 
     iv = null
   } = {}) {
-    // TODO: Validation!
     this.msg = msg;
     this.type = type;
-    // Sender's pubkey
     this.pubkey = pubkey;
-    // Signature of sender over msg
     this.sig = sig;
-    // One time symmetric key (must be encrypted)
     this.key = key;
-    // IV for one time key (send it in the clear)
     this.iv = iv;
   }
 
-  // Construct a decrypted Ftrans_msg from an encrypted Ftrans_msg
+  /**
+   * Factory function: construct a decrypted Ftrans_msg from an encrypted Ftrans_msg
+   */ 
   static async decrypted_from(ftrans_msg) {
     try {
       const privkey = await Fcrypto.get_privkey();
@@ -93,7 +100,9 @@ class Ftrans_msg {
     }
   }
 
-  // Construct an encrypted Ftrans_msg
+  /**
+   * Factory function: Construct an encrypted Ftrans_msg
+   */ 
   static async encrypted_from({
     msg = null, 
     type = null,
