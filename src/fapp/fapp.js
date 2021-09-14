@@ -69,6 +69,7 @@ class Fapp {
   fid_prv;
   bootstrap_nodes;
   authorities;
+  trusted_root_keys;
   fpht;
   fbuy;
   fksrv;
@@ -91,6 +92,7 @@ class Fapp {
     port = 27500,
     bootstrap_nodes = [],
     authorities = [],
+    trusted_root_keys = [],
     geocoding = Fapp.GEOCODING_METHOD.NOMINATIM, 
     is_keyserver_validator = false,
     keepalive = true,
@@ -103,6 +105,7 @@ class Fapp {
     }));
 
     this.authorities = [...authorities];
+    this.trusted_root_keys = [...trusted_root_keys];
     this.fid_pub = fid_pub;
     this.fid_prv = fid_prv;
     this.port = port;
@@ -621,7 +624,7 @@ class Fapp {
       db_init_hook: Fksrv.UTXO_DB_INIT_HOOK
     });
 
-    this.fksrv = new Fksrv({dlt: ksrv_dlt});
+    this.fksrv = new Fksrv({dlt: ksrv_dlt, trusted_root_keys: this.trusted_root_keys});
     this.fksrv.start();
 
     // Create and start an FBUY interface

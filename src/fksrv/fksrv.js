@@ -1,7 +1,7 @@
 /** 
 * FKSRV
-* Distributed ledger-based keyserver for 
-* web-of-trust-ish system of peer-signed certificates
+* A keyserver built atop FDLT
+* 
 * 
 *
 *
@@ -21,12 +21,14 @@ const { Fgraph } = require("../ftypes/fgraph/fgraph.js");
 const { Flog } = require("../flog/flog.js");
 const { Futil } = require("../futil/futil.js");
 
-// Hi, I'm an application built atop FDLT which provides a distributed database of public keys and
-// a record of relationships between keys in the form of signatures and revocations: a peer signs
-// another peer's key by spending a persistent token, SIG_TOK. A peer revokes their signature
-// by spending a persistent token, REV_TOK. Peers may double spend SIG_TOK and REV_TOK, we interpret
-// transactions idempotently. A peer registers their new key with the keyserver by performing a 
-// self-signature. Peers may not revoke their self-signature. 
+/**
+ * Hi, I'm an application built atop FDLT which provides a distributed database of public keys and
+ * a record of relationships between keys in the form of signatures and revocations: a peer signs
+ * another peer's key by spending a persistent token, SIG_TOK. A peer revokes their signature
+ * by spending a persistent token, REV_TOK. Peers may double spend SIG_TOK and REV_TOK, we interpret
+ * transactions idempotently. A peer registers their new key with the keyserver by performing a 
+ * self-signature. Peers may not revoke their self-signature.
+ */ 
 
 class Fksrv {          
   static REQ_POW_BITS = Fid.POW_LEAD_ZERO_BITS;
@@ -34,18 +36,6 @@ class Fksrv {
   static REV_TOK = Buffer.from([0xBE, 0xEF]).toString("hex");
   static SCRIPT_NO_UNLOCK = [Fdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];
   static SCRIPT_IS_VALID_SIG_AND_POW = [Fdlt_vm.OPCODE.OP_CHECKSIGPOW, Fksrv.REQ_POW_BITS];
-
-  static ROOT_KEY = 
-    "30820122300d06092a864886f70d01010105000382010f003082010a0282" + 
-    "010100ae76dbab80b72039d8c3c31ccc39b8331b36b12cc41587180251d1" + 
-    "84a1c33de27c1213270eafb584f43d2bb734eca91054e23fd99be6be28c2" + 
-    "eaf9e354b4c1a81f10673092a49d8c7d60a5eac7ac50be55a077ad0fae03" + 
-    "64b21fb0ae2737e388c2b8c5b1c19ccfa197aceae3070be8152d763d0b80" + 
-    "631733db824953e332743ae3c79c3299cd7edf9c362fd9f48fff53ab162a" + 
-    "43196bdad5654a7045068c7ac3ca76efe5ebcd88fecac0ad2bd4406ff245" + 
-    "2a5d50340e9b94302ea58918f2de9380eec4e0e249ab86cfe2ecbd87fd12" + 
-    "6494da7ee53cdb8ed9701aef22994cd875e007bb64f124e19d00cfb56e1f" + 
-    "15e9e114b083188f5a7aefd01fb3f71dcc34170203010001";
 
   static SIG_TX = new Fdlt_tsact({
     utxo: Fksrv.SIG_TOK.split("").reverse().join(""), 
@@ -91,9 +81,11 @@ class Fksrv {
   }
   
   dlt;
+  trusted_root_keys;
   
-  constructor ({dlt} = {}) {
+  constructor ({dlt, trusted_root_keys = []} = {}) {
     this.dlt = dlt;
+    this.trusted_root_keys = new Set(trusted_root_keys);
   }
 
   start() {
@@ -246,16 +238,21 @@ class Fksrv {
     return wot;
   }
 
+  /**
+   * TODO: After build_wot() and scc(), the process of selecting the trusted subgraphs is is a truly 
+   * unacceptable O(mn) algorithm (each subgraph * each peer). We avoid O(lmn) by coercing our
+   * trusted root keys into a Set at Fksrv instantiation time. But... this remains an unchill vibe.
+   */ 
   compute_strong_set() {
-    const scc = this.build_wot().scc();
+    return this.build_wot().scc().filter((subgraph) => {
+      subgraph.forEach((key) => {
+        if (this.trusted_root_keys.has(key)) {
+          return true;
+        }
+      });
 
-    // TODO: surely there's a way to do this that isn't O(n ^ 2)
-
-    for (let i = 0; i < scc.length; i += 1) {
-      if (scc[i].includes(Fksrv.ROOT_KEY)) {
-        return scc[i];
-      }
-    }
+      return false;
+    }).flat();
   }
 }
 
