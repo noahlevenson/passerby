@@ -71,7 +71,7 @@ Coming soon...
 ### :floppy_disk: Technology overview
 [Free Food](https://freefood.is) presents an end-to-end solution to the decentralized restaurant marketplace problem. The protocol stack provides both low level functionality (like NAT traversal, p2p networking, distributed data storage, and geolocation-based peer discovery) and higher level abstractions (like distributed trust and reputation systems, as well as restaurant e-commerce functionality for tasks like menu editing and order status notifications).  
 
-Our research topics include distributed data structures, [space-filling curves](https://en.wikipedia.org/wiki/Space-filling_curve), and applied cryptography. If that sounds interesting to you, consider [becoming a contributor](mailto:noah@freefood.is?subject=I want to contribute).
+Our research topics include distributed data structures, [space-filling curves](https://en.wikipedia.org/wiki/Space-filling_curve), and applied cryptography. If that sounds interesting to you, consider [becoming a contributor](mailto:noah@freefood.is?subject=I%20want%20to%20contribute).
 
 Thorough documentation is forthcoming. Until then, here's guide to our source layout:
 
