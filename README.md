@@ -77,7 +77,7 @@ Coming soon...
 
 Our research topics include distributed data structures, [space-filling curves](https://en.wikipedia.org/wiki/Space-filling_curve), and applied cryptography. If that sounds interesting to you, consider [becoming a contributor](mailto:noah@freefood.is?subject=I%20want%20to%20contribute).
 
-Thorough documentation is forthcoming. Until then, here's guide to our source layout:
+Thorough documentation is forthcoming. Until then, here's a guide to our source layout:
 
 |Module |Description                                                                                                                                                   |
 |-----------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
