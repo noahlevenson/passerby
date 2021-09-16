@@ -122,7 +122,7 @@ class Fbintree {
   }
 
   /**
-   * Insert a node into a BST using comparator function f(node, oldnode)
+   * Insert a node into a BST using comparator function f(..., node, oldnode)
    * Comparator function must return:
    * < 0 if node.data < oldnode.data
    * > 0 if node.data > oldnode.data

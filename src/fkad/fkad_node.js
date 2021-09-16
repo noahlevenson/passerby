@@ -318,132 +318,181 @@ class Fkad_node {
     }
   }
 
-  // Congratulations, you have achieved 100% code complexity
-  async _node_lookup(key, rpc = this._req_find_node, cb = (n_active, n_inactive) => {}) {
-    // BST comparator for insertion: sort by both XOR distance and lexicographical distance of its 
-    // concatenated addr and port -- i.e., keep our node_info BST sorted by distance while also 
-    // allowing for items which share the same key but have different network info bc of churn
-    function _by_distance_and_lex(node, oldnode) {
-      if (Fkad_node._get_distance(key, node.get_data().node_id).less(
-        Fkad_node._get_distance(key, oldnode.get_data().node_id))) {
-        return -1;
-      } else if (Fkad_node._get_distance(key, node.get_data().node_id).greater(
-        Fkad_node._get_distance(key, oldnode.get_data().node_id))) {
-        return 1;
-      }
-
-      // The complex case: the new node_info has the same key, so lexically compare the network info
-      const node_net_info = `${node.get_data().addr}${node.get_data().port}`;
-      const oldnode_net_info = `${oldnode.get_data().addr}${oldnode.get_data().port}`;
-      return node_net_info.localeCompare(oldnode_net_info);
+  /**
+   * BST comparator function for insertion of an Fkad_node_info: sort the BST by both XOR distance 
+   * from 'key' and lexicographical distance of the Fkad_node_info's concatenated addr and port. 
+   * This keeps the BST sorted by the Kademlia distance metric while also handling data elements 
+   * which share the same key but have different network info due to churn...
+   */ 
+  _insert_by_xor_lex(key, node, oldnode) {
+    if (Fkad_node._get_distance(key, node.get_data().node_id).less(
+      Fkad_node._get_distance(key, oldnode.get_data().node_id))) {
+      return -1;
+    } else if (Fkad_node._get_distance(key, node.get_data().node_id).greater(
+      Fkad_node._get_distance(key, oldnode.get_data().node_id))) {
+      return 1;
     }
 
-    // BST comparator for search: search by node ID ordered by distance from 'key' in the enclosing scope
-    // TODO: this is confusing
-    function _by_strict_equality(k, node) {
-      const node_info = node.get_data();
+    const node_net_info = `${node.get_data().addr}${node.get_data().port}`;
+    const oldnode_net_info = `${oldnode.get_data().addr}${oldnode.get_data().port}`;
+    return node_net_info.localeCompare(oldnode_net_info);
+  }
 
-      if (Fkad_node._get_distance(key, k.node_id).less(
-        Fkad_node._get_distance(key, node_info.node_id))) {
-        return -1;
-      } else if (Fkad_node._get_distance(key, k.node_id).greater(
-        Fkad_node._get_distance(key, node_info.node_id))) {
-        return 1;
-      }
+  /**
+   * BST comparator function to search over a tree of Fkad_node_infos: assumes the tree is sorted 
+   * using _insert_by_xor_lex(), where the XOR distance is measured from 'key'. Note the subtle
+   * difference between this function and _xor_and_lex(): BST insertion comparators work with BST
+   * nodes, while BST search comparators work with BST values.
+   */ 
+  _search_by_xor_lex(key, node_info_a, node) {
+    const node_info_b = node.get_data();
 
-      // The complex case: there's two objects with the same node ID, so it's lexical comparison time
-      const node_net_info = `${k.addr}${k.port}`;
-      const oldnode_net_info = `${node_info.addr}${node_info.port}`;
-      return node_net_info.localeCompare(oldnode_net_info);
+    if (Fkad_node._get_distance(key, node_info_a.node_id).less(
+      Fkad_node._get_distance(key, node_info_b.node_id))) {
+      return -1;
+    } else if (Fkad_node._get_distance(key, node_info_a.node_id).greater(
+      Fkad_node._get_distance(key, node_info_b.node_id))) {
+      return 1;
     }
 
-    // Send the RPCs and maintain the node lists
-    // Returns a value if one is found, otherwise returns undefined
-    async function _do_node_lookup(active, inactive, rsz = Fkad_node.ALPHA) {
-      const contacts = [];
-      let node = inactive.bst_min();
+    const node_a_net_info = `${node_info_a.addr}${node_info_a.port}`;
+    const node_b_net_info = `${node_info_b.addr}${node_info_b.port}`;
+    return node_a_net_info.localeCompare(node_b_net_info);
+  }
 
-      while (node !== null && contacts.length < rsz) {
-        contacts.push(node);
-        node = inactive.bst_successor(node);
-      }
+  /**
+   * Perform one round of a node lookup for 'key', sending RPC 'rpc' to 'rsz' peers, given some 
+   * state of active nodes and inactive nodes (as BSTs). 
+   * 
+   * If a value is found, we'll return a pair in the form of [payload, closest], where 'payload' is 
+   * the Fkad_data.payload wrapping the value, and 'closest' is the BST node wrapping the 
+   * closest active peer we heard of who didn't have the value. In many cases, 'closest' will be 
+   * null, indicating that we didn't know of any other active peers at the time we found the value. 
+   * 
+   * If a value is not found, we return undefined.
+   */ 
+  async _do_node_lookup({active, inactive, rsz = Fkad_node.ALPHA, rpc, key} = {}) {
+    const contacts = [];
+    let node = inactive.bst_min();
 
-      const res = [];
-      
-      contacts.forEach((node) => {
-        res.push(new Promise((resolve, reject) => {
-          rpc.bind(this)(key, node.get_data(), (res, ctx) => {
-            if (res.data.type === Fkad_data.TYPE.VAL) {
-              Fkad_node._is_valid_storable(res.data.payload[0]).then((is_valid) => {
-                resolve(is_valid ? [res.data.payload, active.bst_min()] : null);
-              });
+    while (node !== null && contacts.length < rsz) {
+      contacts.push(node);
+      node = inactive.bst_successor(node);
+    }
 
-              return;
-            } 
-
-            active.bst_insert(new Fbintree_node({data: res.from}), _by_distance_and_lex.bind(this));
-            inactive.bst_delete(node);
-
-            res.data.payload.forEach((node_info) => {
-              if (active.bst_search(_by_strict_equality.bind(this), node_info) === null) {
-                inactive.bst_insert(new Fbintree_node({data: node_info}), _by_distance_and_lex.bind(this));
-              }
+    const results = [];
+    
+    contacts.forEach((node) => {
+      results.push(new Promise((resolve, reject) => {
+        rpc.bind(this)(key, node.get_data(), (res, ctx) => {
+          if (res.data.type === Fkad_data.TYPE.VAL) {
+            Fkad_node._is_valid_storable(res.data.payload[0]).then((is_valid) => {
+              resolve(is_valid ? [res.data.payload, active.bst_min()] : null);
             });
 
-            resolve(null);
-          }, () => {
-            inactive.bst_delete(node);
-            resolve(null);
+            return;
+          } 
+
+          active.bst_insert(
+            new Fbintree_node({data: res.from}), 
+            this._insert_by_xor_lex.bind(this, key)
+          );
+          
+          inactive.bst_delete(node);
+
+          res.data.payload.forEach((node_info) => {
+            if (active.bst_search(this._search_by_xor_lex.bind(this, key), node_info) === null) {
+              inactive.bst_insert(
+                new Fbintree_node({data: node_info}), 
+                this._insert_by_xor_lex.bind(this, key)
+              );
+            }
           });
-        }));
-      });
 
-      return await Promise.all(res).then((values) => {
-        for (let i = 0; i < values.length; i += 1) {
-          if (values[i] !== null) {
-            return values[i];
-          }
+          resolve(null);
+        }, () => {
+          inactive.bst_delete(node);
+          resolve(null);
+        });
+      }));
+    });
+
+    return await Promise.all(results).then((values) => {
+      for (let i = 0; i < values.length; i += 1) {
+        if (values[i] !== null) {
+          return values[i];
         }
-      });
-    }
+      }
+    });
+  }
 
-    // *** INIT ***
+  /**
+   * Perform a complete node lookup for 'key'; 'rpc' is the RPC request function, one of either 
+   * _req_find_node or _req_find_value; status callback 'cb' is updated with the number of active
+   * and inactive nodes after each round
+   * 
+   * Returns an Fkad_data of either VAL or NODE_LIST type, depending on outcome
+   */ 
+  async _node_lookup(key, rpc = this._req_find_node, cb = (n_active, n_inactive) => {}) {
     const active = new Fbintree();
     const inactive = new Fbintree();
 
     this._get_nodes_closest_to({key: key, max: Fkad_node.ALPHA}).forEach((node_info) => {
-      inactive.bst_insert(new Fbintree_node({data: node_info}), _by_distance_and_lex.bind(this));
+      inactive.bst_insert(new Fbintree_node({data: node_info}), this._insert_by_xor_lex.bind(this, key));
     });
 
-    let lc;
+    let last_closest;
     let val;
   
-    // *** MAIN LOOP ***
     while (active.size() < Fkad_node.K_SIZE && !val) {
-      const c = active.bst_min();
-      const isz = inactive.size();
+      const closest = active.bst_min();
+      const n_inactive = inactive.size();
 
-      if (c === lc && isz === 0) {
+      if (closest === last_closest && n_inactive === 0) {
         break;
-      } else if (c === lc && isz > 0) {
-        val = await _do_node_lookup.bind(this, active, inactive, isz)();
+      } else if (closest === last_closest && n_inactive > 0) {
+        val = await this._do_node_lookup.bind(this, {
+          active: active, 
+          inactive: inactive, 
+          rsz: n_inactive, 
+          rpc: rpc, 
+          key: key
+        })();
       } else {
-        lc = c;
-        val = await _do_node_lookup.bind(this, active, inactive)();
+        last_closest = closest;
+        val = await this._do_node_lookup.bind(this, {
+          active: active, 
+          inactive: inactive, 
+          rpc: rpc, 
+          key: key
+        })();
       }
 
-      cb(active.size(), isz);
+      cb(active.size(), n_inactive);
     }
 
+    /**
+     * CASE 1: A value lookup has successfully returned a value
+     */ 
     if (val) {
-      if (val[1] !== null) {
-        Flog.log(`[FKAD] Storing ${key} to keyspace owner ${val[1].get_data().node_id}`);
-        this._req_store(key, val[0][0], val[1].get_data());
+      const [payload, closest] = val;
+
+      /** 
+       * Caching behavior upon successful lookup (section 2.3 in the Kademlia spec): we store the 
+       * [key, val] pair at the closest node we observed to the key that did not return the value
+       */ 
+      if (closest !== null) {
+        Flog.log(`[FKAD] Storing ${key} to keyspace owner ${closest.get_data().node_id}`);
+        this._req_store(key, payload[0], closest.get_data());
       }
 
-      return new Fkad_data({type: Fkad_data.TYPE.VAL, payload: val[0]});
+      return new Fkad_data({type: Fkad_data.TYPE.VAL, payload: payload});
     }
 
+    /**
+     * CASE 2: Either a value lookup has failed to return a value, or we performed a node lookup;
+     * in both circumstances, we just return a sorted list of the closest nodes we heard about
+     */ 
     const sorted = active.inorder((node, data) => {
       data.push(node.get_data());
       return data;  
