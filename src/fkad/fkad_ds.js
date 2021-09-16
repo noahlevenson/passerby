@@ -31,7 +31,9 @@ class Fkad_ds {
     return this.data.get(key.toString());
   }
 
-  // Get a 2D array of all [key, val] pairs
+  /**
+   * Returns a 2D array of all [key, val] pairs
+   */ 
   entries() {
     return Array.from(this.data.entries());
   }

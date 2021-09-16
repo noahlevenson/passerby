@@ -39,8 +39,10 @@ class Fkad_net_solo extends Fkad_net {
       if (ftrans_msg.type === Ftrans_msg.TYPE.FKAD) {
         const msg = new Fkad_msg(ftrans_msg.msg);
 
-        // Sender's node ID must equal the hash of their pubkey (we know they're
-        // the true owner of this pubkey bc we validated their sig at Ftrans layer)
+        /**
+         * Sender's node ID must equal the hash of their pubkey (we know they're
+         * the true owner of this pubkey bc we validated their sig at Ftrans layer)
+         */ 
         if (msg.from.node_id.equals(new Fbigint(Fcrypto.sha1(rinfo.pubkey)))) {
           this._in(msg);
         }

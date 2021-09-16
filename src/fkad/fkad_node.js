@@ -106,12 +106,17 @@ class Fkad_node {
     this.net.node = this;
   }
 
-  // Enforce data integrity on the DHT, we'll run this on any data we receive
-  // and on any data that a peer asks us to store
+  /**
+   * Enforce data integrity on the DHT. This is our hook to perform basic security to mitigate
+   * storage-based attacks (index poisoning, etc). We run this on all data we receive via a 
+   * value lookup, and also on any data that a peer asks us to store.
+   */ 
   static async _is_valid_storable(data) {
     try {
-      // We only store PHT nodes to our DHT
-      // TODO: we obviously need a more robust way of validating a PHT node by schema
+      /**
+       * Rule: we must only allow the storage of PHT nodes to our DHT. TODO: we obviously need a more
+       * robust method for validating a PHT node by schema
+       */ 
       if (!Fpht_node.valid_magic(data)) {
         return false;
       }
@@ -119,16 +124,17 @@ class Fkad_node {
       const pairs = Fpht_node.get_all_pairs(data);
 
       for (let i = 0; i < pairs.length; i += 1) {
-        const location_key = pairs[i][0];
-        const bboard = pairs[i][1];
+        const [location_key, bboard] = pairs[i];
 
-        // location_key must be an n-bit location key and
-        // bboard must be a valid Fapp_bboard object
-        // TODO: write me
+        /**
+         * Rule: location_key must be an n-bit location key and bboard must be a valid Fapp_bboard 
+         * object. TODO: write me
+         */
 
-        // The data must be published by a peer with a valid proof of work
-        // TODO: this is insecure until we replace Fid.hash_cert with a new 
-        // system which hashes over the entire Fid_pub
+        /**
+         * Rule: The data must be published by a peer with a valid proof of work. TODO: this is insecure  
+         * until we replace Fid.hash_cert() with a new system which hashes over the entire Fid_pub
+         */ 
         const pow = Fid.is_valid_pow(
           Fid.hash_cert(bboard.cred.pubkey, bboard.cred.nonce), 
           Fid.POW_LEAD_ZERO_BITS
@@ -138,18 +144,23 @@ class Fkad_node {
           return false;
         }
 
-        // The data must be published by a peer who's in the strong set
-        // TODO: write me
+        /**
+         * Rule: the data must be published by a peer who's in the strong set. TODO: write me
+         */ 
 
-        // The data must be signed by the genuine owner of the named keypair
+        /**
+         * Rule: the data must be signed by the genuine owner of the named keypair
+         */ 
         const valid_sig = await Fapp_bboard.verify(bboard, bboard.cred.pubkey);
 
         if (!valid_sig) {
           return false;
         }
 
-        // The location_key matches the lat/long found in the signed data
-        // TODO: this is also insecure until we replace Fid.hash_cert as above
+        /**
+         * Rule: the location_key matches the lat/long found in the signed data. TODO: this is also 
+         * insecure until we replace Fid.hash_cert() as above
+         */ 
         const coord = new Fgeo_coord({lat: bboard.cred.lat, long: bboard.cred.long});
         const valid_lk = new Fbigint(location_key).equals(coord.linearize());
 
@@ -164,27 +175,18 @@ class Fkad_node {
     } 
   }
   
-  // Get XOR "distance" between two Fbigint values
+  /**
+   * Get XOR "distance" between two Fbigint values
+   */ 
   static _get_distance(key1, key2) {
     return key1.xor(key2);
   }
 
-  // Prints using DFS
-  _debug_print_routing_table() {
-    Flog.log(`*******************************************`, true);
-    Flog.log(`[FKAD] FKAD_NODE _DEBUG_PRINT_ROUTING_TABLE:`);
-
-    this.routing_table.dfs((node, data) => {
-      const bucket = node.get_data();
-      
-      if (bucket !== null) {
-        Flog.log(`[FKAD] prefix "${bucket.get_prefix()}" - ${bucket.length()} contacts`);
-      }
-    });
-  }
-
-  // TODO: to get a "random ID in the bucket's range," we're selecting a random node in the bucket
-  // it's prob more rigorous to generate a random ID in the bucket's range
+  /**
+   * Perform a refresh on a given k-bucket. Per the Kademlia spec, we're supposed to select a 
+   * "random ID in the bucket's range." Currently we do this by selecting a random node in the bucket. 
+   * TODO: it's prob more rigorous to generate a random ID over the interval of the bucket's range...
+   */ 
   async _refresh_kbucket(kbucket) {
     const random_id = kbucket.get(Math.floor(Math.random() * kbucket.length())).node_info.node_id;
     const prefix = kbucket.get_prefix();
@@ -193,57 +195,63 @@ class Fkad_node {
     await this._node_lookup(random_id);
   }
 
-  // Find the appropriate leaf node in the routing table for a given node ID
+  /**
+   * Find the appropriate leaf node in the routing table for a given node ID (as Fbigint)
+   */ 
   find_kbucket_for_id(id) {
     let node = this.routing_table.get_root();
     let i = 0;
 
-    // TODO: this can prob be simplified since our tree seems to be a perfect tree
-    // leafs always split into two children so we don't need to know the value of b before we enter 
-    // the loop - we can just say "while this node's children are not null, keep going"
-    while (true) {
-      const b = id.get_bit(i);
-
-      if (node.get_child_bin(b) === null) {
-        break;
-      }
-
-      node = node.get_child_bin(b);
+    while (node.get_left() !== null && node.get_right() !== null) {
+      node = node.get_child_bin(id.get_bit(i));
       i += 1;
     }
 
     return node;
   }
 
-  // TODO: this god function is not chad mode
-  // we need to separate its concerns: decide if a contact needs to be inserted, split buckets 
-  // in the routing table, replicate data to new contacts... need to design things better: how
-  // and why does the eng initiate the insertion of new contacts and replicating data to them?
+  /**
+   * TODO: this god function is not chad mode
+   * We need to separate our concerns and break this up. These are the activities being performed
+   * here: deciding if a contact needs to be inserted, handling the easy insertion case, handling
+   * the hard insertion case which requires bucket splitting, and replicating data to new contacts.
+   */ 
   _routing_table_insert(inbound_node_info) {
     let leaf_node = this.find_kbucket_for_id(inbound_node_info.node_id);
     let bucket = leaf_node.get_data();
     const kbucket_rec = bucket.exists(inbound_node_info);
 
-    // TODO: a locked contact is silently unlocked before insertion by wrapping it in a fresh 
-    // Fkad_kbucket_rec; it's bad for code comprehension bc the locking occurs in Fkad_eng_alpha 
+    /**
+     * TODO: a locked contact is silently unlocked before insertion by wrapping it in a fresh 
+     * Fkad_kbucket_rec; it's bad for code comprehension bc the locking occurs in Fkad_eng_alpha
+     */ 
     const new_kbucket_rec = new Fkad_kbucket_rec({node_info: inbound_node_info});
 
     if (kbucket_rec !== null) {
-      // We've already seen this node in this bucket, so just move a fresh record to the tail
+      /**
+       * CASE 1: We've already seen this node in this bucket, so just move a fresh record to the tail
+       */ 
       bucket.delete(kbucket_rec);
       bucket.enqueue(new_kbucket_rec);
     } else if (kbucket_rec === null && !bucket.is_full()) {
-      // We've never seen this node and the appropriate bucket isn't full, so just insert it
+      /**
+       * CASE 2: We've never seen this node and the appropriate bucket isn't full, so just insert it
+       */ 
       bucket.enqueue(new_kbucket_rec);
 
-      // Replicate any of our data that is appropriate to this new node
+      /**
+       * Replicate any of our data that is appropriate to this new node
+       */
       this.data.entries().forEach((pair) => {
-        const key = new Fbigint(pair[0]);
+        const [key_str, val] = pair;
+        const key = new Fbigint(key_str);
         const cnodes = this._get_nodes_closest_to({key: key});
 
-        // If the new node is one of the K closest nodes to this key AND we are closer to the key 
-        // than any of my neighbors (or the new node is now closer to the key than we are), then 
-        // replicate this (key, value) pair to the new node
+        /**
+         * If the new node is one of the K closest nodes to this key AND we are closer to the key 
+         * than any of my neighbors (or the new node is now closer to the key than we are), then 
+         * replicate this (key, value) pair to the new node
+         */ 
         if (cnodes.includes(inbound_node_info) && 
           (Fkad_node._get_distance(this.node_id, key).less_equal(
             Fkad_node._get_distance(cnodes[0].node_id, key) || 
@@ -252,15 +260,19 @@ class Fkad_node {
           Flog.log(`[FKAD] Replicating ${key.toString()} to new node ` +
           `${inbound_node_info.node_id.toString()}`);
 
-          this._req_store(key, pair[1].get_data(), inbound_node_info);
+          this._req_store(key, val.get_data(), inbound_node_info);
         }
       });
     } else {
-      // We've never seen this node but the appropriate bucket is full
+      /**
+       * CASE 3: We've never seen this node but the appropriate bucket is full
+       */ 
       const our_bucket = this.find_kbucket_for_id(this.node_id).get_data();
 
       if (bucket === our_bucket) {
-        // The incoming node_info's bucket's range includes our ID, so split the bucket
+        /**
+         * 3A: The incoming node_info's bucket's range includes our ID, so split the bucket
+         */ 
         const left_child = new Fbintree_node({
           parent: leaf_node, 
           data: new Fkad_kbucket({max_size: Fkad_node.K_SIZE, prefix: `${bucket.get_prefix()}0`})
@@ -275,22 +287,33 @@ class Fkad_node {
         leaf_node.set_right(right_child);
         leaf_node.set_data(null);
 
-        // Redistribute the Fkad_kbucket_recs from the old bucket to the new leaves
+        /**
+         * Redistribute the Fkad_kbucket_recs from the old bucket to the new leaves
+         */ 
         bucket.to_array().forEach((kbucket_rec) => {
           const b = kbucket_rec.node_info.node_id.get_bit(bucket.get_prefix().length);
           leaf_node.get_child_bin(b).get_data().enqueue(kbucket_rec);
         });
 
-        // Attempt reinsertion via recursion
+        /**
+         * Attempt reinsertion via recursion
+         */ 
         this._routing_table_insert(inbound_node_info);
       } else {
-        // TODO: This case requires an implementation!
-
-        // Per the optimizations in section 4.1, we're supposed to add the new contact to the 
-        // "replacement cache" and do lazy replacement the next time we need to access the bucket
-
-        // Unresolved: if a new contact is discarded (or moved to the replacement cache), 
-        // are we supposed to replicate our data to them? Is that mathematically poss?
+        /**
+         * 3B: The incoming node_info's bucket's range does not include our ID. Per the spec,
+         * section 4.1, the optimized way to handle this is to add the new contact to the 
+         * "replacement cache" and do a lazy replacement -- i.e., swap in a peer from the 
+         * replacement cache the next time we mark a peer in this bucket range as stale. 
+         * 
+         * TODO: this case requires an implementation!
+         * 
+         * TODO: remember that, when lazy replacing a peer, you probably need to perform the 
+         * replication check in CASE 2. Why? Well, at the time a peer was placed in the replacement
+         * cache, we do know that since their bucket range doesn't include our ID, they are not
+         * one of the K closest peers responsible for values in our partition of the keyspace. But
+         * the routing table will have changed by the time we get around to lazy replacing them...
+         */
       }
     }
   }

@@ -24,37 +24,51 @@ class Fkad_kbucket {
     this.touch();
   }
 
-  // Get an Fkad_kbucket_rec from this k-bucket by index
+  /**
+   * Fetch an Fkad_kbucket_rec from this k-bucket by index
+   */ 
   get(i) {
     return this.data[i];
   } 
 
-  // Get this k-bucket's prefix
+  /**
+   * Return this k-bucket's prefix
+   */ 
   get_prefix() {
     return this.prefix;
   }
 
-  // Set time last touched (ms since Unix Epoch)
+  /**
+   * Set time last touched (ms since Unix Epoch)
+   */ 
   touch() {
     this.touched = Date.now();
   }
 
-  // Get time last touched
+  /**
+   * Get time last touched
+   */ 
   get_touched() {
     return this.touched;
   }
 
-  // Has this k-bucket reached max capacity?
+  /**
+   * Has this k-bucket reached max capacity?
+   */ 
   is_full() {
     return this.data.length >= this.max_size;
   }
 
-  // Get current length of this k-bucket
+  /**
+   * Return the current length of this k-bucket
+   */ 
   length() {
     return this.data.length;
   }
 
-  // Enqueue an Fkad_kbucket_rec, evicting the least recently seen
+  /**
+   * Enqueue an Fkad_kbucket_rec, evicting the least recently seen
+   */ 
   enqueue(kbucket_rec) {
     // TODO: for sanity during development
     if (!(kbucket_rec instanceof Fkad_kbucket_rec)) {
@@ -73,8 +87,10 @@ class Fkad_kbucket {
     }
   }
 
-  // Check whether an Fkad_kbucket_rec for a given Fkad_node_info exists in this k-bucket
-  // Return a reference to the existing Fkad_kbucket_rec || null 
+  /**
+   * Check whether an Fkad_kbucket_rec for a given Fkad_node_info exists in this k-bucket.
+   * Return a reference to the existing Fkad_kbucket_rec, or null if nonexistent
+   */  
   exists(node_info) {
     for (let i = 0; i < this.data.length; i += 1) {
       const c = this.data[i];
@@ -88,13 +104,17 @@ class Fkad_kbucket {
     return null;
   }
 
-  // Delete an Fkad_kbucket_rec from this k-bucket
-  // kbucket_rec must be a reference to an Fkad_kbucket_rec that exists in this k-bucket
+  /**
+   * Delete an Fkad_kbucket_rec from this k-bucket. kbucket_rec must be a reference to an 
+   * Fkad_kbucket_rec that exists in this k-bucket
+   */ 
   delete(kbucket_rec) {
     this.data.splice(this.data.indexOf(kbucket_rec), 1);
   }
 
-  // Return a shallow copy of this k-bucket's underlying linked list
+  /**
+   * Return a shallow copy of this k-bucket's underlying array
+   */ 
   to_array() {
     return [...this.data];
   }

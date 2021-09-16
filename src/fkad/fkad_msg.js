@@ -29,7 +29,7 @@ class Fkad_msg {
   id;
 
   constructor({rpc = null, from = null, data = null, type = null, id = null} = {}) {
-    // Mostly for sanity during development: explicitly require values 
+    // Mostly for sanity during development, explicitly require values 
     if (id === null || rpc === null || from === null || type === null) {
       throw new Error("Arguments cannot be null");
     }
