@@ -15,9 +15,8 @@ const { Fkad_msg } = require("../fkad_msg.js");
 const { Fkad_node_info } = require("../fkad_node_info.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
-  static DEFAULT_TIMEOUT = 5000;
-  static RES_EVENT_PREFIX = "r+";
-  
+  static DEFAULT_TTL = 5000;
+
   res;
 
   constructor() {
@@ -30,28 +29,24 @@ class Fkad_eng_alpha extends Fkad_eng {
     this.node._routing_table_insert(msg.from);
     
     if (msg.type === Fkad_msg.TYPE.RES) {
-      this.res.emit(`${Fkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`, msg);
+      this.res.emit(`${msg.id.toString()}`, msg);
     } else {
       this.node._on_req(msg);
     }
   }
 
-  _send(msg, node_info, success, timeout, ttl = Fkad_eng_alpha.DEFAULT_TIMEOUT)  {
+  _send(msg, node_info, success = () => {}, timeout = () => {}, ttl = Fkad_eng_alpha.DEFAULT_TTL) {
     if (msg.type === Fkad_msg.TYPE.REQ) {
       const outgoing = new Promise((resolve, reject) => {
         const timeout_id = setTimeout(() => {
-          this.res.removeAllListeners(`${Fkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`);
+          this.res.removeAllListeners(`${msg.id.toString()}`);
           // TODO: Maybe we should reject with an err code
           reject();
         }, ttl);
 
-        this.res.once(`${Fkad_eng_alpha.RES_EVENT_PREFIX}${msg.id.toString()}`, (res_msg) => {
+        this.res.once(`${msg.id.toString()}`, (res_msg) => {
           clearTimeout(timeout_id);
-
-          if (typeof success === "function") {
-            success(res_msg, this.node);
-          }
-
+          success(res_msg, this.node);
           // TODO: Maybe we should resolve with a value
           resolve();
         });
@@ -71,9 +66,7 @@ class Fkad_eng_alpha extends Fkad_eng {
           }
         }
         
-        if (typeof timeout === "function") {
-          timeout();
-        }
+        timeout();
       });
     }
 
