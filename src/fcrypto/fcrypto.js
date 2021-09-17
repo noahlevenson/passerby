@@ -67,7 +67,9 @@ class Fcrypto {
     Fcrypto.NATIVE_CRYPTO = ref;
   }
 
-  // TODO: this is not currently in use, right?
+  /**
+   * TODO: this is not currently in use, right?
+   */ 
   static async random_bytes_strong(len) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.randomBytes(len);
@@ -82,20 +84,27 @@ class Fcrypto {
     }
   }
 
-  // Returns a hex string
+  /**
+   * Compute the SHA1 hash of 'data', returns a hex string
+   */ 
   static sha1(data) {
     const hash = crypto.createHash(Fcrypto.SHA1);
     hash.update(data);
     return hash.digest("hex");
   }
 
-  // Returns a hex string
+  /**
+   * Compute the SHA256 hash of 'data', returns a hex string
+   */ 
   static sha256(data) {
     const hash = crypto.createHash(Fcrypto.SHA256);
     hash.update(data);
     return hash.digest("hex");
   }
 
+  /**
+   * Generate an asymmetric keypair, encrypting the private key with password 'passphrase'
+   */ 
   static async generate_key_pair(passphrase) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.generateRSAKeyPair(Fcrypto.MODULUS_LEN, passphrase);
@@ -133,7 +142,9 @@ class Fcrypto {
     }
   }
 
-  // Returns key as buffer
+  /**
+   * Generate a one time key, returns key as Buffer
+   */ 
   static async generate_one_time_key() {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.randomBytes(Fcrypto.ONE_TIME_KEY_LEN);
@@ -145,7 +156,9 @@ class Fcrypto {
     }
   }
 
-  // Returns IV as buffer
+  /**
+   * Generate a one time IV, returns IV as Buffer
+   */ 
   static async generate_one_time_iv() {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.randomBytes(Fcrypto.ONE_TIME_IV_LEN);
@@ -157,8 +170,10 @@ class Fcrypto {
     }
   }
 
-  // Assumes encrypted privkey key as DER buffer
-  // Returns unencrypted key as DER buffer
+  /**
+   * Decrypt encrypted private key 'key' using password 'passphrase'. Pass 'key' as DER Buffer.
+   * Returns unecrypted key as DER Buffer
+   */ 
   static async decrypt_private_key(key, passphrase) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.decryptPrivateKeyRSA(key.toString("hex"), passphrase);
@@ -178,7 +193,10 @@ class Fcrypto {
     } 
   }
 
-  // Assumes UNENCRYPTED privkey key as DER buffer
+  /**
+   * Compute the cryptographic signature over 'data' using private key 'key'. Pass 'key' as 
+   * unencrypted DER Buffer. Returns sig as Buffer
+   */  
   static async sign(data, key) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.signRSA(data.toString("hex"), key.toString("hex"));
@@ -193,7 +211,10 @@ class Fcrypto {
     }
   }
 
-  // Assumes pubkey key as DER buffer
+  /**
+   * Verify the authenticity of signature 'sig' over 'data'. Pass public key 'key' as DER Buffer.
+   * Returns a bool
+   */ 
   static async verify(data, key, sig) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.verifyRSA(
@@ -218,7 +239,9 @@ class Fcrypto {
     }
   }
 
-  // Assumes symmetric key one_time_key as buffer, iv as buffer
+  /**
+   * Encrypt 'data' using a symmetric key. Pass 'one_time_key' as Buffer, iv as Buffer
+   */ 
   static async symmetric_encrypt(data, one_time_key, iv) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.symmetricEncrypt(
@@ -237,7 +260,9 @@ class Fcrypto {
     }
   }
 
-  // Assumes symmetric key one_time_key as buffer, iv as buffer
+  /**
+   * Decrypt 'data' using a symmetric key. Pass 'one_time_key' as Buffer, iv as Buffer
+   */ 
   static async symmetric_decrypt(data, one_time_key, iv) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.symmetricDecrypt(
@@ -256,7 +281,9 @@ class Fcrypto {
     }
   }
 
-  // Assumes pubkey key as DER buffer, data as buffer
+  /**
+   * Encrypt 'data' using public key 'key'. Pass 'data' as Buffer, 'key' as DER Buffer
+   */ 
   static async public_encrypt(data, key) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.publicEncryptRSA(
@@ -276,7 +303,9 @@ class Fcrypto {
     }
   }
 
-  // Assumes UNENCRYPTED privkey key as DER buffer, data as buffer
+  /**
+   * Decrypt 'data' using private key 'key'. Pass 'data' as Buffer, 'key' as unencrypted DER Buffer
+   */ 
   static async private_decrypt(data, key) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE) {
       const res = await Fcrypto.NATIVE_CRYPTO.privateDecryptRSA(
