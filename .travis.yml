@@ -1,4 +1,4 @@
 language: node_js
 node_js: lts/*
 install: skip
-script: ./test/test.sh
+script: ./test.sh
