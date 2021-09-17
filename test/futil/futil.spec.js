@@ -11,11 +11,17 @@ const { Futil } = require("../../src/futil/futil.js");
   assert.strictEqual(res2, false);
 
   const res3 = Futil.is_hex_str("f");
-  assert.strictEqual(res3, false);
+  assert.strictEqual(res3, true);
 
   const res4 = Futil.is_hex_str("fff");
-  assert.strictEqual(res4, false);
+  assert.strictEqual(res4, true);
 
   const res5 = Futil.is_hex_str("00001111222266abcdef");
   assert.strictEqual(res5, true);
+
+  const res6 = Futil.is_hex_str("fk");
+  assert.strictEqual(res6, false);
+
+  const res7 = Futil.is_hex_str("");
+  assert.strictEqual(res7, false);
 })();

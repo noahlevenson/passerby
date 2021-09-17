@@ -71,7 +71,8 @@ class Futil {
   }
 
   /**
-   * Check whether a string appears to be a valid hexidecimal value
+   * Check whether a string appears to be a valid hexidecimal value. This returns true for all
+   * valid hex strings regardless of byte length, e.g. 'fff' is considered valid
    */ 
   static is_hex_str(str) {
     const reg = /^[A-Fa-f0-9]+$/;
