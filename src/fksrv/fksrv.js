@@ -39,14 +39,14 @@ class Fksrv {
 
   static SIG_TX = new Fdlt_tsact({
     utxo: Fksrv.SIG_TOK.split("").reverse().join(""), 
-    lock: [Fdlt_vm.OPCODE.OP_NOOP], 
+    lock: [Fdlt_vm.OPCODE.OP_NOP], 
     unlock: Fksrv.SCRIPT_IS_VALID_SIG_AND_POW,
     t: 31337
   });
 
   static REV_TX = new Fdlt_tsact({
     utxo: Fksrv.REV_TOK.split("").reverse().join(""),
-    lock: [Fdlt_vm.OPCODE.OP_NOOP],
+    lock: [Fdlt_vm.OPCODE.OP_NOP],
     unlock: Fksrv.SCRIPT_IS_VALID_SIG_AND_POW,
     t: 31337
   })

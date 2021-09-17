@@ -1,6 +1,6 @@
 /** 
 * FDLT_TSACT
-* A single DLT transaction
+* A DLT transaction
 * 
 * 
 *
@@ -30,7 +30,9 @@ class Fdlt_tsact {
   unlock;
   t;
 
-  // utxo as hex string, lock and unlock as buffers or arrays, t as unix time as number
+  /**
+   * Pass utxo as hex string, lock and unlock as buffers or arrays, t (unix epoch) as number
+   */ 
   constructor ({version = Fdlt_tsact.VERSION.V1, utxo, lock, unlock, t} = {}) {
     this.version = version;
     this.utxo = utxo;
@@ -39,20 +41,27 @@ class Fdlt_tsact {
     this.t = t ? t : Date.now();
   }
 
+  /**
+   * Factory function to construct an Fdlt_tsact from its serialized form
+   */ 
   static from(buf) {
     return Fdlt_tsact.DECODER.get(buf[0])(buf);
   }
 
-  // Transactions are serialized as buffers
+  /**
+   * Transactions are serialized as Buffers
+   */ 
   static serialize(tsact) {
     // TODO: handle bad version
     return Buffer.from(Fdlt_tsact.ENCODER.get(tsact.version)(tsact));
   }
 
-  // V1 format: version (1 byte), utxo len (2 bytes, uint little endian), utxo, 
-  // lock len (2 bytes, uint little endian), lock, unlock len (2 bytes, uint little endian), 
-  // unlock, unix timestamp (8 bytes, double little endian)
-  // TODO: Watch out for integer overflow here 
+  /**
+   * V1 format: version (1 byte), utxo len (2 bytes, uint little endian), utxo, 
+   * lock len (2 bytes, uint little endian), lock, unlock len (2 bytes, uint little endian), 
+   * unlock, unix timestamp (8 bytes, double little endian)
+   * TODO: Watch out for integer overflow here 
+   */ 
   static _encoder_v1(tsact) {
     const utxo_buf = Buffer.from(tsact.utxo, "hex");
 
@@ -97,7 +106,9 @@ class Fdlt_tsact {
     });
   }
 
-  // Compute the SHA256 hash of a serialized transaction, returns a string
+  /**
+   * Compute the SHA256 hash of a serialized transaction, returns a string
+   */ 
   static sha256(buf) {
     return Fcrypto.sha256(buf.toString("hex"));
   }

@@ -1,7 +1,7 @@
 /** 
 * FDLT_MSG
-* Encapsulates and provides a simple interface for 
-* interrogating the contents of FDLT messages
+* An FDLT message 
+* 
 * 
 *
 *
@@ -17,10 +17,13 @@ class Fdlt_msg {
     RES: 1
   };
 
-  // Our messages are similar to Bitcoin, but we currently use them in an unsolicited
-  // fashion - nodes just broadcast blocks as TX and BLOCK messages without first sending
-  // an INV; a GETBLOCKS REQ advertises a last known hash and a list of avail blocks is 
-  // sent in the RES; GETDATA requests one block by hash and the response is sent in the RES
+  /**
+   * Our message types are similar to Bitcoin's message types, but we currently deploy them in an 
+   * unsolicited fashion: nodes just broadcast blocks as TX and BLOCK messages without first sending
+   * an INV; a GETBLOCKS REQ advertises a last known hash and a list of avail blocks is sent in the 
+   * RES; GETDATA requests one block by hash and the response is sent in the RES. TODO: when we 
+   * get around to optimizing the message system, we'll prob want to make everything solicited...
+   */ 
   static FLAVOR = {
     TX: 0,
     BLOCK: 1,

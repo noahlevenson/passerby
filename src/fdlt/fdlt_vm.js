@@ -14,13 +14,15 @@ const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fid } = require("../fid/fid.js");
 const cfg = require("../../libfood.json");
 
-// Be forewarned: the stack uses Buffers instead of Fbigints so as to preserve leading zeros
+/**
+ * Be forewarned: the stack uses Buffers instead of Fbigints so as to preserve leading zeros
+ */ 
 
 class Fdlt_vm {
   static STACK_SZ = 1024;
 
   static OPCODE = {
-    OP_NOOP: 0x61,
+    OP_NOP: 0x61,
     OP_PUSH1: 0x64,
     OP_PUSH2: 0x65,
     OP_CHECKSIG: 0xAC,
@@ -29,7 +31,7 @@ class Fdlt_vm {
   };
 
   GRAMMAR = new Map([
-    [Fdlt_vm.OPCODE.OP_NOOP, this._op_noop],
+    [Fdlt_vm.OPCODE.OP_NOP, this._op_nop],
     [Fdlt_vm.OPCODE.OP_PUSH1, this._op_push1],
     [Fdlt_vm.OPCODE.OP_PUSH2, this._op_push2],
     [Fdlt_vm.OPCODE.OP_CHECKSIG, this._op_checksig],
@@ -44,8 +46,10 @@ class Fdlt_vm {
   tx_new;
   program;
 
-  // The VM accepts as inputs the previous tx and the new tx
-  // its preprocessor constructs a program from the appropriate lock and unlock scripts
+  /**
+   * The VM accepts as inputs the previous tx and the new tx. The preprocessor then constructs a 
+   * program from the appropriate lock and unlock scripts
+   */ 
   constructor ({tx_prev, tx_new} = {}) {
     this.STACK = new Array(Fdlt_vm.STACK_SZ);
     this.SP = 0;
@@ -55,8 +59,10 @@ class Fdlt_vm {
     this.program = this.preproc();
   }
 
-  // Create the preimage for a signature for tx_new as prescribed by the OP_CHECKSIG instruction
-  // tx_prev is the transaction corresponding to tx_new's utxo
+  /**
+   * Create the preimage for a signature for tx_new as prescribed by the OP_CHECKSIG instruction.
+   * tx_prev is the transaction corresponding to tx_new's utxo
+   */ 
   static make_sig_preimage(tx_prev, tx_new) {
     const tsact = new Fdlt_tsact({
       utxo: tx_new.utxo.slice(),
@@ -68,12 +74,17 @@ class Fdlt_vm {
     return Fdlt_tsact.serialize(tsact);
   }
 
+  /**
+   * Program preprocessor
+   */ 
   preproc() {
     return Buffer.from(this.tx_new.lock.concat(this.tx_prev.unlock));
   }
 
-  // Execute the stored program until the end of instructions
-  // Returns true if no errors and the topmost stack value is nonzero
+  /**
+   * Execute the stored program until the end of instructions. Returns true if no errors and the 
+   * topmost stack value is nonzero
+   */ 
   async exec() {
     const inst = this.GRAMMAR.get(this.program[this.PC]);
 
@@ -87,16 +98,22 @@ class Fdlt_vm {
       return await this.exec();
     }
 
-    // A zeroed out buffer of any length is considered zero - any other buffer is nonzero
+    /**
+     * A zeroed out buffer of any length is considered zero - any other buffer is nonzero
+     */ 
     return (this.SP - 1 >= 0 && [...this.STACK[this.SP - 1]].every(byte => byte !== 0)) ? true : false
   }
 
-  // No op
-  async _op_noop() {
+  /**
+   * No op
+   */ 
+  async _op_nop() {
     return;
   }
 
-  // The next byte represents the number of following bytes to push onto the stack
+  /**
+   * The next byte represents the number of following bytes to push onto the stack
+   */ 
   async _op_push1() {
     const n = this.program[this.PC + 1];
     const start = this.PC + 2;
@@ -105,7 +122,9 @@ class Fdlt_vm {
     this.PC += 2 + n;
   }
 
-  // The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
+  /**
+   * The next 2 bytes (big endian) represents the number of following bytes to push onto the stack
+   */ 
   async _op_push2() {
     const n = (this.program[this.PC + 1] << cfg.SYS_BYTE_WIDTH) | this.program[this.PC + 2];
     const start = this.PC + 3;
@@ -114,9 +133,11 @@ class Fdlt_vm {
     this.PC += 3 + n;
   }
 
-  // Verify that the pubkey at (SP - 1) is valid for the sig at (SP - 2), returns 1 if valid, 0 otherwise
-  // Like Bitcoin's OP_CHECKSIG instruction, it compares the sig against a copy of tx_new with 
-  // its lock script replaced by tx_prev's unlock script
+  /**
+   * Verify that the pubkey at (SP - 1) is valid for the sig at (SP - 2), returns 1 if valid, 0 
+   * otherwise. Like Bitcoin's OP_CHECKSIG instruction, it compares the sig against a copy of tx_new 
+   * with its lock script replaced by tx_prev's unlock script
+   */ 
   async _op_checksig() {
     const pubkey = this.STACK[this.SP - 1];
     this.SP -= 2;
@@ -140,9 +161,11 @@ class Fdlt_vm {
     this.PC += 1;
   }
 
-  // Verify that the proof of work for the pubkey at (SP - 1) is valid for the nonce at (SP - 2)
-  // OP_CHECKPOW assumes the next byte represents the number of leading zero bits required
-  // returns 1 if valid, 0 otherwise
+  /**
+   * Verify that the proof of work for the pubkey at (SP - 1) is valid for the nonce at (SP - 2)
+   * OP_CHECKPOW assumes the next byte represents the number of leading zero bits required
+   * returns 1 if valid, 0 otherwise
+   */ 
   async _op_checkpow() {
     const n = this.program[this.PC + 1];
     const pubkey = this.STACK[this.SP - 1];
@@ -158,11 +181,13 @@ class Fdlt_vm {
     this.PC += 2;
   }
 
-  // Combines OP_CHECKSIG and OP_CHECKPOW: Verify that proof of work for the pubkey at (SP - 1) 
-  // is valid for the nonce at (SP - 2) and also that the pubkey at (SP - 1) is valid for 
-  // the sig at (SP - 3), returns 1 if valid, 0 otherwise... this instruction assumes the next 
-  // byte represents the number of leading zero bits to enforce
-  // TODO: we're duplicating code from OP_CHECKSIG and OP_CHECKPOW in a way we might be able to avoid
+  /**
+   * Combines OP_CHECKSIG and OP_CHECKPOW: Verify that proof of work for the pubkey at (SP - 1) 
+   * is valid for the nonce at (SP - 2) and also that the pubkey at (SP - 1) is valid for 
+   * the sig at (SP - 3), returns 1 if valid, 0 otherwise... this instruction assumes the next 
+   * byte represents the number of leading zero bits to enforce. TODO: we're duplicating code from 
+   * OP_CHECKSIG and OP_CHECKPOW in a way we might be able to avoid
+   */ 
   async _op_checksigpow() {
     const n = this.program[this.PC + 1];
     const pubkey = this.STACK[this.SP - 1];
