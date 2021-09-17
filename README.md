@@ -1,5 +1,7 @@
 # libfood
 
+[![Build Status](https://app.travis-ci.com/noahlevenson/libfood.svg?branch=master)](https://app.travis-ci.com/noahlevenson/libfood)
+
 [![Youtube demo](https://github.com/noahlevenson/libfood/blob/master/screens/youtube_thumb.png)](https://youtu.be/vuLQelvHlkM "Youtube demo")
 
 # :compass: Table of contents
