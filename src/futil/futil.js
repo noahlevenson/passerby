@@ -64,7 +64,7 @@ class Futil {
   }
 
   /**
-   * Check whether a number is a power of 2
+   * Check whether a number is a positive power of 2
    */ 
   static is_power2(n) {
     return (n & (n - 1)) === 0;
