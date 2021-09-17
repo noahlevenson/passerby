@@ -18,7 +18,9 @@ class Fdlt_net_solo extends Fdlt_net {
   trans;
   app_id;
 
-  // TODO: app_id should prob become part of the base class
+  /**
+   * TODO: app_id should prob become part of the Fdlt_net base class
+   */ 
 
   constructor(trans, app_id) {
     super();
@@ -43,7 +45,7 @@ class Fdlt_net_solo extends Fdlt_net {
         this._in(msg, rinfo);
       }
     } catch(err) {
-      // Silently ignore it?
+      // Do nothing
     }
   }
 

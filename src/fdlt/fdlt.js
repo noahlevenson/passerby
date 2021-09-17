@@ -1,8 +1,8 @@
 /** 
 * FDLT
-* A generalized distributed ledger, built atop a
-* stack-based virtual machine, for managing arbitrary
-* contracts. FDLT uses FKAD for peer discovery
+* Distributed ledger built atop a stack-based VM
+*
+* 
 *
 *
 */ 
@@ -26,11 +26,15 @@ const { Flog } = require("../flog/flog.js");
 const { Fntree_node } = require("../ftypes/fntree/fntree_node.js");
 
 class Fdlt {
+  /**
+   * When using CONSENSUS_METHOD.AUTH, the 'args' passed to the Fdlt constructor should be an 
+   * object structured like this:  
+   * {auth: [pubkey1, pubkey2...], rate: [min_ms, max_ms], t_handle: null}
+   * TODO: we should have classes for all the different consensus method args
+   */ 
+
   static MSG_TIMEOUT = 5000;
 
-  // When using AUTH, pass this object as args: 
-  // {auth: [pubkey1, pubkey2...], rate: [min_ms, max_ms], t_handle: null}
-  // TODO: we should have classes for all the different consensus method args
   static CONSENSUS_METHOD = {
     AUTH: 0
   };
@@ -93,8 +97,10 @@ class Fdlt {
     this.db_init_hook = db_init_hook;
   }
 
-  // Compute the state of of a branch of blocks ending with last_node
-  // returns a Map of unspent outputs as [tx_hash: tx]
+  /**
+   * Compute the state of of a branch of blocks ending with last_node. Returns a Map of unspent 
+   * outputs as [tx_hash: tx]
+   */
   build_db(last_node) {
     const utxo_db = this.db_init_hook(new Map());
     const branch = this.store.get_branch(last_node);
@@ -109,9 +115,10 @@ class Fdlt {
     return utxo_db;
   }
 
-  // For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
-  // where block.nonce is replaced with the signer's public key
-  // TODO: handle error/bad passphrase etc
+  /**
+   * For AUTH consensus, the nonce must be a signature over the hash of of a copy of the block
+   * where block.nonce is replaced with the signer's public key. TODO: handle error/bad passphrase etc
+   */ 
   static async make_nonce_auth(block, pubkey) {
     const data = Buffer.from(Fdlt_block.sha256(Object.assign({}, block, {nonce: pubkey})), "hex");
     const privkey = await Fcrypto.get_privkey();
@@ -119,11 +126,16 @@ class Fdlt {
     return res.toString("hex");
   }
 
+  /**
+   * Public method to verify the nonce present in a block
+   */ 
   async verify_nonce(block) {
     return await this.NONCE_INTEGRITY.get(this.consensus).bind(this)(block);
   }
 
-  // TODO: this is linear search through the pubkeys in args :(
+  /**
+   * AUTH mode nonce verification function. TODO: this is linear search through the pubkeys in args :(
+   */ 
   async _verify_nonce_auth(block) {
     for (let i = 0; i < this.args.auth.length; i += 1) {
       const is_valid = await Fcrypto.verify(
@@ -140,10 +152,16 @@ class Fdlt {
     return false;
   }
 
+  /**
+   * Public method to assemble a new block 
+   */ 
   async make_block(pred_block_node) {
     return this.MAKE_BLOCK_ROUTINE.get(this.consensus).bind(this)(pred_block_node);
   }
 
+  /**
+   * AUTH mode block assembly function
+   */ 
   async _make_block_auth(pred_block_node) {
     if (this.args.t_handle !== null) {
       clearTimeout(this.args.t_handle);
@@ -156,8 +174,10 @@ class Fdlt {
       `${Fdlt_block.sha256(pred_block_node.data)} in ${t / 1000}s...`);
 
     this.args.t_handle = setTimeout(async () => {
-      // Find the transactions in our tx_cache which have not yet been added to a block 
-      // TODO: parameterize this with a max tx per block
+      /**
+       * Find the transactions in our tx_cache which have not yet been added to a block. TODO: 
+       * parameterize this with a max tx per block
+       */ 
       const branch = this.store.get_branch(pred_block_node);
       const new_tx = new Map(this.tx_cache);
       
@@ -166,12 +186,16 @@ class Fdlt {
       
       const tx_candidates = Array.from(new_tx.entries());
       
-      // Simple tx ordering logic: ensure that no tx appears before a tx which represents its utxo
-      // TODO: This is selection sort O(n ^ 2), bad vibes bro
+      /**
+       * Very naive tx ordering logic: ensure that no tx appears before a tx which represents its 
+       * utxo. TODO: This is selection sort O(n ^ 2), bad vibes bro
+       */ 
       for (let i = 0; i < tx_candidates.length; i += 1) {
         for (let j = i + 1; j < tx_candidates.length; j += 1) {
-          // If the hash of the tx at j equals the current tx's utxo, swap the tx at j with 
-          // the current tx and terminate the search over the unsorted righthand subarray
+          /**
+           * If the hash of the tx at j equals the current tx's utxo, swap the tx at j with the 
+           * current tx and terminate the search over the unsorted righthand subarray
+           */ 
           if (tx_candidates[j][0] === tx_candidates[i][1].utxo) {
             const temp = tx_candidates[j];
             tx_candidates[j] = tx_candidates[i];
@@ -181,24 +205,29 @@ class Fdlt {
         }
       }
 
-      // Filter out invalid transactions, validating them against an initial utxo db computed 
-      // up through our predecessor block - TODO: this is noob central but it's hard to 
-      // asynchronously wait for the result of _validate_tx and also iteratively update 
-      // the state of utxo_db while stepping through tx_candidates
+      /**
+       * Filter out invalid transactions. We create an initial utxo db computed up through our
+       * predecessor block, then iterate through all of our candidate transactions, updating the
+       * state of the utxo db as we validate each one. TODO: this is very poorly written because
+       * it's hard to asynchronously wait for the result of _validate_tx() and also iteratively
+       * update the state of utxo_db while stepping through tx_candidates...
+       */
       let utxo_db = this.build_db(pred_block_node);
       const valid_tx = [];
 
-      for (const pair of tx_candidates) {
-        const res = await this._validate_tx({tx: pair[1], utxo_db: utxo_db});
+      for (const [cand_hash, cand_tx] of tx_candidates) {
+        const res = await this._validate_tx({tx: cand_tx, utxo_db: utxo_db});
         utxo_db = res.utxo_db;
 
         if (res.valid) {
-          valid_tx.push(pair[1]);
+          valid_tx.push(cand_tx);
         }
       }
 
-      // If we have no tx to put in a new block this time, and we didn't get interrupted by a 
-      // new deepest block, then keep working on same predecessor
+      /**
+       * If we have no tx to put in a new block this time, and we didn't get interrupted by a 
+       * new deepest block, then keep working on same predecessor
+       */ 
       if (valid_tx.length > 0) {
         const new_block = new Fdlt_block({
           prev_block: pred_block_node.data,
@@ -209,7 +238,9 @@ class Fdlt {
           new_block.nonce = nonce;
           const block_hash = Fdlt_block.sha256(new_block);
 
-          // Add the new block, rebuild the store index, broadcast it, and get to work on the next block
+          /**
+           * Add the new block, rebuild the store index, broadcast it, and get to work on the next block
+           */ 
           const new_node = new Fntree_node({data: new_block, parent: pred_block_node})
           pred_block_node.add_child(new_node);
           this.store.build_dict();
@@ -227,8 +258,10 @@ class Fdlt {
     }, t);
   }
 
-  // Validate a single tx against some state of a utxo db, returns
-  // true/false and the new state of the utxo db
+  /**
+   * Validate a single tx against the state of 'utxo_db', returns true/false and the new state 
+   * of the utxo db
+   */ 
   async _validate_tx({tx, utxo_db} = {}) {
     const utxo = utxo_db.get(tx.utxo);
   
@@ -271,7 +304,9 @@ class Fdlt {
   }
 
   _init() {
-    // If we have an unresolved accidental fork, just advertise the last known hash before the fork
+    /**
+     * If we have an unresolved accidental fork, just advertise the last known hash before the fork
+     */ 
     const last_known_node = this.store.get_deepest_blocks()[0];
     
     while (last_known_node.parent !== null && last_known_node.parent.degree() > 1) {
@@ -283,9 +318,12 @@ class Fdlt {
     Flog.log(`[FDLT] (${this.net.app_id}) Init: ${this.store.size()} known blocks, ` +
       `last known ${last_hash}`);
 
-    // TODO: this is doing pointless work - a better way is to wait until we get all the lists of blocks,
-    // then find the intersection of the lists before asking nodes to send blocks... also: since we
-    // don't wait for blocks to arrive in order, we could kick off a lot of _res_block case 3s,
+    /**
+     * TODO: this is doing pointless work. A better way is to wait until we get all the lists of 
+     * blocks, then find the intersection of the lists before asking nodes to send blocks. Also: 
+     * since we don't wait for blocks to arrive in order, we might kick off a lot of 
+     * _res_block() CASE 3s...
+     */ 
     this.broadcast(this.getblocks_req, {
       block_hash: last_hash, 
       success: (res, addr, port, pubkey, ctx) => {
@@ -314,9 +352,11 @@ class Fdlt {
     }
   }
 
-  // TODO: make sure req.data is a structurally valid Fdlt_tsact
-  // We don't care if req.data is spending a valid utxo or if its scripts are legal etc.
-  // we leave that to network validators to determine at block creation time
+  /**
+   * TODO: make sure req.data is a structurally valid Fdlt_tsact. Note: we don't care if req.data is 
+   * spending a valid utxo or if its scripts are legal etc. We leave that to network validators to 
+   * determine at block creation time
+   */ 
   async _res_tx(req, rinfo) {
     const tx_hash = Fdlt_tsact.sha256(Fdlt_tsact.serialize(req.data));
 
@@ -334,8 +374,10 @@ class Fdlt {
     });
   }
 
-  // TODO: make sure req.data is a structurally valid Fdlt_block
-  // TODO: we're doing block validation in here, but we should break out elsewhere
+  /**
+   * TODO: make sure req.data is a structurally valid Fdlt_block
+   * TODO: we're doing block validation in here, but we should break out elsewhere
+   */ 
   async _res_block(req, rinfo) {
     const res = new Fdlt_msg({
       data: "OK",
@@ -348,22 +390,26 @@ class Fdlt {
     const block_hash = Fdlt_block.sha256(req.data);
     const block_node = this.store.get_node(block_hash);
 
-    // Case 1: we already have the new block
+    /**
+     * CASE 1: we already have the new block
+     */ 
     if (block_node) {
       return res;
     }
 
     const parent = this.store.get_node(req.data.hash_prev);
 
-    // Case 2: we know the new block's parent, the new block's hash_prev matches the hash of its parent
-    // block, and the new block's nonce passes verification
+    /**
+     * CASE 2: we know the new block's parent, the new block's hash_prev matches the hash of its 
+     * parent block, and the new block's nonce passes verification
+     */ 
     if (parent && Fdlt_block.sha256(parent.data) === req.data.hash_prev && 
       await this.verify_nonce(req.data)) {
-      // We'll validate transactions in this new block against the state of the utxo db as 
-      // computed from the genesis block through its parent block
-      // TODO: this is noob central but it's hard to asynchronously wait
-      // for the result of _validate_tx and also iteratively update 
-      // the state of utxo_db while stepping through tx_candidates
+      /**
+       * We'll validate transactions in this new block against the state of the utxo db as 
+       * computed from the genesis block through the parent block to the new block. TODO: this is 
+       * poorly written for the same reason as the tx filtering logic in _make_block_auth()
+       */ 
       let utxo_db = this.build_db(parent);
       const valid_tx = [];
 
@@ -374,7 +420,9 @@ class Fdlt {
       }
       
       if (valid_tx.every(res => res)) {
-        // Add the new block, rebuild the store index, and rebroadcast it
+        /**
+         * Add the new block, rebuild the store index, and rebroadcast it
+         */ 
         const new_node = new Fntree_node({data: req.data, parent: parent})
         parent.add_child(new_node);
         this.store.build_dict();
@@ -384,8 +432,10 @@ class Fdlt {
 
         this.broadcast(this.block_req, {fdlt_block: req.data});
 
-        // If I'm a validator and the new block is the first block at a 
-        // new height, then it's time to throw out my work and start a new block
+        /**
+         * If I'm a validator and the new block is the first block at a new height, then it's time 
+         * to discard my work and start a new block
+         */ 
         const new_d = this.store.get_deepest_blocks();
 
         if (this.is_validator && new_d.length === 1 && new_d[0] === new_node) {
@@ -393,18 +443,22 @@ class Fdlt {
         }
       }
     } else if (!parent) {
-      // Case 3: we don't know the new block's parent, run init to rebuild our store
+      /**
+       * CASE 3: we don't know the new block's parent, run init to rebuild our store
+       */ 
       this._init();
     }
 
     return res;
   }
 
-  // To handle the case where a peer advertises a last known hash which is in a branch that's 
-  // not part of our canonical branch, we perform BFS in undirected mode
-  // TODO: since we use BFS, this method sends block hashes ordered by their distance from
-  // the last known block, which seems desirable -- but it also sends every single block
-  // in our store except for the one known to the peer... seems like we can do this better?
+  /**
+   * To handle the case where a peer advertises a last known hash which is in a branch that's 
+   * not part of our canonical branch, we perform BFS in undirected mode. TODO: since we use BFS, 
+   * this method sends block hashes ordered by their distance from the last known block, which seems 
+   * desirable... but it also sends every single block in our store except for the one known to the 
+   * peer... seems like we can do this better?
+   */ 
   async _res_getblocks(req, rinfo) {
     const start_node = this.store.get_node(req.data);
     const succ = [];
@@ -425,7 +479,9 @@ class Fdlt {
   }
 
   async _res_getdata(req, rinfo) {
-    // If we have the block, we send a BLOCK message to the requester and a RES for their GETDATA message
+    /**
+     * If we have the block, we send a BLOCK message to the requester and a RES for their GETDATA message
+     */ 
     const block_node = this.store.get_node(req.data);
 
     if (block_node) {
@@ -454,7 +510,7 @@ class Fdlt {
     this._send(res, rinfo);
   }
 
-  _send(msg, ftrans_rinfo, success, timeout) {
+  _send(msg, ftrans_rinfo, success = () => {}, timeout = () => {}) {
     if (msg.type === Fdlt_msg.TYPE.REQ) {
       const outgoing = new Promise((resolve, reject) => {
         const timeout_id = setTimeout(() => {
@@ -464,17 +520,11 @@ class Fdlt {
 
         this.res.once(msg.id.toString(), (res_msg) => {
           clearTimeout(timeout_id);
-
-          if (typeof success === "function") {
-            success(res_msg, ftrans_rinfo.address, ftrans_rinfo.port, ftrans_rinfo.pubkey, this);
-          }
-
+          success(res_msg, ftrans_rinfo.address, ftrans_rinfo.port, ftrans_rinfo.pubkey, this);
           resolve();
         });
       }).catch((reason) => {
-        if (typeof timeout === "function") {
-          timeout(msg);
-        }
+        timeout(msg);
       });
     } 
 
@@ -485,9 +535,11 @@ class Fdlt {
     this.net._out(msg, ftrans_rinfo); 
   }
 
-  // TODO: to find neighbors, we use FKAD to select the K_SIZE peers closest to our peer ID
-  // this is prob even less efficient than choosing a random subset of peers from FKAD's routing table
-  // TODO: this also grossly assumes that the config object passed to each req function is the same
+  /**
+   * TODO: to find neighbors, we use FKAD to select the K_SIZE peers closest to our peer ID. This is 
+   * prob even less efficient than choosing a random subset of peers from FKAD's routing table!
+   * This also dangerously assumes that the config object passed to each req function is the same.
+   */ 
   broadcast(msg_func, config_obj) {
     const neighbors = this.fkad._get_nodes_closest_to({key: this.fkad.node_id}).filter(n => 
       !n.node_id.equals(this.fkad.node_id));
@@ -514,7 +566,7 @@ class Fdlt {
     success = () => {}, 
     timeout = () => {}
   } = {}) {
-    // For sanity during development, explicitly require arguments
+    // TODO: For sanity during development, explicitly require arguments
     if (fdlt_tsact === null || addr === null || port === null || pubkey === null) {
       throw new Error("Arguments cannot be null");
     }
@@ -538,7 +590,7 @@ class Fdlt {
     success = () => {}, 
     timeout = () => {}
   } = {}) {
-    // For sanity during development, explicitly require arguments
+    // TODO: For sanity during development, explicitly require arguments
     if (fdlt_block === null || addr === null || port === null || pubkey === null) {
       throw new Error("Arguments cannot be null");
     }
@@ -562,7 +614,7 @@ class Fdlt {
     success = () => {}, 
     timeout = () => {}
   } = {}) {
-    // For sanity during development, explicitly require arguments
+    // TODO: For sanity during development, explicitly require arguments
     if (block_hash === null || addr === null || port === null || pubkey === null) {
       throw new Error("Arguments cannot be null");
     }
@@ -586,7 +638,7 @@ class Fdlt {
     success = () => {}, 
     timeout = () => {}
   } = {}) {
-    // For sanity during development, explicitly require arguments
+    // TODO: For sanity during development, explicitly require arguments
     if (block_hash === null || addr === null || port === null || pubkey === null) {
       throw new Error("Arguments cannot be null");
     }
