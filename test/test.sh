@@ -1,1 +1,1 @@
-node futil/futil.spec.js
+node ./futil/futil.spec.js
