@@ -341,8 +341,8 @@ class Fkad_node {
   /**
    * BST comparator function to search over a tree of Fkad_node_infos: assumes the tree is sorted 
    * using _insert_by_xor_lex(), where the XOR distance is measured from 'key'. Note the subtle
-   * difference between this function and _xor_and_lex(): BST insertion comparators work with BST
-   * nodes, while BST search comparators work with BST values.
+   * difference between this function and _insert_by_xor_lex(): BST insertion comparators work with 
+   * BST nodes, while BST search comparators work with BST values.
    */ 
   _search_by_xor_lex(key, node_info_a, node) {
     const node_info_b = node.get_data();
@@ -626,30 +626,25 @@ class Fkad_node {
   }
 
   _res_find_value(req) {
-    let payload;
-    let type;
-
-    let ds_rec = this.data.get(req.data.payload[0]);
-
-    // Lazy deletion: the requested data exists but has expired, so delete it from our data store
-    if (ds_rec && Date.now() > (ds_rec.get_created() + ds_rec.get_ttl())) {
-      this.data.delete(req.data.payload[0]);
+    const key = req.data.payload[0];
+    let ds_rec = this.data.get(key);
+  
+    /**
+     * Lazy deletion: the requested data exists but has expired, so delete it from our data store
+     */ 
+    if (ds_rec && ds_rec.get_created() < (Date.now() - ds_rec.get_ttl())) {
+      this.data.delete(key);
       ds_rec = undefined;
     }
 
-    if (ds_rec) {
-      payload = [ds_rec.get_data()];
-      type = Fkad_data.TYPE.VAL;
-    } else {
-      payload = this._get_nodes_closest_to({key: req.data.payload[0], max: Fkad_node.K_SIZE});
-      type = Fkad_data.TYPE.NODE_LIST;
-    }
+    const data = ds_rec ? new Fkad_data({type: Fkad_data.TYPE.VAL, payload: [ds_rec.get_data()]}) : 
+      new Fkad_data({type: Fkad_data.TYPE.NODE_LIST, payload: this._get_nodes_closest_to({key: key})});
 
     return new Fkad_msg({
       rpc: Fkad_msg.RPC.FIND_VALUE,
       from: new Fkad_node_info(this.node_info),
       type: Fkad_msg.TYPE.RES,
-      data: new Fkad_data({type: type, payload: payload}),
+      data: data,
       id: req.id
     });
   }
@@ -659,11 +654,13 @@ class Fkad_node {
     this.eng._send(res, msg.from);
   }
 
-  // Very unoptimized: just collect all the nodes we know about by traversing the entire routing
-  // table, then sort by each node's distance from the key...
-  // TODO: try optimizing by starting our search at the leaf node and visiting adjacent buckets
-  // in the routing table by their distance from our ID, ending the search when we hit the max,
-  // then sort by distance from the key...
+  /**
+   * Fetch an array of the Fkad_node_infos in our routing table that are closest to 'key'
+   * TODO: this is an unoptimized naive approach, we collect every node by traversing the entire
+   * routing table, then sort by each node's distance from the key... an optimization approach might
+   * be to start our search at the leaf node and visit adjacent buckets in the routing table by
+   * their distance from our ID, ending the search when hit max, then sort by distance from the key
+   */ 
   _get_nodes_closest_to({key, max = Fkad_node.K_SIZE, get_locked = false, get_stale = false} = {}) {
     // Touch the bucket so we know it's not a pathological case
     this.find_kbucket_for_id(key).get_data().touch();
@@ -672,7 +669,7 @@ class Fkad_node {
       const bucket = node.get_data();
       
       if (bucket !== null) {
-        data = data.concat(bucket.to_array().filter(kbucket_rec => {
+        data = data.concat(bucket.to_array().filter((kbucket_rec) => {
           if (!get_locked && !get_stale) {
             return !kbucket_rec.is_locked() && !kbucket_rec.is_stale();
           } else if (get_locked && !get_stale) {
@@ -696,7 +693,9 @@ class Fkad_node {
   }
 
   _init_intervals() {
-    // Idempotently start the bucket refresh interval
+    /**
+     * Bucket refresh interval
+     */ 
     if (this.refresh_interval_handle === null) {
       this.refresh_interval_handle = setInterval(() => {
         const t1 = Date.now() - Fkad_node.T_KBUCKET_REFRESH;
@@ -722,26 +721,33 @@ class Fkad_node {
     Flog.log(`[FKAD] K-bucket refresh interval: ` + 
       `${(Fkad_node.T_KBUCKET_REFRESH / 60 / 1000).toFixed(1)} minutes`);
 
-    // Idempotently start the data republish interval
+    /**
+     * Data republish interval
+     */ 
     if (this.republish_interval_handle === null) {
       this.republish_interval_handle = setInterval(async () => {
-        // TODO: write republication logic, or eliminate this entirely - see publish() below
+        /**
+         * TODO: write republication logic, or eliminate this entirely - see publish() below
+         */ 
       }, Fkad_node.T_REPUBLISH);
     }
 
     Flog.log(`[FKAD] Data republish interval: ` + 
       `${(Fkad_node.T_REPUBLISH / 60 / 60 / 1000).toFixed(1)} hours`);
 
-    // Idempotently start the data replication interval
+    /**
+     * Data replication interval
+     */ 
     if (this.replicate_interval_handle === null) {
       this.replicate_interval_handle = setInterval(() => {
         this.data.entries().forEach((pair) => {
+          const [key_str, ds_rec] = pair;
           const t1 = Date.now();
 
           // No one's issued a STORE on this data for a while? Let's do a PUT on it
-          if (t1 > (pair[1].get_created() + Fkad_node.T_REPLICATE) && 
-            t1 < (pair[1].get_created() + pair[1].get_ttl())) {
-            this.put(new Fbigint(pair[0]), pair[1].get_data());
+          if (t1 > (ds_rec.get_created() + Fkad_node.T_REPLICATE) && 
+            t1 < (ds_rec.get_created() + ds_rec.get_ttl())) {
+            this.put(new Fbigint(key_str), ds_rec.get_data());
           }
         });
       }, Fkad_node.T_REPLICATE);
@@ -768,7 +774,9 @@ class Fkad_node {
     }
   }
 
-  // Supply the addr, port, and pubkey of the bootstrap node
+  /**
+   * Bootstrap onto a network. Supply the addr, port, and pubkey of the bootstrap node
+   */ 
   async bootstrap({addr = null, port = null, pubkey = null} = {}) {
     this.net.network.on("message", this.eng._on_message.bind(this.eng));
     
@@ -889,6 +897,9 @@ class Fkad_node {
     await this.put(key, val);
   }
 
+  /**
+   * Fetch data 'key' from the distributed database
+   */ 
   async get(key) {
     return await this._node_lookup(key, this._req_find_value);
   }
