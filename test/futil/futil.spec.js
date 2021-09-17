@@ -17,5 +17,5 @@ const { Futil } = require("../../src/futil/futil.js");
   assert.strictEqual(res4, false);
 
   const res5 = Futil.is_hex_str("00001111222266abcdef");
-  assert strictEqual(res5, true);
+  assert.strictEqual(res5, true);
 })();
