@@ -67,7 +67,11 @@ class Futil {
    * Check whether a number is a positive power of 2
    */ 
   static is_power2(n) {
-    return (n & (n - 1)) === 0;
+    if (Number.isInteger(n) && n > 0) {
+      return (n & (n - 1)) === 0;
+    }
+
+    return false;
   }
 
   /**
