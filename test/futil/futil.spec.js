@@ -21,10 +21,6 @@ const { Futil } = require("../../src/futil/futil.js");
 
   const res6 = Futil.is_power2(0);
   assert.strictEqual(res6, false);
-
-  assert.throws(() => {
-    Futil.is_power2();
-  });
 })();
 
 (function is_hex_str() {
@@ -48,8 +44,4 @@ const { Futil } = require("../../src/futil/futil.js");
 
   const res7 = Futil.is_hex_str("");
   assert.strictEqual(res7, false);
-
-  assert.throws(() => {
-    Futil.is_hex_str();
-  });
 })();
