@@ -1,8 +1,8 @@
 /** 
 * FID_PRV
-* The private half of our identity system
-* It encapsulates identity info about a peer that
-* must never be shared
+* Private user info
+* 
+* 
 * 
 *
 */ 

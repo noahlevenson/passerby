@@ -1,9 +1,9 @@
 /** 
 * FID_PUB
-* The public half of our identity system
-* It encapsulates identity info about a peer that's
-* safe to share, and it enforces primitive types
-* so that it's easy to serialize
+* Public key certificate
+* 
+* 
+* 
 *
 */ 
 
@@ -12,6 +12,9 @@
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
 
 class Fid_pub {
+  /**
+   * TODO: validation, enforce primitive types
+   */ 
   pubkey;
   name;
   first;
@@ -33,10 +36,7 @@ class Fid_pub {
     lat = null, 
     long = null
   } = {}) {
-    // TODO: validation, enforce primitive types
-
     this.pubkey = pubkey;
-    // TODO: name is for restaurants, and first/last are for people. Too complex?
     this.name = name;
     this.first = first;
     this.last = last;
@@ -45,10 +45,16 @@ class Fid_pub {
     this.lat = lat;
     this.long = long;
     this.peer_id = Fcrypto.sha1(this.pubkey);
-    // Need two digits for Buffer to parse correctly
-    this.nonce = "00";
+    this.nonce = "00"; // Need two digits for Buffer to parse correctly
   }
 
+  /**
+   * We want to be able to increment the nonce but also store the result immediately as a hex string
+   * which always has explicit leading zeroes. TODO: strong suspicion that this complexity is only 
+   * required because of the way the Buffer constructor parses hex strings. Given hex string "05f", 
+   * Buffer will return 1-byte Buffer 0x05. To construct 2-byte Buffer 0x005f, you need to add the
+   * implied leading zero to your string, i.e. "005f".
+   */  
   static inc_nonce(fid_pub) {
     const unpad = (parseInt(fid_pub.nonce, 16) + 1).toString(16);
     fid_pub.nonce = unpad.padStart(unpad.length + (unpad.length % 2), "0");
