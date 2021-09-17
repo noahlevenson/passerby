@@ -23,6 +23,7 @@ const { Futil } = require("../../src/futil/futil.js");
   assert.strictEqual(res6, false);
 })();
 
+
 (function is_hex_str() {
   const res1 = Futil.is_hex_str("deadbeef");
   assert.strictEqual(res1, true);

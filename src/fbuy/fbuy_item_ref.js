@@ -1,7 +1,8 @@
 /** 
 * FBUY_ITEM_REF
-* Wire format for a buyer's selection from an Fbuy_menu or
-* other order form type -- it's a reference to an item
+* Reference to an item from an Fbuy_menu or similar order form
+* 
+* 
 * 
 * 
 * 

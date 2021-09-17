@@ -1,7 +1,7 @@
 /** 
 * FBUY_MSG
-* Encapsulates and provides a simple interface
-* for interrogating the contents of FBUY messages
+* An FBUY message
+* 
 *
 *
 *

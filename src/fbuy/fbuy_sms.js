@@ -23,9 +23,12 @@ class Fbuy_sms {
       throw new TypeError("Argument 'data' must be array");
     }
 
-    // Enforce MAX_CHARS
+    /**
+     * MAX_CHARS is silently enforced here. TODO: this should be well documented so client 
+     * implementers know to provide adequate UI feedback
+     */ 
     if (text === null) {
-      this.text = text;
+      this.text = null;
     } else {
       this.text = text.length < Fbuy_sms.MAX_CHARS ? text : text.substring(0, Fbuy_sms.MAX_CHARS);
     }

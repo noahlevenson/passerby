@@ -1,7 +1,7 @@
 /** 
 * FBUY
-* Services for e-commerce layer functionality,
-* including payments, order forms, messaging, etc.
+* E-commerce layer functionality, including
+* payments, order forms, messaging, etc.
 * 
 * 
 * 
@@ -59,6 +59,9 @@ class Fbuy {
     }
   }
 
+  /** 
+   * Transaction hook. Don't set this directly, use on_transact()
+   */ 
   _transact_hook(req, rinfo) {
     // Do nothing
   }
@@ -74,6 +77,9 @@ class Fbuy {
     });
   }
 
+  /**
+   * SMS hook. Don't set this directly, use on_sms()
+   */ 
   _sms_hook(req, rinfo) {
     // Do nothing
   }
@@ -108,7 +114,7 @@ class Fbuy {
     this._send(res, rinfo);
   }
 
-  _send(msg, ftrans_rinfo, success, timeout) {
+  _send(msg, ftrans_rinfo, success = () => {}, timeout = () => {}) {
     if (msg.type === Fbuy_msg.TYPE.REQ) {
       const outgoing = new Promise((resolve, reject) => {
         const timeout_id = setTimeout(() => {
@@ -118,17 +124,11 @@ class Fbuy {
 
         this.res.once(msg.id.toString(), (res_msg) => {
           clearTimeout(timeout_id);
-
-          if (typeof success === "function") {
-            success(res_msg, this);
-          }
-
+          success(res_msg, this);
           resolve();
         });
       }).catch((reason) => {
-        if (typeof timeout === "function") {
-          timeout(msg);
-        }
+        timeout(msg);
       });
     } 
 
@@ -139,7 +139,9 @@ class Fbuy {
     this.net._out(msg, ftrans_rinfo); 
   }
 
-  // Send a transaction request
+  /**
+   * Send a transaction request
+   */ 
   transact_req({
     fbuy_transaction = null, 
     addr = null, 
@@ -163,7 +165,9 @@ class Fbuy {
     this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
   }
 
-  // Send a status request
+  /**
+   * Send a status request
+   */ 
   status_req({
     fbuy_status = null, 
     addr = null, port = null, 
@@ -186,7 +190,9 @@ class Fbuy {
     this._send(msg, new Ftrans_rinfo({address: addr, port: port, pubkey: pubkey}), success, timeout);
   }
 
-  // Send an SMS request
+  /**
+   * Send an SMS request
+   */ 
   sms_req({
     fbuy_sms = null, 
     addr = null, 
@@ -220,6 +226,9 @@ class Fbuy {
     Flog.log(`[FBUY] Offline`);
   }
 
+  /** 
+   * Set the transaction hook, aka the actions to take upon receipt of an incoming transaction
+   */ 
   on_transact(f) {
     if (typeof f !== "function") {
       throw new TypeError("Argument 'f' must be a function");
@@ -228,6 +237,9 @@ class Fbuy {
     this._transact_hook = f;
   }
 
+  /**
+   * Set the SMS hook, aka the actions to take upon receipt of an incoming SMS message
+   */ 
   on_sms(f) {
     if (typeof f !== "function") {
       throw new TypeError("Argument 'f' must be a function");
@@ -236,7 +248,9 @@ class Fbuy {
     this._sms_hook = f;
   }
 
-  // Subscribe only once to the next status event for a given transaction ID and status code
+  /**
+   * Listen only once for the next status event for a given transaction ID and status code
+   */ 
   on_status(transact_id, status_code, cb) {
     this.status.once(`${transact_id}#${status_code}`, cb);
   }

@@ -1,6 +1,6 @@
 /** 
 * FBUY_STATUS
-* Encapsulates a status information  
+* Encapsulates one status information update
 * for a given transaction ID
 *
 *

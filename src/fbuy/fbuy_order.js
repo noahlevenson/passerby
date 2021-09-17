@@ -1,7 +1,7 @@
 /** 
 * FBUY_ORDER
-* An order representing items requested from 
-* a seller
+* An order represents items requested from a resource provider
+*
 * 
 * 
 * 
