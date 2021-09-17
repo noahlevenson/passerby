@@ -1,7 +1,7 @@
 /** 
 * FBUY_PMENT_CARD
-* FBUY_PMENT_CARD extends FBUY_PMENT
-* to represent an instance of a credit card
+* A credit card
+* 
 * 
 * 
 * 

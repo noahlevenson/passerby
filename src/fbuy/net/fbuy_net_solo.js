@@ -35,7 +35,7 @@ class Fbuy_net_solo extends Fbuy_net {
         this._in(msg, rinfo);
       }
     } catch(err) {
-      // Silently ignore it?
+      // Do nothing
     }
   }
 
