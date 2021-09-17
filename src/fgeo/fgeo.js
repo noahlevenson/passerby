@@ -1,8 +1,8 @@
 /** 
 * FGEO
-* Functionality for describing
-* and transforming geographic data based
-* on latitude and longitude
+* Geography module
+* 
+* 
 *
 *
 */ 
@@ -16,8 +16,12 @@ class Fgeo {
   static LONG_MINUTES_MILES = 0.91;
   static MINUTES_PER_DEGREE = 60;
   
-  // Get the coord pairs for a square window with extremeties 'd' miles equidistant from center point 'pair' 
-  // CENTER_POINT [plus or minus] (DISTANCE_IN_MILES / NUM_MINUTES_PER_MILE / NUM_MINUTES_PER_DEGREE)
+  /**
+   * Get the coord pairs for a square window with extremeties 'd' miles equidistant from center 
+   * point 'pair', aka:
+   * 
+   * CENTER_POINT [plus or minus] (DISTANCE_IN_MILES / NUM_MINUTES_PER_MILE / NUM_MINUTES_PER_DEGREE)
+   */ 
   static get_exts(pair, d) {
     const long_offset = d / Fgeo.LONG_MINUTES_MILES / Fgeo.MINUTES_PER_DEGREE;
     const lat_offset = d / Fgeo.LAT_MINUTES_MILES / Fgeo.MINUTES_PER_DEGREE;

@@ -1,6 +1,6 @@
 /** 
 * FGEO_COORD
-* Geographic latidude/longitude coordinate pair
+* Latidude/longitude coordinate pair
 *
 *
 *
@@ -39,8 +39,10 @@ class Fgeo_coord {
     this.long = long;
   }
 
-  // Compute the flattened 1D representation of this coordinate pair
-  // b = bit depth per dimension (if b = 40, then the 1D representation will fit into 80 bits)
+  /**
+   * Map this 2D coordinate pair to one dimension using a space-filling curve. 'b' is the bit 
+   * depth per dimension -- i.e., for b = 40, then the 1D representation will fit into 80 bits
+   */
   linearize(b = 40) {
     const lat = Futil.float_to_normalized_int(this.lat + Math.abs(Fgeo_coord.LIMITS.LAT_MIN), 
       Fgeo_coord.LIMITS.LONG_MAX + Math.abs(Fgeo_coord.LIMITS.LONG_MIN), b);

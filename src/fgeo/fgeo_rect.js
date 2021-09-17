@@ -1,6 +1,6 @@
 /** 
 * FGEO_RECT
-* Rectangular geographic "window" as defined by its
+* Rectangular geographic window as defined by its
 * bottom left (min) and top right (max) vertices
 *
 *
