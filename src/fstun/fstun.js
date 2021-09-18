@@ -44,8 +44,6 @@ class Fstun {
     this.sw = sw;
     this.net = net;
     this.res = new EventEmitter();
-    this.net.network.on("message", this._on_message.bind(this));
-    Flog.log(`[FSTUN] Online`);
   }
 
   /**
@@ -182,6 +180,16 @@ class Fstun {
 
   _send(stunMsgObj, rinfo) {
     this.net._out(stunMsgObj.serialize(), rinfo);
+  }
+
+  start() {
+    this.net.network.on("message", this._on_message.bind(this));
+    Flog.log(`[FSTUN] Online`);
+  }
+
+  stop() {
+    this.net.network.removeListener("message", this._on_message.bind(this));
+    Flog.log(`[FSTUN] Offline`);
   }
 }
 

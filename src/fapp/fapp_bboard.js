@@ -40,9 +40,14 @@ class Fapp_bboard {
     this.sig = sig;
   }
 
-  // TODO: write a static method to safely validate size and dimensions of img_cred_base64
+  /**
+   * TODO: write a static method to safely validate size and dimensions of img_cred_base64
+   */ 
 
-  // privkey as hex string
+  /**
+   * Add a cryptographic signature to a Fapp_bboard. Pass privkey as unencrypted hex string. 
+   * Modifies 'fap_bboard', returning it with the signature in place
+   */ 
   static async sign(fapp_bboard, privkey) {
     fapp_bboard.sig = null;
     
@@ -55,7 +60,10 @@ class Fapp_bboard {
     return fapp_bboard;
   }
 
-  // pubkey as hex string
+  /**
+   * Verify the cryptographic signature present on a Fapp_bboard. Pass pubkey as hex string.
+   * Returns a bool
+   */ 
   static async verify(fapp_bboard, pubkey) {
     const copy = new Fapp_bboard(JSON.parse(JSON.stringify(fapp_bboard)));
     copy.sig = null;

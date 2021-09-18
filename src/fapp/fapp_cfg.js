@@ -1,7 +1,7 @@
 /** 
 * FAPP_CFG
-* Enums and functionality for interpreting 
-* a libfood.json configuration file
+* Singleton for working with libfood.json  
+* configuration files
 *
 *
 *

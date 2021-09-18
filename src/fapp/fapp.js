@@ -72,20 +72,25 @@ class Fapp {
   trusted_root_keys;
   fpht;
   fbuy;
+  fstun;
   fksrv;
   node;
   trans;
   keepalive;
   t_keepalive;
+  keepalive_max_tries;
   keepalive_interval;
   anti_idle_interval;
   crud_ops;
   geocoding;
   is_keyserver_validator;
 
-  // Currently we only support one kind of Fapp instance: it implements a solo UDP transport module,
-  // full STUN, a DHT peer with a node ID equal to the hash of its pubkey, and a PHT interface
-  // indexing on GEO_INDEX_ATTR - TODO: parameterize this to create diff kinds of Fapp instances
+  /**
+   * To create a new Fapp instance, the important things here are fid_pub and fid_prv (for the peer
+   * who'll be joining the network) and bootstrap_nodes/authorities/trusted_root_keys, which should
+   * come from your network secrets file. TODO: currently we only allow Fapp instances with a UDP
+   * transport, but this should eventually be parameterizable...
+   */ 
   constructor({
     fid_pub = null, 
     fid_prv = null, 
@@ -96,13 +101,13 @@ class Fapp {
     geocoding = Fapp.GEOCODING_METHOD.NOMINATIM, 
     is_keyserver_validator = false,
     keepalive = true,
-    t_keepalive = 20000
+    t_keepalive = 20000,
+    keepalive_max_tries = 3
   } = {}) {
-    this.bootstrap_nodes = bootstrap_nodes.map(node => new Ftrans_rinfo({
-      address: node[0], 
-      port: node[1], 
-      pubkey: node[2]
-    }));
+    this.bootstrap_nodes = bootstrap_nodes.map((tuple) => {
+      const [address, port, pubkey] = tuple;
+      return new Ftrans_rinfo({address: address, port: port, pubkey: pubkey});
+    });
 
     this.authorities = [...authorities];
     this.trusted_root_keys = [...trusted_root_keys];
@@ -112,7 +117,8 @@ class Fapp {
     this.fpht = null;
     this.fbuy = null;
     this.node = null;
-    this.trans = null;
+    this.trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
+    this.fstun = new Fstun({net: new Fstun_net_solo(this.trans)});
     this.keepalive = keepalive;
     this.t_keepalive = t_keepalive;
     this.keepalive_interval = null;
@@ -122,28 +128,38 @@ class Fapp {
     this.is_keyserver_validator = is_keyserver_validator;
   }
 
-  // Convenience method to generate a public/private key pair
+  /**
+   * Convenience method to generate a public/private key pair
+   */ 
   static async generate_key_pair(passphrase) {
     return await Fcrypto.generate_key_pair(passphrase);
   }
 
-  // Convenience method to cryptographically sign some data
+  /**
+   * Convenience method to generate a cryptographic signature over data 'data'
+   */ 
   static async sign(data, key) {
     return await Fcrypto.sign(data, key);
   }
 
-  // Convenience method to verify a cryptographic signature
+  /**
+   * Convenience method to verify a cryptographic signature 'sig' over 'data'
+   */ 
   static async verify(data, key, sig) {
     return await Fcrypto.verify(data, key, sig);
   }
     
-  // Compute the peer ID derived from input 'data'
-  // Free Food requires peer IDs to be equal to the hash of its public key computed in this fashion
+  /**
+   * Compute the peer ID derived from input 'data'. Free Food requires peer IDs to be equal to the 
+   * hash of its public key computed in this fashion
+   */ 
   static get_peer_id(data) {
     return new Fbigint(Fcrypto.sha1(data));
   }
 
-  // Derive a lat/long pair from an address using the specified geocoding method
+  /**
+   * Derive a lat/long pair from a street address using the specified geocoding method
+   */ 
   static async geocode({street, city, state, postalcode, method} = {}) {
     const hosts = Fapp.GEOCODING_HOSTS.get(method);
     let i = 0;
@@ -162,12 +178,15 @@ class Fapp {
       }
     }
 
-    throw new Error(`All hosts for geocoding method ${Object.keys(Fapp.GEOCODING_METHOD)[method]} failed!`);
+    throw new Error(`All hosts for geocoding method ${Object.keys(Fapp.GEOCODING_METHOD)[method]}` + 
+      ` failed!`);
   }
 
   static _geocoding_handler_nominatim({hostname, street, city, state, postalcode} = {}) {
     if (Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.BROWSER) {
-      // TODO: write the browser implementation using XMLHttpRequest
+      /**
+       * TODO: write the browser implementation using XMLHttpRequest
+       */ 
       throw new Error("No browser implementation for HTTPS requests yet!"); 
     }
 
@@ -190,7 +209,9 @@ class Fapp {
         const parsed = data[0];
         return new Fgeo_coord({lat: parseFloat(parsed.lat), long: parseFloat(parsed.lon)});
       }).catch((err) => {
-        // TODO: handle error!
+        /**
+         * TODO: handle error
+         */ 
       });
     }
 
@@ -219,20 +240,23 @@ class Fapp {
     }
   }
 
-  async _keepalive_handler() {
+  async _keepalive_handler(n = 1) {
     const recip = this.bootstrap_nodes[Math.floor(Math.random() * this.bootstrap_nodes.length)];
 
-    // TODO: we can enter an infinite loop of keepalive retries here lolololol
     try {
       await this.send_keepalive(recip);
       Flog.log(`[FAPP] Keepalive OK`);
     } catch(err) {
-      this._keepalive_handler();
+      if (n < this.keepalive_max_tries) {
+        this._keepalive_handler(n + 1);
+      }
     }
   }
 
-  // Send a keepalive message to a peer
-  // TODO: to keep track of msg state, we use an FKAD ping RPC, but we should be more lightweight
+  /**
+   * Send a keepalive message to a peer. TODO: to keep track of msg state, we use an FKAD ping RPC, 
+   * but we should be more lightweight than this...
+   */ 
   send_keepalive(ftrans_rinfo) {
     return new Promise((resolve, reject) => {
       const node_info = new Fkad_node_info({
@@ -246,12 +270,16 @@ class Fapp {
     });
   }
 
-  // Convenience method: send a transaction req to the peer named on cred and listen once
-  // for Fbuy_status.CODE.CONFIRMED, calling status_cb if we hear it
-  // Immediately returns the transaction ID as a string independent of success or failure
+  /**
+   * Convenience method: send a transaction req to the peer named on 'cred' and listen once for 
+   * Fbuy_status.CODE.CONFIRMED, calling status_cb if we hear it. Immediately returns the 
+   * transaction ID as a string.
+   */ 
   send_transaction({cred, order, pment, success = () => {}, timeout = () => {}, status_cb} = {}) {
-    // TODO: verify the credential!
-    // TODO: How should we handle different physical addresses?
+    /**
+     * TODO: Do security checks on the cred. Also, this should be parameterized to allow us to send
+     * transactions from different delivery addresses
+     */ 
 
     const transaction = new Fbuy_tsact({
         order: order,
@@ -260,8 +288,10 @@ class Fapp {
         id: Fbigint.unsafe_random(Fbuy_tsact.ID_LEN).toString(16)
     });
 
-    // Set up the status listener before sending the transaction to avoid a race condition 
-    // TODO: we never cancel this this listener, we should cancel if the tsact req times out or errs
+    /**
+     * Set up the status listener before sending the transaction to avoid a race condition. TODO: we 
+     * never cancel this this listener, we should cancel if the tsact req times out or errs
+     */ 
     this.on_status({
       transact_id: transaction.id, 
       status_code: Fbuy_status.CODE.CONFIRMED, 
@@ -278,15 +308,17 @@ class Fapp {
             timeout: timeout
         });
     }).catch((err) => {
-      // TODO: Handle any error
+      // TODO: Handle error
       timeout();
     });
 
     return transaction.id;
   }
 
-  // Convenience method: send an SMS to the peer associated with pubkey
-  // Immediately returns the Fbuy_sms object independent of success or failure
+  /**
+   * Convenience method: send an SMS to the peer associated with pubkey 'pubkey'. Immediately 
+   * returns the constructed Fbuy_sms object.
+   */ 
   send_sms({pubkey, text, data, success = () => {}, timeout = () => {}}) {
     const sms = new Fbuy_sms({
       text: text,
@@ -304,15 +336,17 @@ class Fapp {
         timeout: timeout
       });
     }).catch((err) => {
-      // TODO: Handle any error
+      // TODO: Handle error
       timeout();
     });
 
     return sms;
   }
 
-  // Convenience method: send a status message to the peer associated with pubkey
-  // Immediately returns the Fbuy_status object
+  /**
+   * Convenience method: send a status message to the peer associated with pubkey 'pubkey'.
+   * Immediately returns the Fbuy_status object.
+   */ 
   send_status({pubkey, trans_id, code, success = () => {}, timeout = () => {}}) {
     const status = new Fbuy_status({
       id: trans_id,
@@ -336,28 +370,38 @@ class Fapp {
     return status;
   }
 
-  // Convenience methodd which wraps fbuy.on_status: 
-  // subscribe only once to the next status event for a given transaction ID and status code
+  /**
+   * Convenience method wrapping Fbuy.on_status(): subscribe only once to the next status event for 
+   * a given transaction ID and status code
+   */ 
   on_status({transact_id, status_code, cb} = {}) {
     this.fbuy.on_status(transact_id, status_code, cb);
   }
 
-  // Convenience method which wraps fbuy.on_sms: set the handler function for sms messages
+  /**
+   * Convenience method wrapping Fbuy.on_sms(): set the handler function for inbound sms messages
+   */ 
   on_sms({f} = {}) {
     this.fbuy.on_sms(f);
   }
 
-  // Convenience method: fetch the object representing our controlled folksonomy of menu keywords
+  /**
+   * Convenience method: fetch the object representing our controlled folksonomy of menu keywords
+   */ 
   get_menu_keywords() {
       return Fbuy_menu.KEYWORDS;
   }
 
-  // Convenience method to return the object representing our fulfillment types
+  /**
+   * Convenience method: fetch the object representing our fulfillment types
+   */ 
   get_ffment_types() {
     return Fbuy_ffment.TYPE;
   }
 
-  // Convenience factory method to create an Fbuy_item_ref
+  /**
+   * Convenience method to create an Fbuy_item_ref
+   */ 
   create_item_ref({
     menu = null, 
     froz_idx = null, 
@@ -376,7 +420,9 @@ class Fapp {
     });
   }
 
-  // Convenience factory method to create an Fbuy_item_misc
+  /**
+   * Convenience method to create an Fbuy_item_misc
+   */ 
   create_item_misc({desc, price, qty} = {}) {
     return new Fbuy_item_misc({
       desc: desc,
@@ -385,23 +431,31 @@ class Fapp {
     });
   }
 
-  // Convenience method to compute the form ID for an Fbuy_menu 
+  /**
+   * Convenience method to compute the form ID for an Fbuy_menu 
+   */ 
   get_form_id(fbuy_form) {
     return Fbuy_menu.get_form_id(fbuy_form);
   }
 
-  // Return a reference to our DHT node
+  /**
+   * Return a reference to our FKAD node
+   */ 
   get_node() {
     return this.node;
   }
 
-  // Return a reference to our latitude/longitude as an Fgeo_coord
+  /**
+   * Return a reference to our latitude/longitude as an Fgeo_coord
+   */ 
   get_location() {
     return new Fgeo_coord({lat: this.fid_pub.lat, long: this.fid_pub.long});
   }
 
-  // Search the network for the Fkad_node_info object for a given node_id as Fbigint
-  // Returns null if we can't find it
+  /**
+   * Search the network for a peer's contact info. Pass 'node_id' as Fbigint. Returns an 
+   * Fkad_node_info or null if the contact info cannot be found
+   */
   async search_node_info(node_id) {
     const data = await this.node._node_lookup(node_id);
 
@@ -535,52 +589,56 @@ class Fapp {
    * resolve our network info using STUN
    */ 
   async start({addr = null, port = null} = {}) {
-    // Create and boot a UDP transport module
-    const fapp_udp_trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
-    await fapp_udp_trans._start();
+    /**
+     * Boot our transport module and STUN services
+     */ 
+    await this.trans._start();
+    this.fstun.start();
         
-    this.trans = fapp_udp_trans;
+    /**
+     * If we need to resolve our external address and port, let's do that. TODO: we should randomly
+     * shuffle the bootstrap nodes...
+     */ 
+    if (addr === null || port === null) {
+      let res_net_info = null;
+      let i = 0;
 
-    // Create and start STUN services
-    const fapp_stun_net = new Fstun_net_solo(fapp_udp_trans);
-    const fapp_stun_service = new Fstun({net: fapp_stun_net});
-
-    let addr_port = null;
-
-    if (addr !== null && port !== null) {
-      addr_port = [addr, port];
-    } else {
-      // Try all of our known bootstrap nodes' STUN servers to resolve our external addr and port 
-      for (let i = 0; i < this.bootstrap_nodes.length && addr_port === null; i += 1) {
-        addr_port = await fapp_stun_service._binding_req(
+      while (res_net_info === null && i < this.bootstrap_nodes.length) {
+         res_net_info = await this.fstun._binding_req(
           this.bootstrap_nodes[i].address, 
           this.bootstrap_nodes[i].port, 
           this.bootstrap_nodes[i].pubkey
         );
+
+        i += 1;
       }
-    }
 
-    if (addr_port === null) {
-      throw new Error("STUN binding request failed!");
-    }
+      if (res_net_info === null) {
+        throw new Error("STUN binding request failed!");
+      }
 
-    // Create a DHT node
-    const peer_node = new Fkad_node({
+      [addr, port] = res_net_info;
+    } 
+
+    /**
+     * Create a DHT node
+     */ 
+    this.node = new Fkad_node({
       eng: new Fkad_eng_alpha(), 
-      net: new Fkad_net_solo(fapp_udp_trans), 
-      addr: addr_port[0],
-      port: addr_port[1],
+      net: new Fkad_net_solo(this.trans), 
+      addr: addr,
+      port: port,
       pubkey: this.fid_pub.pubkey
     });
 
-    this.node = peer_node;
-
-    // TODO: Should we bootstrap with more than one node? 
-    // Bootstrap with every bootstrap node in our list?
+    /**
+     * Bootstrap onto the network. TODO: should we bootstrap with more than one node? We should also
+     * randomly shuffle the bootstrap nodes here
+     */  
     let bootstrap_res = false;
 
     for (let i = 0; i < this.bootstrap_nodes.length && bootstrap_res === false; i += 1) {
-      bootstrap_res = await peer_node.bootstrap({
+      bootstrap_res = await this.node.bootstrap({
         addr: this.bootstrap_nodes[i].address, 
         port: this.bootstrap_nodes[i].port, 
         pubkey: this.bootstrap_nodes[i].pubkey
@@ -596,25 +654,30 @@ class Fapp {
       Flog.log(`[FAPP] keepalive enabled (${this.t_keepalive / 1000}s)`);
     }
 
-    // Create a PHT interface
+    /**
+     * Create a PHT interface
+     */ 
     this.fpht = new Fpht({
       index_attr: Fapp.GEO_INDEX_ATTR,
-      dht_lookup_func: peer_node._node_lookup, 
-      dht_lookup_args: [peer_node._req_find_value], 
-      dht_node: peer_node,
+      dht_lookup_func: this.node._node_lookup, 
+      dht_lookup_args: [this.node._req_find_value], 
+      dht_node: this.node,
       dht_ttl: Fkad_node.T_DATA_TTL
     });
 
-    // Idempotently initialize the PHT
+    /**
+     * Idempotently initialize the PHT topology
+     */ 
     await this.fpht.init();
 
-    // Create and start the default FKSRV interface
-    // TODO: we shouldn't need to know how to instantiate a compatible
-    // Fdlt instance - we should move Fdlt construction to the Fksrv
-    // constructor, just passing consensus mechanism and app ID
+    /**
+     * Create and boot the default FKSRV interface. TODO: we shouldn't need to know how to 
+     * instantiate a compatible Fdlt instance - we should move Fdlt construction to the Fksrv
+     * constructor, just passing consensus mechanism and app ID
+     */ 
     const ksrv_dlt = new Fdlt({
-      net: new Fdlt_net_solo(fapp_udp_trans, Fapp.KEYSERVER_APP_ID),
-      fkad: peer_node,
+      net: new Fdlt_net_solo(this.trans, Fapp.KEYSERVER_APP_ID),
+      fkad: this.node,
       fid_pub: this.fid_pub,
       consensus: Fdlt.CONSENSUS_METHOD.AUTH, 
       is_validator: this.is_keyserver_validator,
@@ -627,17 +690,23 @@ class Fapp {
     this.fksrv = new Fksrv({dlt: ksrv_dlt, trusted_root_keys: this.trusted_root_keys});
     this.fksrv.start();
 
-    // Create and start an FBUY interface
-    const fapp_fbuy_net = new Fbuy_net_solo(fapp_udp_trans);
+    /**
+     * Create and boot an FBUY instance
+     */ 
+    const fapp_fbuy_net = new Fbuy_net_solo(this.trans);
     this.fbuy = new Fbuy({net: fapp_fbuy_net, fid_pub: this.fid_pub});
     this.fbuy.start();
   }
 
-  // Disconnect from the network
+  /**
+   * Disconnect and shut down
+   */ 
   async stop() {
     try {
       if (this.trans) {
         await this.trans._stop()
+        this.fstun.stop();
+        this.fbuy.stop();
         this.fpht = null;
         this.node._stop_intervals();
         this.node = null;
