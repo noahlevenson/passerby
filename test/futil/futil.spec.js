@@ -63,5 +63,22 @@ const { Futil } = require("../../src/futil/futil.js");
   assert.strictEqual(res5, true);
 
   const res6 = Futil.get_bit(Buffer.from([0x04, 0x02, 0x01]), 2, 1);
-  assert.strictEqual(res5, false);
+  assert.strictEqual(res6, false);
+})();
+
+(function wbuf_uint16be() {
+  const res1 = Futil.wbuf_uint16be(65535);
+  assert.strictEqual(Buffer.compare(res1, Buffer.from([0xFF, 0xFF])), 0);
+
+  const res2 = Futil.wbuf_uint16be(1000);
+  assert.strictEqual(Buffer.compare(res2, Buffer.from([0x03, 0xE8])), 0);
+
+  const res3 = Futil.wbuf_uint16be(16704);
+  assert.strictEqual(Buffer.compare(res3, Buffer.from([0x41, 0x40])), 0);
+
+  const res4 = Futil.wbuf_uint16be(3);
+  assert.strictEqual(Buffer.compare(res4, Buffer.from([0x00, 0x03])), 0);
+
+  const res5 = Futil.wbuf_uint16be(256);
+  assert.strictEqual(Buffer.compare(res5, Buffer.from([0x01, 0x00])), 0);
 })();

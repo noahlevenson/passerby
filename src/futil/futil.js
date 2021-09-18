@@ -110,7 +110,8 @@ class Futil {
   }
 
   /**
-   * Convenience method to write an unsigned integer to a 16-bit Buffer, big endian. TODO: validation
+   * Convenience method to write an unsigned integer to a 16-bit Buffer, big endian.
+   * TODO: catch overflow
    */ 
   static wbuf_uint16be(uint) {
     const buf = Buffer.alloc(2);
