@@ -854,6 +854,12 @@ class Fkad_node {
     return true;
   }
 
+  stop() {
+    this.net.network.removeListener("message", this.eng._on_message.bind(this.eng));
+    this._stop_intervals();
+    Flog.log(`[FKAD] Offline`);
+  }
+
   /**
    * Put data to the distributed database; that is, issue a STORE RPC for some key/value pair to
    * the K_SIZE closest peers who own that partition of the keyspace. Returns the number of peers

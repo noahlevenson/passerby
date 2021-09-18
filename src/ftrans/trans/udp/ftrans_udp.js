@@ -82,7 +82,7 @@ class Ftrans_udp extends Ftrans {
     this.gc_timeout = null;
   }
 
-  async _start() {
+  async start() {
     if (this.udp4 && this.udp6) {
       this.socket = dgram.createSocket("udp6");
     } else if (this.udp4) {
@@ -103,8 +103,9 @@ class Ftrans_udp extends Ftrans {
     this._gc_handler();
   }
 
-  async _stop() {
+  async stop() {
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
+    this.socket.removeListener("message", this._on_network.bind(this));
     clearTimeout(this.send_timeout);
     clearTimeout(this.recv_timeout);
     clearTimeout(this.gc_timeout);

@@ -70,12 +70,12 @@ class Fapp {
   bootstrap_nodes;
   authorities;
   trusted_root_keys;
+  trans;
+  fstun;
   fpht;
   fbuy;
-  fstun;
+  fkad;
   fksrv;
-  node;
-  trans;
   keepalive;
   t_keepalive;
   keepalive_max_tries;
@@ -114,11 +114,11 @@ class Fapp {
     this.fid_pub = fid_pub;
     this.fid_prv = fid_prv;
     this.port = port;
-    this.fpht = null;
-    this.fbuy = null;
-    this.node = null;
     this.trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
     this.fstun = new Fstun({net: new Fstun_net_solo(this.trans)});
+    this.fpht = null;
+    this.fbuy = null;
+    this.fkad = null;
     this.keepalive = keepalive;
     this.t_keepalive = t_keepalive;
     this.keepalive_interval = null;
@@ -266,7 +266,7 @@ class Fapp {
         pubkey: ftrans_rinfo.pubkey
       });
 
-      this.node._req_ping(node_info, resolve, reject);
+      this.fkad._req_ping(node_info, resolve, reject);
     });
   }
 
@@ -442,7 +442,7 @@ class Fapp {
    * Return a reference to our FKAD node
    */ 
   get_node() {
-    return this.node;
+    return this.fkad;
   }
 
   /**
@@ -457,7 +457,7 @@ class Fapp {
    * Fkad_node_info or null if the contact info cannot be found
    */
   async search_node_info(node_id) {
-    const data = await this.node._node_lookup(node_id);
+    const data = await this.fkad._node_lookup(node_id);
 
     if (data.payload[0].node_id.equals(node_id)) {
       return data.payload[0];
@@ -592,7 +592,7 @@ class Fapp {
     /**
      * Boot our transport module and STUN services
      */ 
-    await this.trans._start();
+    await this.trans.start();
     this.fstun.start();
         
     /**
@@ -623,7 +623,7 @@ class Fapp {
     /**
      * Create a DHT node
      */ 
-    this.node = new Fkad_node({
+    this.fkad = new Fkad_node({
       eng: new Fkad_eng_alpha(), 
       net: new Fkad_net_solo(this.trans), 
       addr: addr,
@@ -638,7 +638,7 @@ class Fapp {
     let bootstrap_res = false;
 
     for (let i = 0; i < this.bootstrap_nodes.length && bootstrap_res === false; i += 1) {
-      bootstrap_res = await this.node.bootstrap({
+      bootstrap_res = await this.fkad.bootstrap({
         addr: this.bootstrap_nodes[i].address, 
         port: this.bootstrap_nodes[i].port, 
         pubkey: this.bootstrap_nodes[i].pubkey
@@ -659,9 +659,9 @@ class Fapp {
      */ 
     this.fpht = new Fpht({
       index_attr: Fapp.GEO_INDEX_ATTR,
-      dht_lookup_func: this.node._node_lookup, 
-      dht_lookup_args: [this.node._req_find_value], 
-      dht_node: this.node,
+      dht_lookup_func: this.fkad._node_lookup, 
+      dht_lookup_args: [this.fkad._req_find_value], 
+      dht_node: this.fkad,
       dht_ttl: Fkad_node.T_DATA_TTL
     });
 
@@ -677,7 +677,7 @@ class Fapp {
      */ 
     const ksrv_dlt = new Fdlt({
       net: new Fdlt_net_solo(this.trans, Fapp.KEYSERVER_APP_ID),
-      fkad: this.node,
+      fkad: this.fkad,
       fid_pub: this.fid_pub,
       consensus: Fdlt.CONSENSUS_METHOD.AUTH, 
       is_validator: this.is_keyserver_validator,
@@ -699,25 +699,23 @@ class Fapp {
   }
 
   /**
-   * Disconnect and shut down
+   * Disconnect and shut down. TODO: this is just a stub while we figure out a better pattern for
+   * this, we're still leaving a bunch of dangling event handlers everywhere
    */ 
   async stop() {
-    try {
-      if (this.trans) {
-        await this.trans._stop()
-        this.fstun.stop();
-        this.fbuy.stop();
-        this.fpht = null;
-        this.node._stop_intervals();
-        this.node = null;
-      }
+    await this.trans.stop();
+    this.fstun.stop();
+    this.fbuy.stop();
+    this.fbuy = null;
+    this.fkad.stop();
+    this.fkad = null;
+    this.fksrv.stop();
+    this.fksrv = null;
+    this.fpht = null;
 
-      if (this.keepalive_interval) {
-        clearInterval(this.keepalive_interval);
-        this.keepalive_interval = null;
-      }
-    } catch {
-      // Do nothing
+    if (this.keepalive_interval) {
+      clearInterval(this.keepalive_interval);
+      this.keepalive_interval = null;
     }
   }
 }
