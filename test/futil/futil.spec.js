@@ -64,4 +64,4 @@ const { Futil } = require("../../src/futil/futil.js");
 
   const res6 = Futil.get_bit(Buffer.from([0x04, 0x02, 0x01]), 2, 1);
   assert.strictEqual(res5, false);
-}();
+})();
