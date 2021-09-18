@@ -23,7 +23,6 @@ const { Futil } = require("../../src/futil/futil.js");
   assert.strictEqual(res6, false);
 })();
 
-
 (function is_hex_str() {
   const res1 = Futil.is_hex_str("deadbeef");
   assert.strictEqual(res1, true);
@@ -46,3 +45,23 @@ const { Futil } = require("../../src/futil/futil.js");
   const res7 = Futil.is_hex_str("");
   assert.strictEqual(res7, false);
 })();
+
+(function get_bit() {
+  const res1 = Futil.get_bit(Buffer.from([0x04]), 0, 2);
+  assert.strictEqual(res1, true);
+
+  const res2 = Futil.get_bit(Buffer.from([0x04]), 0, 4);
+  assert.strictEqual(res2, false);
+
+  const res3 = Futil.get_bit(Buffer.from([0x04, 0x02]), 1, 1);
+  assert.strictEqual(res3, true);
+
+  const res4 = Futil.get_bit(Buffer.from([0x04, 0x02]), 1, 7);
+  assert.strictEqual(res4, false);
+
+  const res5 = Futil.get_bit(Buffer.from([0x04, 0x02, 0x01]), 2, 0);
+  assert.strictEqual(res5, true);
+
+  const res6 = Futil.get_bit(Buffer.from([0x04, 0x02, 0x01]), 2, 1);
+  assert.strictEqual(res5, false);
+}();
