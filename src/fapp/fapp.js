@@ -666,9 +666,15 @@ class Fapp {
     });
 
     /**
-     * Idempotently initialize the PHT topology
+     * Init the PHT interface. If we're the only peer on the network, we'll idempotently initialize
+     * the trie topology
      */ 
-    await this.fpht.init();
+    const npeers = this.fkad._get_nodes_closest_to({
+      key: this.fkad.node_id, 
+      max: Number.POSITIVE_INFINITY
+    }).length;
+
+    await this.fpht.init(npeers === 1 ? true : false);
 
     /**
      * Create and boot the default FKSRV interface. TODO: we shouldn't need to know how to 

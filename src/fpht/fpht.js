@@ -95,9 +95,10 @@ class Fpht {
   }
 
   /**
-   * Idempotently init a new PHT structure indexing on index_attr
+   * Search the network for the root node we expect for index_attr. If we fail to find the root node
+   * and create = false, we'll throw an error; if create = true, we'll try to create the root node.
    */ 
-  async init() {
+  async init(create = false) {
     Flog.log(`[FPHT] Looking up root node for index attr ${this.index_attr}...`);
     const data = await this._dht_lookup();
 
@@ -106,14 +107,15 @@ class Fpht {
       return;
     }
 
-    Flog.log(`[FPHT] No root node found! Creating new root for index attr ${this.index_attr}...`);
+    Flog.log(`[FPHT] No root node found!`);
+
+    if (!create) {
+      throw new Error(`Could not locate root node for index attr ${this.index_attr}!`);
+    }
+
+    Flog.log(`[FPHT] Creating new root node for index attr ${this.index_attr}...`);
     const root = new Fpht_node({label: ""});
     const res = await this.dht_node.put.bind(this.dht_node)(this._get_label_hash(), root);
-
-    if (!res) {
-      Flog.log(`[FPHT] WARNING! COULD NOT CREATE NEW ROOT FOR INDEX ATTR ${this.index_attr}!`);
-      return;
-    }
   }
 
   /**
