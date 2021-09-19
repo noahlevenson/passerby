@@ -25,6 +25,7 @@ const { Futil } = require("../futil/futil.js");
 const { Fcrypto } = require("../fcrypto/fcrypto.js"); 
 const { Fkad_data } = require("../fkad/fkad_data.js");
 const { Fpht_node } = require("./fpht_node.js");
+const { Fpht_key } = require("./fpht_key.js");
 
 class Fpht {
   static BIT_DEPTH = 80;
@@ -158,7 +159,8 @@ class Fpht {
     return null;
   }
 
-  async full_search(key_str) {
+  async full_search(fpht_key) {
+    const key_str = Fpht_key.get_integral(fpht_key).to_bin_str(Fpht.BIT_DEPTH);
     let leaf = await this.lookup_bin(key_str);
 
     if (leaf === null) {
@@ -217,22 +219,23 @@ class Fpht {
        * keys to them
        */ 
       pairs.forEach((pair) => {
-        const [key, val] = pair;
+        const [fpht_key, val] = pair;
 
         /**
-         * A [key, val] pair is distributed to the 0 or 1 child based on the bit that comes 
+         * A [fpht_key, val] pair is distributed to the 0 or 1 child based on the bit that comes 
          * after the lcp computed over all the [key, val] pairs; e.g., for group of pairs 
          * with a lcp of 6 bits, the 6th bit (0-indexed) determines which child to sort to...
-         */ 
-        const dest = key.to_bin_str(Fpht.BIT_DEPTH)[lcp.length] === "0" ? child_0 : child_1;
+         */
+        const dest = Fpht_key.get_integral(fpht_key).to_bin_str(Fpht.BIT_DEPTH)[lcp.length] === "0" ? 
+          child_0 : child_1;
 
         Fpht_node.put({
           node: dest,
-          key: key,
+          fpht_key: fpht_key,
           val: val
         });
 
-        Flog.log(`[FPHT] Redistributed key ${key.toString()} -> ${this.index_attr} ` + 
+        Flog.log(`[FPHT] Redistributed key ${Fpht_key.get_integral(fpht_key)} (integral) -> ${this.index_attr} ` + 
           `${Fpht_node.get_label(dest)} (DHT key ${this._get_label_hash(Fpht_node.get_label(dest))})`);
       });
 
@@ -251,10 +254,10 @@ class Fpht {
   }
   
   /**
-   * Insert a (key, value) pair into the PHT
+   * Insert a (fpht_key, value) pair into the PHT
    */
-  async insert(key, val) {
-    const leaf = await this.full_search(key.to_bin_str(Fpht.BIT_DEPTH));
+  async insert(fpht_key, val) {
+    const leaf = await this.full_search(fpht_key);
 
      /**
      * If we can't find the leaf node for a key, our trie is likely corrupted
@@ -264,13 +267,14 @@ class Fpht {
       throw new Error("Fatal PHT error");
     }
 
-    if (Fpht_node.get({node: leaf, key: key}) || Fpht_node.size(leaf) < Fpht.B) {
+    if (Fpht_node.get({node: leaf, fpht_key: fpht_key}) || Fpht_node.size(leaf) < Fpht.B) {
       /**
        * The easy case: if we're stomping a value or this insertion won't exceed block size,
        * just insert the value in a new Fpht_node to update the created time.
        */ 
-      Fpht_node.put({node: leaf, key: key, val: val});
-      await this.dht_node.put.bind(this.dht_node)(
+      Fpht_node.put({node: leaf, fpht_key: fpht_key, val: val});
+
+      const res = await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(leaf)), 
         new Fpht_node(leaf)
       );
@@ -281,13 +285,13 @@ class Fpht {
        */
       const pairs = Fpht_node.get_all_pairs(leaf).map((pair) => {
         const [old_key, old_val] = pair;
-        return [new Fbigint(old_key), old_val];
-      }).concat([[key, val]]);
+        return [Fpht_key.from(old_key), old_val];
+      }).concat([[fpht_key, val]]);
 
       const lcp = Futil.get_lcp(
         pairs.map((pair) => {
           const [new_key, new_val] = pair;
-          return new_key.to_bin_str(Fpht.BIT_DEPTH);
+          return Fpht_key.get_integral(new_key).to_bin_str(Fpht.BIT_DEPTH);
         })
       );
 
@@ -299,8 +303,8 @@ class Fpht {
       });
     }
 
-    Flog.log(`[FPHT] Inserted key ${key.toString()} -> ${this.index_attr} ` +
-      `${Fpht_node.get_label(leaf).length > 0 ? Fpht_node.get_label(leaf) : "[root]"} ` +
+    Flog.log(`[FPHT] Inserted key ${Fpht_key.get_integral(fpht_key).toString()} (integral) -> ` + 
+      `${this.index_attr} ${Fpht_node.get_label(leaf).length > 0 ? Fpht_node.get_label(leaf) : "[root]"} ` +
         `(DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
   }
 
@@ -395,8 +399,8 @@ class Fpht {
     if (parent_sib === null || pairs.length + Fpht_node.size(parent_sib) > Fpht.B) {
       pairs.forEach((pair) => {
         const [key, val] = pair;
-        Fpht_node.put({node: parent, key: key, val: val});  
-        Flog.log(`[FPHT] Redistributed key ${key.toString()} -> ${this.index_attr} ` + 
+        Fpht_node.put({node: parent, fpht_key: key, val: val});  
+        Flog.log(`[FPHT] Redistributed key ${Fpht_key.get_integral(key)} (integral) -> ${this.index_attr} ` + 
           `${Fpht_node.get_label(parent)} (DHT key ` + 
             `${this._get_label_hash(Fpht_node.get_label(parent))})`);
       });
@@ -419,8 +423,8 @@ class Fpht {
   /**
    * Delete a key from the PHT
    */
-  async delete(key) {
-    const leaf = await this.full_search(key.to_bin_str(Fpht.BIT_DEPTH));
+  async delete(fpht_key) {
+    const leaf = await this.full_search(fpht_key);
 
     /**
      * If we can't find the leaf node for a key, our trie is likely corrupted
@@ -430,7 +434,7 @@ class Fpht {
       throw new Error("Fatal PHT error");
     }
 
-    const res = Fpht_node.delete({node: leaf, key: key});
+    const res = Fpht_node.delete({node: leaf, fpht_key: fpht_key});
 
     /**
      * The data you want to delete doesn't exist
@@ -456,7 +460,7 @@ class Fpht {
        */ 
       const pairs = Fpht_node.get_all_pairs(leaf).concat(Fpht_node.get_all_pairs(sib)).map((pair) => {
         const [key, val] = pair;
-        return [new Fbigint(key), val];
+        return [Fpht_key.from(key), val];
       });
 
       await this._do_merge_delete({
@@ -466,7 +470,7 @@ class Fpht {
       });
     }
 
-    Flog.log(`[FPHT] Deleted key ${key.toString()} -> ${this.index_attr} ` + 
+    Flog.log(`[FPHT] Deleted key ${Fpht_key.get_integral(fpht_key)} (integral) -> ${this.index_attr} ` + 
         `${Fpht_node.get_label(leaf)} (DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
   }
 
@@ -477,7 +481,7 @@ class Fpht {
     if (Fpht_node.is_leaf(pht_node)) {
       const valid_pairs = Fpht_node.get_all_pairs(pht_node).filter((pair) => {
         const [key, val] = pair;
-        const zvalue = new Fbigint(key);
+        const zvalue = Fpht_key.get_integral(Fpht_key.from(key));
         const zvalue_2d = Futil.z_delinearize_2d(zvalue, Fpht.BIT_DEPTH / 2);
         return zvalue_2d.x.greater_equal(minkey_2d.x) && zvalue_2d.x.less(maxkey_2d.x) && 
           zvalue_2d.y.greater_equal(minkey_2d.y) && zvalue_2d.y.less(maxkey_2d.y);
@@ -542,7 +546,9 @@ class Fpht {
 
   /**
    * 2D range query, where minkey and maxkey are 2D values mapped to one dimension using a Morton
-   * order curve
+   * order curve. Note a distinction here: PHT update operations require an Fpht_key because data
+   * is stored to the network under a serialized Fpht_key, but 2D range query takes Fbigints because
+   * range queries are concerned only with the integral parts of Fpht_keys.
    */ 
   async range_query_2d(minkey, maxkey) {
     if (!(minkey instanceof Fbigint) || !(maxkey instanceof Fbigint)) {
@@ -566,7 +572,7 @@ class Fpht {
     let start = await this._dht_lookup(lcp);
 
     if (start === null) {
-      start = await this.full_search(lcp);
+      start = await this.full_search(new Fpht_key({integral: Fbigint.from_base2_str(lcp)}));
     }
 
     /**

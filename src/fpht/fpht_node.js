@@ -9,10 +9,7 @@
 
 "use strict";
 
-const { Fapp_cfg } = require("../fapp/fapp_cfg.js");
-const cfg = require("../../libfood.json");
-const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ? 
-  require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
+const { Fpht_key } = require("./fpht_key.js"); 
 
 class Fpht_node {
   static MAGIC_VAL = `FR33F00D`;
@@ -110,24 +107,28 @@ class Fpht_node {
     return Object.keys(node.data).length;
   }
 
-  static put({node, key, val} = {}) {
-    if (!(key instanceof Fbigint)) {
-      throw new TypeError("Argument 'key' must be Fbigint");
+  static put({node, fpht_key, val} = {}) {
+    if (!(fpht_key instanceof Fpht_key)) {
+      throw new TypeError("Argument 'fpht_key' must be Fpht_key");
     }
 
-    node.data[key.toString()] = val;
+    node.data[Fpht_key.to_str(fpht_key)] = val;
   }
 
-  static get({node, key} = {}) {
-    if (!(key instanceof Fbigint)) {
-      throw new TypeError("Argument 'key' must be Fbigint");
+  static get({node, fpht_key} = {}) {
+    if (!(fpht_key instanceof Fpht_key)) {
+      throw new TypeError("Argument 'fpht_key' must be Fpht_key");
     }
 
-    return node.data[key.toString()];
+    return node.data[Fpht_key.to_str(fpht_key)];
   }
 
-  static delete({node, key}) {
-    const key_str = key.toString();
+  static delete({node, fpht_key}) {
+    if (!(fpht_key instanceof Fpht_key)) {
+      throw new TypeError("Argument 'fpht_key' must be Fpht_key");
+    }
+
+    const key_str = Fpht_key.to_str(fpht_key);
 
     if (node.data[key_str]) {
       delete node.data[key_str];

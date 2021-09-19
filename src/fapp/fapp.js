@@ -25,6 +25,7 @@ const { Fcrypto } = require("../fcrypto/fcrypto.js");
 const { Fgeo } = require("../fgeo/fgeo.js");
 const { Fgeo_coord } = require("../fgeo/fgeo_coord.js");
 const { Fgeo_rect } = require("../fgeo/fgeo_rect.js");
+const { Fid_pub } = require("../fid/fid_pub.js");
 const { Fpht } = require("../fpht/fpht.js");
 const { Fstun } = require("../fstun/fstun.js");
 const { Fstun_net_solo } = require("../fstun/net/fstun_net_solo.js");
@@ -537,7 +538,7 @@ class Fapp {
    */ 
   async put(bboard) {
     this.crud_ops = this.crud_ops.then(async () => {
-      await this.fpht.insert(this.get_location().linearize(), bboard);
+      await this.fpht.insert(Fid_pub.get_location_key(this.fid_pub), bboard);
     });
 
     await this.crud_ops;

@@ -10,6 +10,8 @@
 "use strict";
 
 const { Fcrypto } = require("../fcrypto/fcrypto.js");
+const { Fgeo_coord } = require("../fgeo/fgeo_coord.js");
+const { Fpht_key } = require("../fpht/fpht_key.js");
 
 class Fid_pub {
   /**
@@ -46,6 +48,16 @@ class Fid_pub {
     this.long = long;
     this.peer_id = Fcrypto.sha1(this.pubkey);
     this.nonce = "00"; // Need two digits for Buffer to parse correctly
+  }
+
+  /**
+   * Construct the location key for a Fid_pub
+   */ 
+  static get_location_key(fid_pub) {
+    return new Fpht_key({
+      integral: new Fgeo_coord({lat: fid_pub.lat, long: fid_pub.long}).linearize(),
+      meta: fid_pub.pubkey
+    });
   }
 
   /**

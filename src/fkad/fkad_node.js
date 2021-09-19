@@ -30,6 +30,7 @@ const { Fbintree_node } = require("../ftypes/fbintree/fbintree_node.js");
 const { Fid } = require("../fid/fid.js");
 const { Fgeo_coord } = require("../fgeo/fgeo_coord.js");
 const { Fpht_node } = require("../fpht/fpht_node.js");
+const { Fpht_key } = require("../fpht/fpht_key.js");
 
 class Fkad_node {
   /**
@@ -124,11 +125,14 @@ class Fkad_node {
       const pairs = Fpht_node.get_all_pairs(data);
 
       for (let i = 0; i < pairs.length; i += 1) {
-        const [location_key, bboard] = pairs[i];
+        const [location_key_str, bboard] = pairs[i];
+        const location_key = Fpht_key.from(location_key_str);
 
         /**
-         * Rule: location_key must be an n-bit location key and bboard must be a valid Fapp_bboard 
-         * object. TODO: write me
+         * Rule: location_key must be a valid Fpht_key; its integral part must be a valid n-bit
+         * linearization; the meta part of the Fpht_key must meet requirements (as of 9/19/2021, 
+         * that means meta must be the pubkey of the publisher named on the bboard); and bboard 
+         * must be a valid Fapp_bboard object. TODO: write me
          */
 
         /**
@@ -158,11 +162,11 @@ class Fkad_node {
         }
 
         /**
-         * Rule: the location_key matches the lat/long found in the signed data. TODO: this is also 
-         * insecure until we replace Fid.hash_cert() as above
+         * Rule: the integral part of location_key matches the lat/long found in the signed data. 
+         * TODO: this is also insecure until we replace Fid.hash_cert() as above
          */ 
         const coord = new Fgeo_coord({lat: bboard.cred.lat, long: bboard.cred.long});
-        const valid_lk = new Fbigint(location_key).equals(coord.linearize());
+        const valid_lk = Fpht_key.get_integral(location_key).equals(coord.linearize());
 
         if (!valid_lk) {
           return false;
