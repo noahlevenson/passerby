@@ -12,7 +12,7 @@
 const { Flog } = require("../flog/flog.js");
 
 class Fkad_kbucket_rec {
-  static MAX_LOCK_ATTEMPTS = 4;
+  static MAX_LOCK_ATTEMPTS = 3;
   static LOCK_BASE_SECONDS = 100;
   static BACKOFF_FUNC = x => (Fkad_kbucket_rec.LOCK_BASE_SECONDS ** x) * 1000;
 
@@ -31,16 +31,22 @@ class Fkad_kbucket_rec {
   }
 
   is_stale() {
-    return this.n_locks > Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS;
+    return this.n_locks === Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS;
   }
 
   lock() {
+    if (this.is_stale()) {
+      return;
+    }
+
     this.n_locks += 1;
-    const dur_ms = Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks);
-    this.lock_until = Date.now() + dur_ms;
+    const ttl = !this.is_stale() ? Fkad_kbucket_rec.BACKOFF_FUNC(this.n_locks) : Number.POSITIVE_INFINITY;
+    this.lock_until = Date.now() + ttl;
+
     Flog.log(`[FKAD] Locked contact ${this.node_info.node_id.toString()} ` + 
-      `(${this.node_info.addr}:${this.node_info.port}) for ${(dur_ms / 1000).toFixed(1)} sec ` +
-        `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS}`);
+      `(${this.node_info.addr}:${this.node_info.port}) ` + 
+        `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS} ` + 
+        `(${ttl < Number.POSITIVE_INFINITY ? (ttl / 1000).toFixed(1) + " sec" : "permanent"})`);
   }  
 }
 
