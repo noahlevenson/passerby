@@ -458,7 +458,7 @@ class Fapp {
    * Fkad_node_info or null if the contact info cannot be found
    */
   async search_node_info(node_id) {
-    const data = await this.fkad._node_lookup(node_id);
+    const data = await this.fkad.node_lookup(node_id);
 
     if (data.payload[0].node_id.equals(node_id)) {
       return data.payload[0];
@@ -660,7 +660,7 @@ class Fapp {
      */ 
     this.fpht = new Fpht({
       index_attr: Fapp.GEO_INDEX_ATTR,
-      dht_lookup_func: this.fkad._node_lookup, 
+      dht_lookup_func: this.fkad.node_lookup, 
       dht_lookup_args: [this.fkad._req_find_value], 
       dht_node: this.fkad,
       dht_ttl: Fkad_node.T_DATA_TTL

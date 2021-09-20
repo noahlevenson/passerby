@@ -196,7 +196,7 @@ class Fkad_node {
     const prefix = kbucket.get_prefix();
     Flog.log(`[FKAD] Refreshing k-bucket ${prefix.length === 0 ? "[root]" : prefix} ` + 
       `(${kbucket.length()} contact${kbucket.length() > 1 ? "s" : ""})`);
-    await this._node_lookup(random_id);
+    await this.node_lookup(random_id);
   }
 
   /**
@@ -437,7 +437,16 @@ class Fkad_node {
    * 
    * Returns an Fkad_data of either VAL or NODE_LIST type, depending on outcome
    */ 
-  async _node_lookup(key, rpc = this._req_find_node, cb = (n_active, n_inactive) => {}) {
+  async node_lookup(key, rpc = this._req_find_node, cb = (n_active, n_inactive) => {}) {
+    /**
+     * Per the Kademlia spec section 2.3, to handle "pathological cases in which there are no lookups
+     * for a particular ID range," we record the time at which we last performed a node lookup on
+     * this bucket. The k-bucket refresh interval uses this time to determine which buckets to refresh
+     */ 
+    if (rpc === this._req_find_node) {
+      this.find_kbucket_for_id(key).get_data().touch();
+    }
+
     const active = new Fbintree();
     const inactive = new Fbintree();
 
@@ -666,9 +675,6 @@ class Fkad_node {
    * their distance from our ID, ending the search when hit max, then sort by distance from the key
    */ 
   _get_nodes_closest_to({key, max = Fkad_node.K_SIZE, get_locked = false, get_stale = false} = {}) {
-    // Touch the bucket so we know it's not a pathological case
-    this.find_kbucket_for_id(key).get_data().touch();
-
     const all_nodes = this.routing_table.dfs((node, data) => {
       const bucket = node.get_data();
       
@@ -702,7 +708,7 @@ class Fkad_node {
      */ 
     if (this.refresh_interval_handle === null) {
       this.refresh_interval_handle = setInterval(() => {
-        const t1 = Date.now() - Fkad_node.T_KBUCKET_REFRESH;
+        const t_expiry = Date.now() - Fkad_node.T_KBUCKET_REFRESH;
 
         const all_buckets = this.routing_table.dfs((node, data) => {
           const bucket = node.get_data();
@@ -715,7 +721,7 @@ class Fkad_node {
         });
       
         all_buckets.forEach((bucket) => {
-          if (bucket.get_touched() < t1) {
+          if (bucket.get_touched() < t_expiry) {
             this._refresh_kbucket(bucket);
           }
         });
@@ -822,7 +828,7 @@ class Fkad_node {
     let last_inactive = 0;
 
     // Do a node lookup on myself, refresh every k-bucket further away from my closest neighbor
-    const lookup_res = await this._node_lookup(
+    const lookup_res = await this.node_lookup(
       this.node_id, 
       this._req_find_node, 
       (n_active, n_inactive) => {
@@ -870,7 +876,7 @@ class Fkad_node {
    * that successfully stored the data.
    */
   async put(key, val) {
-    const result = await this._node_lookup(key);
+    const result = await this.node_lookup(key);
     const kclosest = result.payload;
     const p = [];
     let succ = 0;
@@ -911,7 +917,7 @@ class Fkad_node {
    * Fetch data 'key' from the distributed database
    */ 
   async get(key) {
-    return await this._node_lookup(key, this._req_find_value);
+    return await this.node_lookup(key, this._req_find_value);
   }
 }
 
