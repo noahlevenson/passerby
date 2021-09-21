@@ -16,12 +16,12 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
 
 class Futil {
   /**
-   * Rescale positive float f to an integer of bit depth b, where fmax is the largest possible value
-   * for f. TODO: validate inputs and catch overflow
+   * Rescale positive float x to an integer of bit depth b, where xmax is the largest possible value
+   * for x. TODO: validate inputs and catch overflow
    */
-  static float_to_normalized_int(f, fmax, b) {
+  static float_to_normalized_int(x, fmax, b) {
     const max = (Math.pow(2, b) - 1) / fmax;
-    return Math.floor(f * max);
+    return Math.floor(x * max);
   }
 
   /**
@@ -61,6 +61,28 @@ class Futil {
     });
 
     return {x: Fbigint.from_base2_str(x), y: Fbigint.from_base2_str(y)};
+  }
+
+  /**
+   * Perform a k-way merge (ascending) on array of sorted arrays 'x'. Minimum comparator function 
+   * minf(vals) operates at every merge step over an array of the 0th elements of the sorted arrays, 
+   * and must return the index into x which corresponds to the sorted array which has the smallest 
+   * 0th element. 's' is the sentinel value to use for sorted arrays which have already been 
+   * completely merged. E.g., to merge simple arrays of numbers:
+   * 
+   * kway_merge_min(arrs, vals => vals.indexOf(Math.min(...vals)), Number.POSITIVE_INFINITY)
+   *  
+   * TODO: this is the naive approach, re-implement using priority queue based on a min heap
+   */  
+  static kway_merge_min(x, minf, s) {
+    const merged = [];
+
+    while (x.some(y => y.length > 0)) {
+      const i = minf(x.map(y => y.length > 0 ? y[0] : s));
+      merged.push(x[i].shift());
+    }
+
+    return merged;
   }
 
   /**

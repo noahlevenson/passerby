@@ -3,7 +3,23 @@
 const assert = require("assert");
 const { Futil } = require("../../src/futil/futil.js");
 
-(function is_power2(n) {
+(function kway_merge_min() {
+  const arrs = [
+    [2, 7, 99, 109, 110, 110],
+    [1, 8, 65, 100, 108, 109],
+    [1, 7, 8, 101, 109, 112, 118]
+  ];
+
+  const res1 = Futil.kway_merge_min(arrs, vals => vals.indexOf(Math.min(...vals)), Number.POSITIVE_INFINITY);
+  const res1_golden = [1, 1, 2, 7, 7, 8, 8, 65, 99, 100, 101, 108, 109, 109, 109, 110, 110, 112, 118];
+  assert.strictEqual(res1.length, res1_golden.length);
+
+  for (let i = 0; i < res1.length; i += 1) {
+    assert.strictEqual(res1[i], res1_golden[i]);
+  }
+})();
+
+(function is_power2() {
   const res1 = Futil.is_power2(128);
   assert.strictEqual(res1, true);
 

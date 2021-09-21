@@ -23,6 +23,7 @@ const { Fdlt_block } = require("./fdlt_block.js");
 const { Fdlt_store } = require("./fdlt_store.js");
 const { Fdlt_vm } = require("./fdlt_vm.js");
 const { Flog } = require("../flog/flog.js");
+const { Futil } = require("../futil/futil.js");
 const { Fntree_node } = require("../ftypes/fntree/fntree_node.js");
 
 class Fdlt {
@@ -295,7 +296,7 @@ class Fdlt {
       await this.make_block(this.store.get_deepest_blocks()[0]);
     }
 
-    this._init();
+    await this._init();
   }
 
   stop() {
@@ -303,7 +304,7 @@ class Fdlt {
     Flog.log(`[FDLT] (${this.net.app_id}) Offline`);
   }
 
-  _init() {
+  async _init() {
     /**
      * If we have an unresolved accidental fork, just advertise the last known hash before the fork
      */ 
@@ -319,26 +320,34 @@ class Fdlt {
       `last known ${last_hash}`);
 
     /**
-     * TODO: this is doing pointless work. A better way is to wait until we get all the lists of 
-     * blocks, then find the intersection of the lists before asking nodes to send blocks. Also: 
-     * since we don't wait for blocks to arrive in order, we might kick off a lot of 
-     * _res_block() CASE 3s...
+     * Our plan: broadcast a request to collect lists of blocks from lots of peers, then merge them 
+     * all down to one master list while preserving depth order. Iterate through each block in the 
+     * merged list; if we don't have it, broadcast a request for it until someone gives it to us. 
+     * To be sane, we won't broadcast a request for a block until we've received its predecessors.
      */ 
-    this.broadcast(this.getblocks_req, {
-      block_hash: last_hash, 
-      success: (res, addr, port, pubkey, ctx) => {
-        res.data.forEach((block_hash) => {
-          if (!this.store.get_node(block_hash)) {
-            this.getdata_req({
-              block_hash: block_hash, 
-              addr: addr, 
-              port: port,
-              pubkey: pubkey
-            });
-          }
+
+    const block_lists = await this.broadcast(this.getblocks_req, {block_hash: last_hash});
+    
+    const merged = Futil.kway_merge_min(
+      block_lists,
+      (vals) => {
+        const depths = vals.map((pair) => {
+          const [block_hash, d] = pair;
+          return d;
         });
+
+        return depths.indexOf(Math.min(...depths));
+      },
+      [null, Number.POSITIVE_INFINITY]
+    );
+
+    for (const [block_hash, d] of merged) {
+      if (!this.store.get_node(block_hash)) {
+        while ((await this.broadcast(this.getdata_req, {block_hash: block_hash})).length === 0) {
+          // Do nothing, we break the loop when we've received at least one response for block_hash
+        }      
       }
-    });
+    }
   }
 
   _on_message(msg, rinfo) {
@@ -446,18 +455,22 @@ class Fdlt {
       /**
        * CASE 3: we don't know the new block's parent, run init to rebuild our store
        */ 
-      this._init();
+      await this._init();
     }
 
     return res;
   }
 
   /**
-   * To handle the case where a peer advertises a last known hash which is in a branch that's 
-   * not part of our canonical branch, we perform BFS in undirected mode. TODO: since we use BFS, 
-   * this method sends block hashes ordered by their distance from the last known block, which seems 
-   * desirable... but it also sends every single block in our store except for the one known to the 
-   * peer... seems like we can do this better?
+   * When a peer asks for a list of blocks which come after a last known block hash, we return a list 
+   * of [block_hash, d] pairs, where d is that block's distance from the block corresponding to the
+   * peer's last known hash. To handle the case where a peer advertises a last known hash which is 
+   * in a branch that's not part of our canonical branch, we perform BFS in undirected mode. TODO: 
+   * this is a very naive implementation which simply sends every block in our datastore, ordered
+   * by distance from the peer's last known block. An improved algorithm would determine the depth
+   * of the peer's last known block, compare it to the state of our datastore, calculate the nearest
+   * common ancestor for all the branches which the peer might not know about, and use BFS in 
+   * directed mode starting from there...
    */ 
   async _res_getblocks(req, rinfo) {
     const start_node = this.store.get_node(req.data);
@@ -465,7 +478,7 @@ class Fdlt {
 
     if (start_node) {
       this.store.tree.bfs((node, d, data) => {
-        data.push(Fdlt_block.sha256(node.data));
+        data.push([Fdlt_block.sha256(node.data), d]);
       }, start_node, succ, true);
     }
     
@@ -536,26 +549,51 @@ class Fdlt {
   }
 
   /**
-   * TODO: to find neighbors, we use FKAD to select the K_SIZE peers closest to our peer ID. This is 
-   * prob even less efficient than choosing a random subset of peers from FKAD's routing table!
-   * This also dangerously assumes that the config object passed to each req function is the same.
+   * Broadcast a message to some neighbors. Specify the message by providing a message function
+   * (one of tx_req, block_req, getblocks_req, or getdata_req) and the configuration object for the
+   * message function. Resolves when all outbound messages have resolved, either by response or 
+   * timeout; returns an array of VALUES returned from all responses, i.e. the res.data. TODO: to
+   * find neighbors, we use FKAD to select the K_SIZE peers closest to our peer ID. This is prob
+   * even less efficient than choosing a random subset of peers from FKAD's routing table! This
+   * also dangerously assumes that the config object passed to each req function is the same. 
    */ 
-  broadcast(msg_func, config_obj) {
+  async broadcast(msg_func, config_obj) {
     const neighbors = this.fkad._get_nodes_closest_to({key: this.fkad.node_id}).filter(n => 
       !n.node_id.equals(this.fkad.node_id));
     
     Flog.log(`[FDLT] (${this.net.app_id}) Broadcasting a ${msg_func.name} to ` + 
       `${neighbors.length} neighbors...`);
 
-    neighbors.forEach((n) => {
-      const arg = Object.assign({}, config_obj, {
-        addr: n.addr, 
-        port: n.port,
-        pubkey: n.pubkey
-      });
+    const resolutions = [];
 
-      msg_func.bind(this, arg)();
+    neighbors.forEach((n) => {
+      resolutions.push(new Promise((resolve, reject) => {
+        const arg = Object.assign({}, config_obj, {
+          addr: n.addr, 
+          port: n.port,
+          pubkey: n.pubkey,
+          success: (res, addr, port, pubkey, ctx) => {
+            if (typeof config_obj.success === "function") {
+              config_obj.success(res, addr, port, pubkey, ctx);
+            }
+            
+            resolve(res.data);
+          },
+          timeout: (msg) => {
+            if (typeof config_obj.timeout === "function") {
+              config_obj.timeout(msg);
+            }
+            
+            resolve(null);
+          }
+        });
+
+        msg_func.bind(this, arg)();
+      }));
     });
+
+    const res = await Promise.all(resolutions);
+    return res.filter(val => val !== null);
   }
 
   tx_req({
