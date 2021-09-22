@@ -549,7 +549,7 @@ class Fapp {
    */ 
   async delete() {
     this.crud_ops = this.crud_ops.then(async () => {
-      await this.fpht.delete(this.get_location().linearize());
+      await this.fpht.delete(Fid_pub.get_location_key(this.fid_pub));
     });
 
     await this.crud_ops;
