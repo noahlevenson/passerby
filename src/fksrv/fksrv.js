@@ -31,7 +31,7 @@ const { Futil } = require("../futil/futil.js");
  */ 
 
 class Fksrv {          
-  static REQ_POW_BITS = Fid.POW_LEAD_ZERO_BITS;
+  static REQ_POW_BITS = Fid.POW_ZERO_BITS;
   static SIG_TOK = Buffer.from([0xDE, 0xAD]).toString("hex");
   static REV_TOK = Buffer.from([0xBE, 0xEF]).toString("hex");
   static SCRIPT_NO_UNLOCK = [Fdlt_vm.OPCODE.OP_PUSH1, 0x01, 0x00];

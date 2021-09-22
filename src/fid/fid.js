@@ -23,12 +23,10 @@ class Fid {
   /**
    * TODO: HASH_SZ is the bit size of the hash function, but it's brittle that this varies 
    * independently of the hash function used in hash_cert()... 
-   * 
-   * TODO: move POW_LEAD_ZERO_BITS to network secrets
    */ 
 
+  static POW_ZERO_BITS = cfg.FID_POW_ZERO_BITS;
   static HASH_SZ = 256;
-  static POW_LEAD_ZERO_BITS = 3;
   static SYM_ADJ_A = dict_adj_a;
   static SYM_ADJ_B = dict_adj_b;
   static SYM_NOUN = dict_noun;
@@ -84,7 +82,7 @@ class Fid {
   static get_symbol_indices(cert) {
     const hash = Fid.hash_cert(cert.pubkey, cert.nonce);
     
-    if (!Fid.is_valid_pow(hash, Fid.POW_LEAD_ZERO_BITS)) {
+    if (!Fid.is_valid_pow(hash, Fid.POW_ZERO_BITS)) {
         return null; 
     }
 

@@ -141,7 +141,7 @@ class Fkad_node {
          */ 
         const pow = Fid.is_valid_pow(
           Fid.hash_cert(bboard.cred.pubkey, bboard.cred.nonce), 
-          Fid.POW_LEAD_ZERO_BITS
+          Fid.POW_ZERO_BITS
         );
 
         if (!pow) {
