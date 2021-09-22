@@ -590,6 +590,9 @@ class Fapp {
    * resolve our network info using STUN
    */ 
   async start({addr = null, port = null} = {}) {
+    Flog.log(`[FAPP] Welcome to libfood. Protocol vers ${cfg.PROTOCOL_VERSION}, ` + 
+      `${cfg.FID_POW_ZERO_BITS}-bit POW`);
+
     /**
      * Boot our transport module and STUN services
      */ 

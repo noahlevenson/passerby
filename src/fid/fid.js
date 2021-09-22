@@ -25,7 +25,7 @@ class Fid {
    * independently of the hash function used in hash_cert()... 
    */ 
 
-  static POW_ZERO_BITS = cfg.FID_POW_ZERO_BITS;
+  static POW_ZERO_BITS = !cfg.FID_POW_ZERO_BITS ? Fid.pow_err() : cfg.FID_POW_ZERO_BITS;
   static HASH_SZ = 256;
   static SYM_ADJ_A = dict_adj_a;
   static SYM_ADJ_B = dict_adj_b;
@@ -39,6 +39,10 @@ class Fid {
   
   static dict_err() {
     throw new Error("Dictionary cardinality must be power of 2");
+  }
+
+  static pow_err() {
+    throw new Error("Missing POW zero bits");
   }
 
   /**

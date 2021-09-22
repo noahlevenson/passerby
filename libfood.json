@@ -1,4 +1,5 @@
 {
+  "PROTOCOL_VERSION": 1,
   "SYS_BYTE_WIDTH": 8,
   "ENV": "NODE",
   "FID_POW_ZERO_BITS": 3
