@@ -74,7 +74,7 @@ Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are ac
 **libfood is written from scratch, in portable JavaScript, with zero dependencies.**
 
 ### :boom: Quickstart tutorial
-Dev tutorial coming soon. Check out the Strappy tutorial to learn how to spin up and configure a bootstrap node:
+Dev tutorial coming soon. Check out the [Strappy](https://github.com/noahlevenson/strappy) tutorial to learn how to spin up and configure a bootstrap node:
 
 [![Strappy tutorial](https://github.com/noahlevenson/strappy/blob/main/youtube_thumb.png)](https://www.youtube.com/watch?v=kQWziK4Fnmw "Strappy tutorial")
 
