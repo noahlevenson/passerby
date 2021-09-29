@@ -18,13 +18,15 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 
 [Free Food](https://freefood.is) eliminates third party middlemen, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click &mdash; all through one convenient interface. 
 
-[Free Food](https://freefood.is) consists of 3 open source software packages:
+[Free Food](https://freefood.is) consists of 4 open source software packages:
 
 * **libfood (you are here)**
 
 * **Free Food Battlestation, an Android software client which operationalizes libfood for restaurants**
 
 * **Free Food Hotline, a desktop software client which operationalizes libfood for hungry people**
+
+* **[Free Food Strappy](https://github.com/noahlevenson/strappy), an extensible bootstrap node**
 
 To start building with libfood, see the [quickstart tutorial](#boom-quickstart-tutorial).
 
@@ -72,7 +74,9 @@ Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are ac
 **libfood is written from scratch, in portable JavaScript, with zero dependencies.**
 
 ### :boom: Quickstart tutorial
-Coming soon...
+Dev tutorial coming soon. Check out the Strappy tutorial to learn how to spin up and configure a bootstrap node:
+
+[![Strappy tutorial](https://github.com/noahlevenson/strappy/blob/main/youtube_thumb.png)](https://www.youtube.com/watch?v=kQWziK4Fnmw "Strappy tutorial")
 
 ### :floppy_disk: Technology overview
 [Free Food](https://freefood.is) presents an end-to-end solution to the decentralized restaurant marketplace problem. The protocol stack provides both low level functionality (like NAT traversal, p2p networking, distributed data storage, and geolocation-based peer discovery) and higher level abstractions (like distributed trust and reputation systems, as well as restaurant e-commerce functionality for tasks like menu editing and order status notifications).  
