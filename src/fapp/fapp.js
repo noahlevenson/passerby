@@ -556,6 +556,27 @@ class Fapp {
   }
 
   /**
+   * Resource hook. Don't set this directly, use on_resource()
+   */ 
+  _resource_hook(res) {
+    // Do nothing
+  }
+
+  /**
+   * Set the resource hook, which is a function to be executed immediately upon discovery of a 
+   * resource during a call to get_local_resource()
+   */ 
+  on_resource({f} = {}) {
+    if (typeof f !== "function") {
+      throw new TypeError("Argument 'f' must be a function");
+    }
+
+    this._resource_hook = (resources) => {
+      f(this._filter_active_resources(resources));
+    }
+  }
+
+  /**
    * High level method to retrieve a list of nearby resource providers. If you're a resource 
    * consumer, this is probably what you want to use to populate your resource list...
    */ 
@@ -563,12 +584,7 @@ class Fapp {
     const loc = this.get_location();
     const search_window = Fgeo.get_exts(loc, Fapp.SEARCH_DIST_MILES);
     const res = await this.geosearch(search_window);
-    const t_expiry = Date.now() - Fapp.T_IDLE;
-    
-    const active = res.filter((res) => {
-      const [key, bboard] = res;
-      return bboard.last_active > t_expiry;
-    });
+    const active = this._filter_active_resources(res);
     
     Flog.log(`[FAPP] Searched ${Fapp.SEARCH_DIST_MILES.toFixed(1)} miles from ` + 
       `${loc.lat}, ${loc.long}; resources discovered: ${res.length} (${active.length} active)`);
@@ -576,12 +592,25 @@ class Fapp {
     return active;
   }
 
+  _filter_active_resources(resources) {
+    const t_expiry = Date.now() - Fapp.T_IDLE;
+
+    return resources.filter((res) => {
+      const [key, bboard] = res;
+      return bboard.last_active > t_expiry;
+    });
+  }
+
   /**
    * Search the network for data within a geographic window defined by an Fgeo_rect
    * This is a lower level function; for doing a regular search, use get_local_resources() above
    */ 
   async geosearch(rect) {
-    return await this.fpht.range_query_2d(rect.get_min().linearize(), rect.get_max().linearize());
+    return await this.fpht.range_query_2d(
+      rect.get_min().linearize(), 
+      rect.get_max().linearize(), 
+      this._resource_hook
+    );
   }
 
   /**

@@ -474,7 +474,7 @@ class Fpht {
         `${Fpht_node.get_label(leaf)} (DHT key ${this._get_label_hash(Fpht_node.get_label(leaf))})`);
   }
 
-  async _do_range_query_2d({pht_node, minkey_2d, maxkey_2d, data = []} = {}) {
+  async _do_range_query_2d({pht_node, minkey_2d, maxkey_2d, data = [], status_cb} = {}) {
     /**
      * Base case: it's a leaf node
      */ 
@@ -486,6 +486,10 @@ class Fpht {
         return zvalue_2d.x.greater_equal(minkey_2d.x) && zvalue_2d.x.less(maxkey_2d.x) && 
           zvalue_2d.y.greater_equal(minkey_2d.y) && zvalue_2d.y.less(maxkey_2d.y);
       });
+
+      if (valid_pairs.length > 0) {
+        status_cb(valid_pairs);
+      }
 
       return data.concat(valid_pairs);
     } 
@@ -522,7 +526,8 @@ class Fpht {
         pht_node: child_node,
         minkey_2d: minkey_2d,
         maxkey_2d: maxkey_2d,
-        data: data
+        data: data,
+        status_cb: status_cb
       });
     }
 
@@ -537,7 +542,8 @@ class Fpht {
         pht_node: child_node,
         minkey_2d: minkey_2d,
         maxkey_2d: maxkey_2d,
-        data: data
+        data: data,
+        status_cb: status_cb
       });
     }
 
@@ -549,8 +555,12 @@ class Fpht {
    * order curve. Note a distinction here: PHT update operations require an Fpht_key because data
    * is stored to the network under a serialized Fpht_key, but 2D range query takes Fbigints because
    * range queries are concerned only with the integral parts of Fpht_keys.
+   * 
+   * We resolve with the results upon completing our trie traversal. If you're impatient, you can 
+   * access partial results using callback 'status_cb'; during traversal, status_cb() is called immediately 
+   * for each leaf node which yields a partial result. It's passed an array of [key, val] pairs. 
    */ 
-  async range_query_2d(minkey, maxkey) {
+  async range_query_2d(minkey, maxkey, status_cb = () => {}) {
     if (!(minkey instanceof Fbigint) || !(maxkey instanceof Fbigint)) {
       throw new TypeError("Arguments 'minkey' and 'maxkey' must be Fbigint");
     }
@@ -586,7 +596,8 @@ class Fpht {
     return await this._do_range_query_2d.bind(this)({
       pht_node: start,
       minkey_2d: Futil.z_delinearize_2d(minkey, Fpht.BIT_DEPTH / 2),
-      maxkey_2d: Futil.z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2)
+      maxkey_2d: Futil.z_delinearize_2d(maxkey, Fpht.BIT_DEPTH / 2),
+      status_cb: status_cb
     });
   }
 }
