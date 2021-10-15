@@ -447,6 +447,13 @@ class Fapp {
   }
 
   /**
+   * Convenience method to compute the strong set over the trust graph
+   */
+  compute_strong_set() {
+    return this.fksrv.compute_strong_set();
+  }
+
+  /**
    * Return a reference to our latitude/longitude as an Fgeo_coord
    */ 
   get_location() {
@@ -564,7 +571,7 @@ class Fapp {
 
   /**
    * Set the resource hook, which is a function to be executed immediately upon discovery of a 
-   * resource during a call to get_local_resource()
+   * resource during a call to get_local_resources()
    */ 
   on_resource({f} = {}) {
     if (typeof f !== "function") {
@@ -684,7 +691,7 @@ class Fapp {
 
     if (this.keepalive) {
       this.keepalive_interval = setInterval(this._keepalive_handler.bind(this), this.t_keepalive);
-      Flog.log(`[FAPP] keepalive enabled (${this.t_keepalive / 1000}s)`);
+      Flog.log(`[FAPP] Keepalive enabled (${this.t_keepalive / 1000}s)`);
     }
 
     /**
