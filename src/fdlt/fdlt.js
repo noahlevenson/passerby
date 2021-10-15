@@ -285,6 +285,10 @@ class Fdlt {
     return {valid: true, utxo_db: this.db_hook(tx, utxo_db)};
   }
 
+  /** 
+   * Boot this instance of the distributed ledger. After calling start(), you should call init()
+   * to collect all the data you're missing.
+   */ 
   async start() {
     this.net.network.on("message", this._on_message.bind(this));
     
@@ -295,8 +299,6 @@ class Fdlt {
       Flog.log(`[FDLT] (${this.net.app_id}) As validator`);
       await this.make_block(this.store.get_deepest_blocks()[0]);
     }
-
-    await this._init();
   }
 
   stop() {
@@ -304,7 +306,10 @@ class Fdlt {
     Flog.log(`[FDLT] (${this.net.app_id}) Offline`);
   }
 
-  async _init() {
+  /**
+   * Update our local copy of the blockchain by collecting all the data we're missing
+   */ 
+  async init() {
     /**
      * If we have an unresolved accidental fork, just advertise the last known hash before the fork
      */ 
@@ -455,7 +460,7 @@ class Fdlt {
       /**
        * CASE 3: we don't know the new block's parent, run init to rebuild our store
        */ 
-      await this._init();
+      await this.init();
     }
 
     return res;

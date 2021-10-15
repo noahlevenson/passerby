@@ -453,6 +453,13 @@ class Fapp {
     return this.fksrv.compute_strong_set();
   }
 
+  /** 
+   * Convenience method to fetch all missing keyserver data
+   */ 
+  async get_keyserver_data() {
+    await this.fksrv.init();
+  }
+
   /**
    * Return a reference to our latitude/longitude as an Fgeo_coord
    */ 

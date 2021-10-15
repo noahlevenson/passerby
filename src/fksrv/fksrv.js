@@ -111,6 +111,10 @@ class Fksrv {
     Flog.log(`[FKSRV] (${this.dlt.net.app_id}) Offline`);
   }
 
+  async init() {
+    await this.dlt.init();
+  }
+
   /**
    * TODO: We're currently preserving separate sign and revoke functions for compatability, but
    * they can be collapsed into a single parameterized function
@@ -277,13 +281,7 @@ class Fksrv {
    */ 
   compute_strong_set() {
     return this.build_wot().scc().filter((subgraph) => {
-      subgraph.forEach((key) => {
-        if (this.trusted_root_keys.has(key)) {
-          return true;
-        }
-      });
-
-      return false;
+      return subgraph.some(key => this.trusted_root_keys.has(key));
     }).flat();
   }
 }
