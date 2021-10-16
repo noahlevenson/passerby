@@ -615,6 +615,13 @@ class Fapp {
     return this._is_strong_set_resource(resource) && this._is_active_resource(resource);
   }
 
+  /** 
+   * Fetch the most recently computed trust scores for resource providers as a plain valued Object
+   */ 
+  get_trust_scores() {
+    return Object.fromEntries(this.fksrv.trust_scores);
+  }
+
   /**
    * Search the network for data within a geographic window defined by an Fgeo_rect
    * This is a lower level function; for doing a regular search, use get_local_resources() above
