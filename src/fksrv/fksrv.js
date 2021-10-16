@@ -95,10 +95,12 @@ class Fksrv {
   
   dlt;
   trusted_root_keys;
+  trust_scores;
   
   constructor ({dlt, trusted_root_keys = []} = {}) {
     this.dlt = dlt;
     this.trusted_root_keys = new Set(trusted_root_keys);
+    this.trust_scores = new Map();
   }
 
   start() {
@@ -113,6 +115,7 @@ class Fksrv {
 
   async init() {
     await this.dlt.init();
+    this.trust_scores = this.compute_trust_scores();
   }
 
   /**
@@ -283,6 +286,15 @@ class Fksrv {
     return this.build_wot().scc().filter((subgraph) => {
       return subgraph.some(key => this.trusted_root_keys.has(key));
     }).flat();
+  }
+
+  /**
+   * TODO: Implement our trust metric algorithm here. Currently we assign a trust score of 100 to
+   * every resource provider in the strong set. Resource providers who are not in the strong set
+   * do not receive an entry in the trust scores Map.
+   */ 
+  compute_trust_scores() {
+    return new Map(this.compute_strong_set().map(key => [key, 100]));
   }
 }
 

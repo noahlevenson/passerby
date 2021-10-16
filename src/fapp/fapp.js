@@ -446,17 +446,11 @@ class Fapp {
     return this.fkad;
   }
 
-  /**
-   * Convenience method to compute the strong set over the trust graph
-   */
-  compute_strong_set() {
-    return this.fksrv.compute_strong_set();
-  }
-
   /** 
-   * Convenience method to fetch all missing keyserver data
+   * Convenience method to fetch all missing keyserver data and recompute trust scores for 
+   * resource providers
    */ 
-  async get_keyserver_data() {
+  async init_keyserver() {
     await this.fksrv.init();
   }
 
@@ -585,8 +579,8 @@ class Fapp {
       throw new TypeError("Argument 'f' must be a function");
     }
 
-    this._resource_hook = (resources) => {
-      f(this._filter_active_resources(resources));
+    this._resource_hook = (res) => {
+      f(res.filter(resource => this._is_active_and_ss(resource)));
     }
   }
 
@@ -598,21 +592,27 @@ class Fapp {
     const loc = this.get_location();
     const search_window = Fgeo.get_exts(loc, Fapp.SEARCH_DIST_MILES);
     const res = await this.geosearch(search_window);
-    const active = this._filter_active_resources(res);
+    const act_ss = res.filter(resource => this._is_active_and_ss(resource));
     
     Flog.log(`[FAPP] Searched ${Fapp.SEARCH_DIST_MILES.toFixed(1)} miles from ` + 
-      `${loc.lat}, ${loc.long}; resources discovered: ${res.length} (${active.length} active)`);
+      `${loc.lat}, ${loc.long}; resources discovered: ${res.length} (${act_ss.length} active strong set)`);
 
-    return active;
+    return act_ss;
   }
 
-  _filter_active_resources(resources) {
-    const t_expiry = Date.now() - Fapp.T_IDLE;
+  _is_strong_set_resource(resource) {
+    const [key, bboard] = resource;
+    return this.fksrv.trust_scores.has(bboard.cred.pubkey);
+  }
 
-    return resources.filter((res) => {
-      const [key, bboard] = res;
-      return bboard.last_active > t_expiry;
-    });
+  _is_active_resource(resource) {
+    const t_expiry = Date.now() - Fapp.T_IDLE;
+    const [key, bboard] = resource;
+    return bboard.last_active > t_expiry;
+  }
+
+  _is_active_and_ss(resource) {
+    return this._is_strong_set_resource(resource) && this._is_active_resource(resource);
   }
 
   /**
