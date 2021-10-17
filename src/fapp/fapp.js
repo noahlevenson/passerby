@@ -759,20 +759,38 @@ class Fapp {
   }
 
   /**
-   * Disconnect and shut down. TODO: this is just a stub while we figure out a better pattern for
-   * this, we're still leaving a bunch of dangling event handlers everywhere
+   * Disconnect and shut down. You should be able to call stop() to cancel a partial boot, so we
+   * don't assume each module exists at stop time. TODO: this is just a stub while we figure out a 
+   * better pattern for this, we're still leaving a bunch of dangling event handlers everywhere
    */ 
   async stop() {
-    await this.trans.stop();
-    this.fstun.stop();
-    this.fbuy.stop();
-    this.fbuy = null;
-    this.fkad.stop();
-    this.fkad = null;
-    this.fksrv.stop();
-    this.fksrv = null;
-    this.fpht = null;
+    if (this.trans) {
+      await this.trans.stop();
+    }
 
+    if (this.fstun) {
+      this.fstun.stop();
+    }
+
+    if (this.fbuy) {
+      this.fbuy.stop();
+      this.fbuy = null;
+    }
+
+    if (this.fkad) {
+      this.fkad.stop();
+      this.fkad = null;
+    }
+
+    if (this.fksrv) {
+      this.fksrv.stop();
+      this.fksrv = null;
+    }
+
+    if (this.fpht) {
+      this.fpht = null;
+    }
+  
     if (this.keepalive_interval) {
       clearInterval(this.keepalive_interval);
       this.keepalive_interval = null;
