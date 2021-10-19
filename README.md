@@ -16,7 +16,7 @@
 ### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery free again. 
 
-[Free Food](https://freefood.is) eliminates third party middlemen, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click &mdash; all through one convenient interface. 
+[Free Food](https://freefood.is) eliminates third party middlemen, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click.
 
 [Free Food](https://freefood.is) consists of 4 open source software packages:
 
