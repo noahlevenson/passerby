@@ -40,7 +40,7 @@ class Fbuy_net_solo extends Fbuy_net {
   }
 
   _out(fbuy_msg, rinfo) {
-    this.trans._send(fbuy_msg, Ftrans_msg.TYPE.FBUY, rinfo);
+    this.trans._send(fbuy_msg, Ftrans_msg.TYPE.FBUY, rinfo, this.MSG_TIMEOUT);
   }
 }
 

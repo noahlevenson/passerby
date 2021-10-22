@@ -34,8 +34,6 @@ class Fdlt {
    * TODO: we should have classes for all the different consensus method args
    */ 
 
-  static MSG_TIMEOUT = 5000;
-
   static CONSENSUS_METHOD = {
     AUTH: 0
   };
@@ -534,7 +532,7 @@ class Fdlt {
         const timeout_id = setTimeout(() => {
           this.res.removeAllListeners(msg.id.toString());
           reject();
-        }, Fdlt.MSG_TIMEOUT);
+        }, this.net.MSG_TIMEOUT);
 
         this.res.once(msg.id.toString(), (res_msg) => {
           clearTimeout(timeout_id);

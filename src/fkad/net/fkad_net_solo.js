@@ -52,7 +52,7 @@ class Fkad_net_solo extends Fkad_net {
     }
   }
 
-  _out(fkad_msg, node_info) {
+  _out(fkad_msg, node_info, ttl) {
     /* Loopback case
     
     if (node_info.addr === this.node.addr && node_info.port === this.node.port &&
@@ -67,7 +67,7 @@ class Fkad_net_solo extends Fkad_net {
       address: node_info.addr, 
       port: node_info.port, 
       pubkey: node_info.pubkey
-    }));
+    }), ttl);
   }
 }
 

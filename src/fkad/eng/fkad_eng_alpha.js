@@ -15,8 +15,6 @@ const { Fkad_msg } = require("../fkad_msg.js");
 const { Fkad_node_info } = require("../fkad_node_info.js");
 
 class Fkad_eng_alpha extends Fkad_eng {
-  static DEFAULT_TTL = 5000;
-
   res;
 
   constructor() {
@@ -35,7 +33,7 @@ class Fkad_eng_alpha extends Fkad_eng {
     }
   }
 
-  _send(msg, node_info, success = () => {}, timeout = () => {}, ttl = Fkad_eng_alpha.DEFAULT_TTL) {
+  _send(msg, node_info, success = () => {}, timeout = () => {}, ttl = this.node.net.DEFAULT_TTL) {
     if (msg.type === Fkad_msg.TYPE.REQ) {
       const outgoing = new Promise((resolve, reject) => {
         const timeout_id = setTimeout(() => {
@@ -70,7 +68,7 @@ class Fkad_eng_alpha extends Fkad_eng {
       });
     }
 
-    this.node.net._out(msg, node_info); 
+    this.node.net._out(msg, node_info, ttl);
   }
 }
 

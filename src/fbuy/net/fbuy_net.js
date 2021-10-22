@@ -13,9 +13,11 @@ const EventEmitter = require("events");
 
 class Fbuy_net {
   network;
-
+  MSG_TIMEOUT;
+  
   constructor() {
     this.network = new EventEmitter();
+    this.MSG_TIMEOUT = 5000;
   }
 
   _in(msg, rinfo) {

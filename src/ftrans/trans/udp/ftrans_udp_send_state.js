@@ -13,12 +13,14 @@ class Ftrans_udp_send_state {
   slice;
   rinfo;
   tries;
+  msg_timeout;
   last_sent;
 
-  constructor({slice, rinfo, tries = 0, last_sent = Number.NEGATIVE_INFINITY} = {}) {
+  constructor({slice, rinfo, tries = 0, msg_timeout, last_sent = Number.NEGATIVE_INFINITY} = {}) {
     this.slice = slice;
     this.rinfo = rinfo;
     this.tries = tries;
+    this.msg_timeout = msg_timeout;
     this.last_sent = last_sent;
   }
 }

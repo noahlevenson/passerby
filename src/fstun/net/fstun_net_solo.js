@@ -38,7 +38,7 @@ class Fstun_net_solo extends Fstun_net {
   }
 
   _out(msg, rinfo) {
-    this.trans._send(msg, Ftrans_msg.TYPE.FSTUN, rinfo);
+    this.trans._send(msg, Ftrans_msg.TYPE.FSTUN, rinfo, this.MSG_TIMEOUT);
   }
 }
 

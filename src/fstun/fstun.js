@@ -29,8 +29,6 @@ const { Fstun_attr } = require("./fstun_attr.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 
 class Fstun {
-  static REQ_TIMEOUT = 5000;
-
   net;
   sw;
   res;
@@ -75,7 +73,7 @@ class Fstun {
       const timeout_id = setTimeout(() => {
         this.res.removeAllListeners(id_string);
         resolve(null);
-      }, Fstun.REQ_TIMEOUT);
+      }, this.net.MSG_TIMEOUT);
 
       this.res.once(id_string, (res_msg) => {
         clearTimeout(timeout_id);

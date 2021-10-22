@@ -14,10 +14,12 @@ const EventEmitter = require("events");
 class Fkad_net {
   network;
   node;
+  DEFAULT_TTL;
 
   constructor() {
     this.network = new EventEmitter();
     this.node = null;
+    this.DEFAULT_TTL = 5000;
   }
 
   _in(msg) {

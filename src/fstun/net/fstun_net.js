@@ -11,11 +11,13 @@
 
 const EventEmitter = require("events");
 
-class Fstun_net {
+class Fstun_net {  
   network;
+  MSG_TIMEOUT;
 
   constructor() {
     this.network = new EventEmitter();
+    this.MSG_TIMEOUT = 5000;
   }
 
   _in(msg, rinfo) {

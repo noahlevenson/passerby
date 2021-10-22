@@ -30,8 +30,7 @@ const { Fcrypto } = require("../../../fcrypto/fcrypto.js");
  */ 
 
 class Ftrans_udp_chunk_sender {
-  static MAX_RETRIES = 20;
-  static WAIT_UNTIL_RETRY = 200;
+  static WAIT_UNTIL_RETRY = 100;
 
   send_map;
   acked_queue;
@@ -98,17 +97,18 @@ class Ftrans_udp_chunk_sender {
 
     // Add the chunks that arrived since the last tick
     this.chunk_queue.forEach((tuple) => {
-      const [chunk, rinfo] = tuple;
+      const [chunk, rinfo, msg_timeout] = tuple;
       
       Ftrans_udp_chunk_sender._make_slices(chunk, this.wr_ptr).map(s => 
-        new Ftrans_udp_send_state({slice: s, rinfo: rinfo})).forEach((send_state, i) => {
-          this.send_map.set(this._get_key({
-            chunk_id: this.wr_ptr, 
-            slice_id: i, 
-            address: rinfo.address,
-            port: rinfo.port
-          }), send_state);
-        });
+        new Ftrans_udp_send_state({slice: s, rinfo: rinfo, msg_timeout: msg_timeout}))
+          .forEach((send_state, i) => {
+            this.send_map.set(this._get_key({
+              chunk_id: this.wr_ptr, 
+              slice_id: i, 
+              address: rinfo.address,
+              port: rinfo.port
+            }), send_state);
+          });
 
       this._incr_wr_ptr();
     });
@@ -133,7 +133,7 @@ class Ftrans_udp_chunk_sender {
         continue;
       }
       
-      if (send_state.tries < Ftrans_udp_chunk_sender.MAX_RETRIES) {
+      if (send_state.tries < send_state.msg_timeout / Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
         send_state.tries += 1;
         send_state.last_sent = Date.now();
       } else {
@@ -154,8 +154,8 @@ class Ftrans_udp_chunk_sender {
     this.acked_queue.push([chunk_id, acked, rinfo]);
   }
 
-  add({chunk, rinfo} = {}) {
-    this.chunk_queue.push([chunk, rinfo]);
+  add({chunk, rinfo, msg_timeout} = {}) {
+    this.chunk_queue.push([chunk, rinfo, msg_timeout]);
   }
 
   /** 

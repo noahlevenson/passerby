@@ -24,8 +24,6 @@ const { Flog } = require("../flog/flog.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
 
 class Fbuy {
-  static MSG_TIMEOUT = 5000;
-  
   net;
   fid_pub;
   res;
@@ -120,7 +118,7 @@ class Fbuy {
         const timeout_id = setTimeout(() => {
           this.res.removeAllListeners(msg.id.toString());
           reject();
-        }, Fbuy.MSG_TIMEOUT);
+        }, this.net.MSG_TIMEOUT);
 
         this.res.once(msg.id.toString(), (res_msg) => {
           clearTimeout(timeout_id);

@@ -265,7 +265,7 @@ class Ftrans_udp extends Ftrans {
     this.outbound_budget -= socketable.buf.length;
   }
 
-  async _send(msg, msg_type, ftrans_rinfo) {
+  async _send(msg, msg_type, ftrans_rinfo, msg_timeout) {
     const ftrans_msg = await Ftrans_msg.encrypted_from({
       msg: msg, 
       type: msg_type,
@@ -273,7 +273,11 @@ class Ftrans_udp extends Ftrans {
       recip_pubkey: ftrans_rinfo.pubkey
     });
 
-    this.chunk_sender.add({chunk: Buffer.from(JSON.stringify(ftrans_msg)), rinfo: ftrans_rinfo});
+    this.chunk_sender.add({
+      chunk: Buffer.from(JSON.stringify(ftrans_msg)), 
+      rinfo: ftrans_rinfo, 
+      msg_timeout: msg_timeout
+    });
   }
 }
 
