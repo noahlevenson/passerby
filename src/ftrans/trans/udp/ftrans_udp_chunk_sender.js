@@ -132,8 +132,10 @@ class Ftrans_udp_chunk_sender {
       if (send_state.last_sent > Date.now() - Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
         continue;
       }
+
+      const max_tries = send_state.msg_timeout / Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY;
       
-      if (send_state.tries < send_state.msg_timeout / Ftrans_udp_chunk_sender.WAIT_UNTIL_RETRY) {
+      if (send_state.tries < max_tries) {
         send_state.tries += 1;
         send_state.last_sent = Date.now();
       } else {
