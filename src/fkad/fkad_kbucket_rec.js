@@ -34,7 +34,7 @@ class Fkad_kbucket_rec {
     return this.n_locks === Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS;
   }
 
-  lock() {
+  lock(reason = "Unknown") {
     if (this.is_stale()) {
       return;
     }
@@ -44,7 +44,7 @@ class Fkad_kbucket_rec {
     this.lock_until = Date.now() + ttl;
 
     Flog.log(`[FKAD] Locked contact ${this.node_info.node_id.toString()} ` + 
-      `(${this.node_info.addr}:${this.node_info.port}) ` + 
+      `(${this.node_info.addr}:${this.node_info.port}) <${reason}> ` + 
         `${this.n_locks}/${Fkad_kbucket_rec.MAX_LOCK_ATTEMPTS} ` + 
         `(${ttl < Number.POSITIVE_INFINITY ? (ttl / 1000).toFixed(1) + " sec" : "permanent"})`);
   }  

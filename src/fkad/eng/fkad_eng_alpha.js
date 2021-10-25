@@ -60,7 +60,8 @@ class Fkad_eng_alpha extends Fkad_eng {
           const kbucket_rec = bucket.exists(node_info);
 
           if (kbucket_rec !== null && !kbucket_rec.is_locked()) {
-            kbucket_rec.lock();
+            kbucket_rec.lock(`${Object.keys(Fkad_msg.RPC)[msg.rpc]} ` + 
+              `${Object.keys(Fkad_msg.TYPE)[msg.type]} failed`);
           }
         }
         
