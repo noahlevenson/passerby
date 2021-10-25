@@ -215,6 +215,41 @@ class Fkad_node {
   }
 
   /**
+   * Implements the data replication logic which applies to newly discovered peers: For each data
+   * object we're responsible for, if the new node is one of the K closest nodes to the key AND we
+   * are closer to the key than any of our neighbors (or if the new node is now closer to the key
+   * than we are), then replicate it to the new node.
+   */ 
+  async _replicate(node_info) {
+    for (const [key_str, val] of this.data.entries()) {
+      const key = new Fbigint(key_str);
+      const cnodes = this._get_nodes_closest_to({key: key});
+
+      const is_node_k_closest = cnodes.some(cnode => Fkad_node_info.compare(cnode, node_info));
+      const is_self_closer = Fkad_node._get_distance(this.node_id, key).less_equal(
+        Fkad_node._get_distance(cnodes[0].node_id, key));
+      const is_node_closer = Fkad_node_info.compare(cnodes[0], node_info);
+
+      if (is_node_k_closest && (is_self_closer || is_node_closer)) {
+        Flog.log(`[FKAD] Replicating ${key.toString()} to new node ` +
+        `${node_info.node_id.toString()}`);
+
+        /**
+         * Just in case we have a lot of data to replicate to this new node, we serialize our STORE
+         * RPCs instead of rudely blasting them all out at once...
+         */ 
+        await new Promise((resolve, reject) => {
+          this._req_store(key, val.get_data(), node_info, (res, ctx) => {
+            resolve();
+          }, () => {
+            resolve();
+          });
+        });
+      }
+    }
+  }
+
+  /**
    * TODO: this god function is not chad mode
    * We need to separate our concerns and break this up. These are the activities being performed
    * here: deciding if a contact needs to be inserted, handling the easy insertion case, handling
@@ -242,31 +277,7 @@ class Fkad_node {
        * CASE 2: We've never seen this node and the appropriate bucket isn't full, so just insert it
        */ 
       bucket.enqueue(new_kbucket_rec);
-
-      /**
-       * Replicate any of our data that is appropriate to this new node
-       */
-      this.data.entries().forEach((pair) => {
-        const [key_str, val] = pair;
-        const key = new Fbigint(key_str);
-        const cnodes = this._get_nodes_closest_to({key: key});
-
-        /**
-         * If the new node is one of the K closest nodes to this key AND we are closer to the key 
-         * than any of my neighbors (or the new node is now closer to the key than we are), then 
-         * replicate this (key, value) pair to the new node
-         */ 
-        if (cnodes.includes(inbound_node_info) && 
-          (Fkad_node._get_distance(this.node_id, key).less_equal(
-            Fkad_node._get_distance(cnodes[0].node_id, key) || 
-              cnodes[0] === inbound_node_info))) {
-          
-          Flog.log(`[FKAD] Replicating ${key.toString()} to new node ` +
-          `${inbound_node_info.node_id.toString()}`);
-
-          this._req_store(key, val.get_data(), inbound_node_info);
-        }
-      });
+      this._replicate(inbound_node_info);
     } else {
       /**
        * CASE 3: We've never seen this node but the appropriate bucket is full
