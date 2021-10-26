@@ -6,9 +6,9 @@
 
 # :compass: Table of contents
 * [What is libfood?](#hamburger-what-is-libfood)
-* [What's the problem with food delivery?](#question-whats-the-problem-with-food-delivery)
-* [Our research: solving decentralized location-based resource discovery](#brain-our-research-solving-decentralized-location-based-resource-discovery)
+* [Our research: solving decentralized location-based resource problems](#brain-our-research-solving-decentralized-location-based-resource-problems)
 * [Portability as a design requirement](#handbag-portability-as-a-design-requirement)
+* [What's the problem with food delivery?](#question-whats-the-problem-with-food-delivery)
 * [Quickstart tutorial](#boom-quickstart-tutorial)
 * [Technology overview](#floppy_disk-technology-overview)
 * [Screenshots](#computer-screenshots)
@@ -16,21 +16,41 @@
 ### :hamburger: What is libfood?
 libfood is the reference implementation of [Free Food](https://freefood.is), a decentralized location-aware p2p protocol to make food delivery free again. 
 
-[Free Food](https://freefood.is) eliminates third party middlemen, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click.
+[Free Food](https://freefood.is) eliminates third party intermediaries, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click. [Free Food](https://freefood.is) is an interoperable and permissionless system.
+
+[Free Food](https://freefood.is) is a research project; the significant portion of our work is concerned with solving decentralized trust and self-governance and achieving low latency location-aware resource discovery at scale. Our philosophy, however, is to approach decentralized food delivery as an applied problem, [simultaneously addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators. In particular, this means dealing with the UX challenges and resource constraints imposed by mobile devices.
 
 [Free Food](https://freefood.is) consists of 4 open source software packages:
 
-* **libfood (you are here)**
+#### * **libfood (you are here)**
 
-* **Free Food Battlestation, an Android software client which operationalizes libfood for restaurants**
+#### * **Free Food Battlestation, an Android software client which operationalizes libfood for restaurants**
 
-* **Free Food Hotline, a desktop software client which operationalizes libfood for hungry people**
+#### * **Free Food Hotline, a desktop software client which operationalizes libfood for hungry people**
 
-* **[Free Food Strappy](https://github.com/noahlevenson/strappy), an extensible bootstrap node**
+#### * **[Free Food Strappy](https://github.com/noahlevenson/strappy), an extensible bootstrap node**
 
 To start building with libfood, see the [quickstart tutorial](#boom-quickstart-tutorial).
 
 **libfood is a research prototype in active development. There will be bugs, security issues, missing features, etc.** [Free Food](https://freefood.is) is led by [Noah Levenson](https://noahlevenson.com), who serves as Hacker in Residence at Consumer Reports Digital Lab and also happens to co-own a [pizzeria](https://www.instagram.com/pizzerialarosa/) in New Rochelle, NY.
+
+### :brain: Our research: solving decentralized location-based resource problems
+Over the last 10 years, many of the most popular centralized platforms have risen to power by efficiently connecting the user to nearby resources: Tinder connects users with nearby single people. Uber connects users with nearby taxi drivers. Grubhub connects users with nearby restaurants. Separately, e-commerce marketplaces like Amazon have made our local shopping resources less competitive by providing an aggregated portal which, by virtue of its vast selection and searchability, is actually more convenient than walking down the block to visit a store.
+
+A significantly negative consequence of this transformation is that many aspects of our daily lives are now centralized behind the paywall of a single corporate gatekeeper. Looking beyond the financial implications, this trend toward centralization also threatens freedom of expression and other civil liberties &mdash; as both resource providers and resource consumers are, even in their private transactions, increasingly subject to the policies established by large corporations.
+
+[Free Food](https://freefood.is) is an effort to reverse this trend by providing an **open, interoperable, decentralized protocol for solving local resource problems.** Local food delivery is the first problem we're tackling. But our long term goal is to eventually power many different kinds of decentralized location-based applications &mdash; from car services, to dating and matchmaking, to aggregated local retail shopping.
+
+### :handbag: Portability as a design requirement
+Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are accustomed to apps that run on mobile devices. But hungry people shouldn't be expected to download a mobile app to order food. Thus, a mandatory objective of this implementation is to ensure portability across a variety of disparate JS runtimes.
+
+|JS Runtime  |Compatible?|Dependencies|Notes                                                    |
+|------------|-----------|------------|---------------------------------------------------------|
+|Node.js     |yes        |none        |                                                         |
+|browsers    |soon       |none        |                                                         |
+|React Native|yes        |~3 shims    |Android only; native Java optimzations, see [fnative](https://github.com/noahlevenson/libfood/tree/master/src/fnative/react_native/android)|
+
+#### **libfood is written from scratch, in portable JavaScript, with zero dependencies.**
 
 ### :question: What's the problem with food delivery?
 Third party delivery apps have created convenience for consumers at the expense of small businesses. *Eater SF* described third party platforms as ["parasitic" and "ethically dubious."](https://sf.eater.com/2020/4/1/21202956/sf-east-bay-food-delivery-grubhub-doordash-parasitic-coronavirus) *Forbes* has called for ["more fair and equitable business practices"](https://www.forbes.com/sites/andrewrigie/2019/08/21/this-is-how-grubhub-is-hurting-your-favorite-restaurants-and-why-you-should-care/?sh=6f0aa482d520) from delivery apps. A recent *Washington Post* headline read: ["Restaurants are barely surviving. Delivery apps will kill them."](https://www.washingtonpost.com/outlook/2020/05/29/delivery-apps-restaurants-coronavirus/)
@@ -54,24 +74,6 @@ Here's the thing: without an aggregated digital restaurant marketplace, **findin
 We have a better solution: let's invent open technology which helps independent entrepreneurs meet their customers' expectations without centralizing power in the hands of a third party. 
 
 [John Gilmore](http://www.toad.com/gnu/) famously said, "The Net interprets censorship as damage and routes around it." We think that holds true not only for censorship, but also for the inefficiencies introduced by intermediation. **We're routing around the middlemen and building a network protocol to make food delivery free again.**
-
-### :brain: Our research: solving decentralized location-based resource discovery
-Over the last 10 years, many of the most popular centralized platforms have risen to power by efficiently connecting the user to nearby resources: Tinder connects users with nearby single people. Uber connects users with nearby taxi drivers. Grubhub connects users with nearby restaurants. Separately, e-commerce marketplaces like Amazon have made our local shopping resources less competitive by providing an aggregated portal which, by virtue of its vast selection and searchability, is actually more convenient than walking down the block to visit a store.
-
-A significantly negative consequence of this transformation is that many aspects of our daily lives are now centralized behind the paywall of a single corporate gatekeeper. Looking beyond the financial implications, this trend toward centralization also threatens freedom of expression and other civil liberties &mdash; as both resource providers and resource consumers are, even in their private transactions, increasingly subject to the policies established by large corporations.
-
-[Free Food](https://freefood.is) is an effort to reverse this trend by providing an **open, interoperable, decentralized protocol for solving local resource problems.** Local food delivery is the first problem we're tackling. But our long term goal is to eventually power many different kinds of decentralized location-based applications &mdash; from car services, to dating and matchmaking, to aggregated local retail shopping.
-
-### :handbag: Portability as a design requirement
-Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are accustomed to apps that run on mobile devices. But hungry people shouldn't be expected to download a mobile app to order food. Thus, a mandatory objective of this implementation is to ensure portability across a variety of disparate JS runtimes.
-
-|JS Runtime  |Compatible?|Dependencies|Notes                                                    |
-|------------|-----------|------------|---------------------------------------------------------|
-|Node.js     |yes        |none        |                                                         |
-|browsers    |soon       |none        |                                                         |
-|React Native|yes        |~3 shims    |Android only; native Java optimzations, see [fnative](https://github.com/noahlevenson/libfood/tree/master/src/fnative/react_native/android)|
-
-**libfood is written from scratch, in portable JavaScript, with zero dependencies.**
 
 ### :boom: Quickstart tutorial
 Dev tutorial coming soon. Check out the [Strappy](https://github.com/noahlevenson/strappy) tutorial to learn how to spin up and configure a bootstrap node:
