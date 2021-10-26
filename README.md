@@ -18,9 +18,9 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 
 [Free Food](https://freefood.is) eliminates third party intermediaries, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click. [Free Food](https://freefood.is) is an interoperable and permissionless system.
 
-[Free Food](https://freefood.is) is a research project; the significant portion of our work is concerned with solving decentralized trust and self-governance and achieving low latency location-aware resource discovery at scale. 
+[Free Food](https://freefood.is) is a research project. The significant portion of our work is concerned with two key research objectives: developing attack-resistant systems for decentralized trust and self-governance, and achieving low latency location-aware resource discovery at scale.
 
-Our philosophy, however, is to approach decentralized food delivery as an applied problem, [simultaneously addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators. In particular, this means dealing with the UX challenges and resource constraints imposed by mobile devices.
+Our philosophy, however, is to approach decentralized food delivery as an *applied* problem, specifically [addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators as part of our core mission. In particular, this means solving the added UX challenges and resource constraints imposed by mobile devices.
 
 [Free Food](https://freefood.is) consists of 4 open source software packages:
 
