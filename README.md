@@ -44,6 +44,8 @@ A significantly negative consequence of this transformation is that many aspects
 [Free Food](https://freefood.is) is an effort to reverse this trend by providing an **open, interoperable, decentralized protocol for solving local resource problems.** Local food delivery is the first problem we're tackling. But our long term goal is to eventually power many different kinds of decentralized location-based applications &mdash; from car services, to dating and matchmaking, to aggregated local retail shopping.
 
 ### :handbag: Portability as a design requirement
+*libfood is written from scratch, in portable JavaScript, with zero dependencies.*
+
 Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are accustomed to apps that run on mobile devices. But hungry people shouldn't be expected to download a mobile app to order food. Thus, a mandatory objective of this implementation is to ensure portability across a variety of disparate JS runtimes.
 
 |JS Runtime  |Compatible?|Dependencies|Notes                                                    |
@@ -51,8 +53,6 @@ Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are ac
 |Node.js     |yes        |none        |                                                         |
 |browsers    |soon       |none        |                                                         |
 |React Native|yes        |~3 shims    |Android only; native Java optimzations, see [fnative](https://github.com/noahlevenson/libfood/tree/master/src/fnative/react_native/android)|
-
-*libfood is written from scratch, in portable JavaScript, with zero dependencies.*
 
 ### :question: What's the problem with food delivery?
 Third party delivery apps have created convenience for consumers at the expense of small businesses. *Eater SF* described third party platforms as ["parasitic" and "ethically dubious."](https://sf.eater.com/2020/4/1/21202956/sf-east-bay-food-delivery-grubhub-doordash-parasitic-coronavirus) *Forbes* has called for ["more fair and equitable business practices"](https://www.forbes.com/sites/andrewrigie/2019/08/21/this-is-how-grubhub-is-hurting-your-favorite-restaurants-and-why-you-should-care/?sh=6f0aa482d520) from delivery apps. A recent *Washington Post* headline read: ["Restaurants are barely surviving. Delivery apps will kill them."](https://www.washingtonpost.com/outlook/2020/05/29/delivery-apps-restaurants-coronavirus/)
