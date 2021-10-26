@@ -18,17 +18,19 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 
 [Free Food](https://freefood.is) eliminates third party intermediaries, enabling host devices to self-organize as a geosearchable peer-to-peer restaurant marketplace which requires no coordinating central authority. Using the [Free Food](https://freefood.is) protocol, a hungry person can search for nearby restaurants, browse menus, and place an order **directly** with one click. [Free Food](https://freefood.is) is an interoperable and permissionless system.
 
-[Free Food](https://freefood.is) is a research project; the significant portion of our work is concerned with solving decentralized trust and self-governance and achieving low latency location-aware resource discovery at scale. Our philosophy, however, is to approach decentralized food delivery as an applied problem, [simultaneously addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators. In particular, this means dealing with the UX challenges and resource constraints imposed by mobile devices.
+[Free Food](https://freefood.is) is a research project; the significant portion of our work is concerned with solving decentralized trust and self-governance and achieving low latency location-aware resource discovery at scale. 
+
+Our philosophy, however, is to approach decentralized food delivery as an applied problem, [simultaneously addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators. In particular, this means dealing with the UX challenges and resource constraints imposed by mobile devices.
 
 [Free Food](https://freefood.is) consists of 4 open source software packages:
 
-#### * **libfood (you are here)**
+* **libfood (you are here)**
 
-#### * **Free Food Battlestation, an Android software client which operationalizes libfood for restaurants**
+* **Free Food Battlestation, an Android software client which operationalizes libfood for restaurants**
 
-#### * **Free Food Hotline, a desktop software client which operationalizes libfood for hungry people**
+* **Free Food Hotline, a desktop software client which operationalizes libfood for hungry people**
 
-#### * **[Free Food Strappy](https://github.com/noahlevenson/strappy), an extensible bootstrap node**
+* **[Free Food Strappy](https://github.com/noahlevenson/strappy), an extensible bootstrap node**
 
 To start building with libfood, see the [quickstart tutorial](#boom-quickstart-tutorial).
 
@@ -50,7 +52,7 @@ Ever seen those tablet devices in a restaurant kitchen? Restaurant owners are ac
 |browsers    |soon       |none        |                                                         |
 |React Native|yes        |~3 shims    |Android only; native Java optimzations, see [fnative](https://github.com/noahlevenson/libfood/tree/master/src/fnative/react_native/android)|
 
-#### **libfood is written from scratch, in portable JavaScript, with zero dependencies.**
+#### libfood is written from scratch, in portable JavaScript, with zero dependencies.
 
 ### :question: What's the problem with food delivery?
 Third party delivery apps have created convenience for consumers at the expense of small businesses. *Eater SF* described third party platforms as ["parasitic" and "ethically dubious."](https://sf.eater.com/2020/4/1/21202956/sf-east-bay-food-delivery-grubhub-doordash-parasitic-coronavirus) *Forbes* has called for ["more fair and equitable business practices"](https://www.forbes.com/sites/andrewrigie/2019/08/21/this-is-how-grubhub-is-hurting-your-favorite-restaurants-and-why-you-should-care/?sh=6f0aa482d520) from delivery apps. A recent *Washington Post* headline read: ["Restaurants are barely surviving. Delivery apps will kill them."](https://www.washingtonpost.com/outlook/2020/05/29/delivery-apps-restaurants-coronavirus/)
