@@ -218,10 +218,13 @@ class Fkad_node {
    * Implements the data replication logic which applies to newly discovered peers: For each data
    * object we're responsible for, if the new node is one of the K closest nodes to the key AND we
    * are closer to the key than any of our neighbors (or if the new node is now closer to the key
-   * than we are), then replicate it to the new node.
+   * than we are), then replicate it to the new node. Calls to _replicate() are likely to be quite
+   * long-lived operations, as we serialize a lot of STORE RPCs to a newly discovered peer; 
+   * accordingly, we work with the live state of the datastore throughout the process such that any
+   * concurrent data updates we receive will be reflected in the data we replicate out.
    */ 
   async _replicate(node_info) {
-    for (const [key_str, val] of this.data.entries()) {
+    for (const key_str of this.data.keys()) {
       const key = new Fbigint(key_str);
       const cnodes = this._get_nodes_closest_to({key: key});
 
@@ -233,6 +236,8 @@ class Fkad_node {
       if (is_node_k_closest && (is_self_closer || is_node_closer)) {
         Flog.log(`[FKAD] Replicating ${key.toString()} to new node ` +
         `${node_info.node_id.toString()}`);
+
+        const val = this.data.get(key);
 
         /**
          * Just in case we have a lot of data to replicate to this new node, we serialize our STORE

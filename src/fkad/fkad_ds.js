@@ -32,10 +32,10 @@ class Fkad_ds {
   }
 
   /**
-   * Returns a 2D array of all [key, val] pairs
+   * Fetch an array of all keys as strings
    */ 
-  entries() {
-    return Array.from(this.data.entries());
+  keys() {
+    return Array.from(this.data.keys());
   }
 
   delete(key) {
