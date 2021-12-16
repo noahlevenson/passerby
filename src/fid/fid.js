@@ -25,7 +25,7 @@ class Fid {
    * independently of the hash function used in hash_cert()... 
    */ 
 
-  static POW_ZERO_BITS = !cfg.FID_POW_ZERO_BITS ? Fid.pow_err() : cfg.FID_POW_ZERO_BITS;
+  static POW_ZERO_BITS = !Number.isInteger(cfg.FID_POW_ZERO_BITS) ? Fid.pow_err() : cfg.FID_POW_ZERO_BITS;
   static HASH_SZ = 256;
   static SYM_ADJ_A = dict_adj_a;
   static SYM_ADJ_B = dict_adj_b;
