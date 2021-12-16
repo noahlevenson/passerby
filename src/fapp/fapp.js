@@ -66,6 +66,7 @@ class Fapp {
     [Fapp.GEOCODING_METHOD.NOMINATIM, Fapp._geocoding_handler_nominatim]
   ]);
 
+  sim;
   port;
   fid_pub;
   fid_prv;
@@ -112,7 +113,8 @@ class Fapp {
       const [address, port, pubkey] = tuple;
       return new Ftrans_rinfo({address: address, port: port, pubkey: pubkey});
     });
-
+    
+    this.sim = sim;
     this.authorities = [...authorities];
     this.trusted_root_keys = [...trusted_root_keys];
     this.fid_pub = fid_pub;
@@ -657,7 +659,7 @@ class Fapp {
      * If we need to resolve our external address and port, let's do that. TODO: we should randomly
      * shuffle the bootstrap nodes...
      */ 
-    if (addr === null || port === null) {
+    if (!this.sim && (addr === null || port === null)) {
       let res_net_info = null;
       let i = 0;
 
