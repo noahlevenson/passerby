@@ -16,6 +16,7 @@ const { Fbigint } = Fapp_cfg.ENV[cfg.ENV] === Fapp_cfg.ENV.REACT_NATIVE ?
   require("../ftypes/fbigint/fbigint_rn.js") : require("../ftypes/fbigint/fbigint_node.js");
 const { Fapp_bboard } = require("./fapp_bboard.js");
 const { Ftrans_rinfo } = require("../ftrans/ftrans_rinfo.js");
+const { Ftrans_sim } = require("../ftrans/trans/sim/ftrans_sim.js");
 const { Ftrans_udp } = require("../ftrans/trans/udp/ftrans_udp.js");
 const { Fkad_node } = require("../fkad/fkad_node.js");
 const { Fkad_node_info } = require("../fkad/fkad_node_info.js");
@@ -93,6 +94,8 @@ class Fapp {
    * transport, but this should eventually be parameterizable...
    */ 
   constructor({
+    sim = false,
+    sim_peer_map,
     fid_pub = null, 
     fid_prv = null, 
     port = 27500,
@@ -115,7 +118,8 @@ class Fapp {
     this.fid_pub = fid_pub;
     this.fid_prv = fid_prv;
     this.port = port;
-    this.trans = new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey});
+    this.trans = !sim ? new Ftrans_udp({port: this.port, pubkey: this.fid_pub.pubkey}) : 
+      new Ftrans_sim({pubkey: this.fid_pub.pubkey, fapp: this, peer_map: sim_peer_map});
     this.fstun = new Fstun({net: new Fstun_net_solo(this.trans)});
     this.fpht = null;
     this.fbuy = null;

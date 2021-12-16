@@ -20,7 +20,7 @@ libfood is the reference implementation of [Free Food](https://freefood.is), a d
 
 [Free Food](https://freefood.is) is a research project. The significant portion of our work is concerned with two key research objectives: developing attack-resistant systems for decentralized trust and self-governance, and achieving low latency location-aware resource discovery at scale.
 
-Our philosophy, however, is to approach decentralized food delivery as an *applied* problem, specifically [addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators as part of our core mission. In particular, this means solving the added UX challenges and resource constraints imposed by mobile devices.
+Our philosophy, however, is to approach decentralized food delivery as an *applied* problem, specifically [addressing the usability requirements](#handbag-portability-as-a-design-requirement) which are unique to restaurant operators as part of our core mission. In particular, this means solving for the added UX challenges and resource constraints imposed by mobile devices.
 
 [Free Food](https://freefood.is) consists of 4 open source software packages:
 
