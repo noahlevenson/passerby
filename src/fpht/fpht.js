@@ -445,18 +445,22 @@ class Fpht {
 
     const sib = await this._dht_lookup(Fpht_node.get_sibling_label(leaf));
 
-    if (sib === null || Fpht_node.size(leaf) + Fpht_node.size(sib) > Fpht.B) {
+    if (sib === null || !Fpht_node.is_leaf(sib) || Fpht_node.size(leaf) + Fpht_node.size(sib) > Fpht.B) {
       /**
-       * The easy case: the data was found in the root node, so there's no possibility of a merge...
-       * or, more likely, leaf + its sibling contain more than B keys, so the invariant is maintained
+       * There's 3 cases where we cannot merge: 
+       * 
+       * A) if the data was found in the root node 
+       * B) if the data was found in a node whose sibling is an internal node
+       * C) if the data was found in a node whose sibling is a leaf, but together they contain > B keys
        */ 
       await this.dht_node.put.bind(this.dht_node)(
         this._get_label_hash(Fpht_node.get_label(leaf)), 
         leaf
       );
-    } else {
+    } else if (Fpht_node.is_leaf(sib) && Fpht_node.size(leaf) + Fpht_node.size(sib) <= Fpht.B) {
       /**
-       * The hard case: leaf + its sibling contain <= B keys, so we must perform a merge
+       * The hard case: leaf and its sibling are both leaf nodes, and together they contain <= B 
+       * keys, so we must perform a merge!
        */ 
       const pairs = Fpht_node.get_all_pairs(leaf).concat(Fpht_node.get_all_pairs(sib)).map((pair) => {
         const [key, val] = pair;
