@@ -606,33 +606,33 @@ class Fkad_node {
     if (val === null) {
       this.data.delete(key);
       Flog.log(`[FKAD] Deleted ${key.toString()} from local storage via ${req.from.node_id}`);
-      return;
+    } else {
+      Fkad_node._is_valid_storable(val).then((res) => {
+        // If the data isn't valid, don't send a response msg!
+        if (!res) {
+          return;
+        }
+
+        /**
+         * To determine TTL for this value, we estimate the number of nodes between us and the key.
+         * What tree depth is the k-bucket for our node ID? What tree depth is the k-bucket for the
+         * key? The difference betwen those depths approximates our distance from the key wrt the 
+         * current topology of the routing table.
+         */ 
+        const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
+        const d2 = this.find_kbucket_for_id(key).get_data().get_prefix().length;
+        const ttl = Fkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
+
+        this.data.put({
+          key: key,
+          val: val,
+          ttl: ttl
+        });
+
+        Flog.log(`[FKAD] Added ${key.toString()} to local storage from ${req.from.node_id}`);
+      });
     }
 
-    Fkad_node._is_valid_storable(val).then((res) => {
-      if (!res) {
-        return;
-      }
-
-      /**
-       * To determine TTL for this value, we estimate the number of nodes between us and the key.
-       * What tree depth is the k-bucket for our node ID? What tree depth is the k-bucket for the
-       * key? The difference betwen those depths approximates our distance from the key wrt the 
-       * current topology of the routing table.
-       */ 
-      const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
-      const d2 = this.find_kbucket_for_id(key).get_data().get_prefix().length;
-      const ttl = Fkad_node.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
-
-      this.data.put({
-        key: key,
-        val: val,
-        ttl: ttl
-      });
-
-      Flog.log(`[FKAD] Added ${key.toString()} to local storage from ${req.from.node_id}`);
-    });
-    
     return new Fkad_msg({
       rpc: Fkad_msg.RPC.STORE,
       from: new Fkad_node_info(this.node_info),
