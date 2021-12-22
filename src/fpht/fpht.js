@@ -159,8 +159,23 @@ class Fpht {
     return null;
   }
 
-  async full_search(fpht_key) {
-    const key_str = Fpht_key.get_integral(fpht_key).to_bin_str(Fpht.BIT_DEPTH);
+  /**
+   * Find the PHT node responsible for a given key, first trying binary search and then falling back 
+   * to linear search. The spec uses this method in two subtly different ways: in one instance, it's
+   * used to find the PHT node responsible for an N-bit PHT key, where N is fixed and equal to BIT_DEPTH. 
+   * In the other instance, it's used to find the PHT node which is the nearest common ancestor to a 
+   * set of leaf nodes representing a search range described by the longest common binary prefix of 
+   * a minimum and maximum value. Since the job of the PHT is to interpret values as binary strings, 
+   * we discover that our friend Fbigint introduces some painful complexity. Fbigint does not 
+   * represent leading zero bits, leaving us with two cases for the interpretation of binary strings: 
+   * If the binary string represents an N-bit key, we should zero-pad the high order bits such that 
+   * the length of the string equals BIT_DEPTH. However, if the binary string represents a longest 
+   * common prefix, we must leave the string as-is to preserve the high order leading zero bits.
+   * To manage this complexity, full_search() asssumes that 'key_str' is a perfect representation
+   * of whatever you're searching for -- i.e., the caller must be sure to correctly transform 
+   * their PHT keys or LCPs to binary strings using the appropriate method!
+   */
+  async full_search(key_str) {
     let leaf = await this.lookup_bin(key_str);
 
     if (leaf === null) {
@@ -257,7 +272,8 @@ class Fpht {
    * Insert a (fpht_key, value) pair into the PHT
    */
   async insert(fpht_key, val) {
-    const leaf = await this.full_search(fpht_key);
+    const key_str = Fpht_key.get_integral(fpht_key).to_bin_str(Fpht.BIT_DEPTH);
+    const leaf = await this.full_search(key_str);
 
      /**
      * If we can't find the leaf node for a key, our trie is likely corrupted
@@ -424,7 +440,8 @@ class Fpht {
    * Delete a key from the PHT
    */
   async delete(fpht_key) {
-    const leaf = await this.full_search(fpht_key);
+    const key_str = Fpht_key.get_integral(fpht_key).to_bin_str(Fpht.BIT_DEPTH);
+    const leaf = await this.full_search(key_str);
 
     /**
      * If we can't find the leaf node for a key, our trie is likely corrupted
@@ -586,7 +603,7 @@ class Fpht {
     let start = await this._dht_lookup(lcp);
 
     if (start === null) {
-      start = await this.full_search(new Fpht_key({integral: Fbigint.from_base2_str(lcp)}));
+      start = await this.full_search(lcp);
     }
 
     /**
