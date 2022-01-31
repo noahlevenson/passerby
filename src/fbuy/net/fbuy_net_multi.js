@@ -1,1 +1,0 @@
-// Stub for Fbuy_net_multi - an FBUY network module that supports multiple FTRANS transports simultaneously
