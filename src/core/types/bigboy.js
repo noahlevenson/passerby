@@ -76,7 +76,7 @@ class Bigboy {
   }
 
   /**
-   * Compare this Bigboy to op and return the index of their highest order unequal byte, or index
+   * Compare this Bigboy to op and return the index of their most significant unequal byte, or index
    * 0 if all their bytes are equal
    */ 
   _get_high_order_diff(op) {
@@ -165,6 +165,40 @@ class Bigboy {
     }
 
     return bigboy;
+  }
+
+  shift_left(n_bits) {
+    if (n_bits < 0 || n_bits > this._data.length * 8) {
+      throw new TypeError("Argument error");
+    }
+
+    const bigboy = new Bigboy({len: this._data.length});
+
+    for (let i = 0; i < this._data.length; i += 1) {
+      bigboy._data[Math.floor(i + n_bits / 8)] = this._data[i] << (n_bits % 8) | 
+        this._data[i - 1] >> 8 - (n_bits % 8); 
+    }
+
+    return bigboy;
+  }
+
+  shift_right(n_bits) {
+    if (n_bits < 0 || n_bits > this._data.length * 8) {
+      throw new TypeError("Argument error");
+    }
+
+    const bigboy = new Bigboy({len: this._data.length});
+
+    for (let i = 0; i < this._data.length; i += 1) {
+      bigboy._data[Math.floor(i - n_bits / 8)] = this._data[i] >>> (n_bits % 8) | 
+        this._data[i - 1] << 8 - (n_bits % 8); 
+    }
+
+    return bigboy;
+  }
+
+  get_bit(idx) {
+    return this._data[Math.floor(idx / 8)] >>> (idx % 8) & 0x01; 
   }
 
   to_hex_str() {
