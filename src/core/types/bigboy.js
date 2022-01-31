@@ -24,7 +24,7 @@ class Bigboy {
       throw new TypeError("Argument error");
     }
 
-    const bigboy = new this();
+    const bigboy = new this({len: len});
 
     for (let i = 0; i < str.length; i += 2) {
       const start = str.length - 2 - i;
@@ -40,12 +40,128 @@ class Bigboy {
       throw new TypeError("Argument error");
     }
 
-    const bigboy = new this();
+    const bigboy = new this({len: len});
 
     for (let i = 0; i < str.length; i += 8) {
       const start = str.length - 8 - i;
       const end = start + 8;
       bigboy._data[i / 8] = Number(`0b${str.substring(start, end)}`);
+    }
+
+    return bigboy;
+  }
+
+  static unsafe_random(len) {
+    const bigboy = new this({len: len});
+    
+    for (let i = 0; i < len; i += 1) {
+      bigboy._data[i] = Math.floor(Math.random() * 256);
+    }
+
+    return bigboy;
+  }
+
+  equals(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    for (let i = 0; i < this._data.length; i += 1) {
+      if (this._data[i] !== op._data[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Compare this Bigboy to op and return the index of their highest order unequal byte, or index
+   * 0 if all their bytes are equal
+   */ 
+  _get_high_order_diff(op) {
+    let i = this._data.length - 1;
+
+    while (this._data[i] === op._data[i] && i > 0) {
+      i -= 1;
+    }
+
+    return i;
+  }
+
+  greater(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const i = this._get_high_order_diff(op);
+    return this._data[i] > op._data[i];
+  }
+
+  less(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const i = this._get_high_order_diff(op);
+    return this._data[i] < op._data[i];
+  }
+
+  greater_equal(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const i = this._get_high_order_diff(op);
+    return this._data[i] >= op._data[i];
+  }
+
+  less_equal(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const i = this._get_high_order_diff(op);
+    return this._data[i] <= op._data[i];
+  }
+
+  and(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const bigboy = new Bigboy({len: this._data.length});
+
+    for (let i = 0; i < this._data.length; i += 1) {
+      bigboy._data[i] = this._data[i] & op._data[i];
+    }
+
+    return bigboy;
+  }
+
+  or(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const bigboy = new Bigboy({len: this._data.length});
+
+    for (let i = 0; i < this._data.length; i += 1) {
+      bigboy._data[i] = this._data[i] | op._data[i];
+    }
+
+    return bigboy;
+  }
+
+  xor(op) {
+    if (this._data.length !== op._data.length) {
+      throw new TypeError("Length mismatch");
+    }
+
+    const bigboy = new Bigboy({len: this._data.length});
+
+    for (let i = 0; i < this._data.length; i += 1) {
+      bigboy._data[i] = this._data[i] ^ op._data[i];
     }
 
     return bigboy;
