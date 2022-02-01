@@ -6,7 +6,9 @@
  * it's portable to Hermes (unlike BigInt). But also unlike BigInt, signed operations are undefined.
  */ 
 class Bigboy {
-  constructor({len = 32, val = 0} = {}) {
+  static DEFAULT_BYTE_WIDTH = 32;
+
+  constructor({len = Bigboy.DEFAULT_BYTE_WIDTH, val = 0} = {}) {
     if (!Number.isInteger(val) || len < Math.log2(val) / 8 || val < 0) {
       throw new TypeError("Argument error");
     }
@@ -19,7 +21,7 @@ class Bigboy {
     }
   }
 
-  static from_hex_str({len = 32, str = "00"} = {}) {
+  static from_hex_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < str.length / 2) {
       throw new TypeError("Argument error");
     }
@@ -35,7 +37,7 @@ class Bigboy {
     return bigboy;
   }
 
-  static from_base2_str({len = 32, str = "00"} = {}) {
+  static from_base2_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < str.length / 8) {
       throw new TypeError("Argument error");
     }
@@ -175,7 +177,7 @@ class Bigboy {
     const bigboy = new Bigboy({len: this._data.length});
 
     for (let i = 0; i < this._data.length; i += 1) {
-      bigboy._data[Math.floor(i + n_bits / 8)] = this._data[i] << (n_bits % 8) | 
+      bigboy._data[i + Math.floor(n_bits / 8)] = this._data[i] << (n_bits % 8) | 
         this._data[i - 1] >> 8 - (n_bits % 8); 
     }
 
@@ -190,10 +192,10 @@ class Bigboy {
     const bigboy = new Bigboy({len: this._data.length});
 
     for (let i = 0; i < this._data.length; i += 1) {
-      bigboy._data[Math.floor(i - n_bits / 8)] = this._data[i] >>> (n_bits % 8) | 
-        this._data[i - 1] << 8 - (n_bits % 8); 
+      bigboy._data[i - Math.floor(n_bits / 8)] = this._data[i] >>> (n_bits % 8) | 
+        this._data[i + 1] << 8 - (n_bits % 8); 
     }
-
+    
     return bigboy;
   }
 
