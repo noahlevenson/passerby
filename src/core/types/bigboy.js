@@ -43,6 +43,7 @@ class Bigboy {
     return bigboy;
   }
 
+  // TODO: validate the string
   static from_base2_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < Math.ceil(str.length / 8)) {
       throw new TypeError("Argument error");
@@ -219,6 +220,10 @@ class Bigboy {
 
   to_base2_str() {
     return Array.from(this._data).map(byte => byte.toString(2).padStart(8, "0")).reverse().join("");
+  }
+
+  length() {
+    return this._data.length;
   }
 }
 
