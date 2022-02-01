@@ -8,8 +8,13 @@
 class Bigboy {
   static DEFAULT_BYTE_WIDTH = 32;
 
+  /**
+   * JavaScript converts Number types to 32-bit integers before bitwise manipulation, so the 
+   * behavior of the default constructor is undefined for values larger than 0xFFFFFFFF
+   */ 
   constructor({len = Bigboy.DEFAULT_BYTE_WIDTH, val = 0} = {}) {
-    if (!Number.isInteger(val) || len < Math.log2(val) / 8 || val < 0) {
+    if (!Number.isInteger(val) || len < Math.ceil(Math.log2(val + 1) / 8) || 
+      val < 0 || val > 0xFFFFFFFF) {
       throw new TypeError("Argument error");
     }
 
@@ -21,8 +26,9 @@ class Bigboy {
     }
   }
 
+  // TODO: validate the string
   static from_hex_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
-    if (len < str.length / 2) {
+    if (len < Math.ceil(str.length / 2)) {
       throw new TypeError("Argument error");
     }
 
@@ -38,7 +44,7 @@ class Bigboy {
   }
 
   static from_base2_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
-    if (len < str.length / 8) {
+    if (len < Math.ceil(str.length / 8)) {
       throw new TypeError("Argument error");
     }
 
@@ -53,7 +59,7 @@ class Bigboy {
     return bigboy;
   }
 
-  static unsafe_random(len) {
+  static unsafe_random(len = Bigboy.DEFAULT_BYTE_WIDTH) {
     const bigboy = new this({len: len});
     
     for (let i = 0; i < len; i += 1) {
@@ -78,8 +84,8 @@ class Bigboy {
   }
 
   /**
-   * Compare this Bigboy to op and return the index of their most significant unequal byte, or index
-   * 0 if all their bytes are equal
+   * Compare this Bigboy to op and return the index of their most significant unequal byte (or just
+   * return index 0 if all their bytes are equal)
    */ 
   _get_high_order_diff(op) {
     let i = this._data.length - 1;
@@ -170,7 +176,7 @@ class Bigboy {
   }
 
   shift_left(n_bits) {
-    if (n_bits < 0 || n_bits > this._data.length * 8) {
+    if (n_bits < 0) {
       throw new TypeError("Argument error");
     }
 
@@ -185,7 +191,7 @@ class Bigboy {
   }
 
   shift_right(n_bits) {
-    if (n_bits < 0 || n_bits > this._data.length * 8) {
+    if (n_bits < 0) {
       throw new TypeError("Argument error");
     }
 
@@ -200,6 +206,10 @@ class Bigboy {
   }
 
   get_bit(idx) {
+    if (idx < 0) {
+      throw new TypeError("Argument error");
+    }
+
     return this._data[Math.floor(idx / 8)] >>> (idx % 8) & 0x01; 
   }
 
@@ -212,4 +222,4 @@ class Bigboy {
   }
 }
 
-module.exports = Bigboy;
+module.exports = { Bigboy };
