@@ -29,7 +29,7 @@ class Bigboy {
   // TODO: validate the string
   static from_hex_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < Math.ceil(str.length / 2)) {
-      throw new TypeError("Argument error");
+      throw new RangeError("Argument error");
     }
 
     const bigboy = new this({len: len});
@@ -46,7 +46,7 @@ class Bigboy {
   // TODO: validate the string
   static from_base2_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < Math.ceil(str.length / 8)) {
-      throw new TypeError("Argument error");
+      throw new RangeError("Argument error");
     }
 
     const bigboy = new this({len: len});
@@ -178,7 +178,7 @@ class Bigboy {
 
   shift_left(n_bits) {
     if (n_bits < 0) {
-      throw new TypeError("Argument error");
+      throw new RangeError("Argument error");
     }
 
     const bigboy = new Bigboy({len: this._data.length});
@@ -193,7 +193,7 @@ class Bigboy {
 
   shift_right(n_bits) {
     if (n_bits < 0) {
-      throw new TypeError("Argument error");
+      throw new RangeError("Argument error");
     }
 
     const bigboy = new Bigboy({len: this._data.length});
@@ -208,7 +208,7 @@ class Bigboy {
 
   get_bit(idx) {
     if (idx < 0) {
-      throw new TypeError("Argument error");
+      throw new RangeError("Argument error");
     }
 
     return this._data[Math.floor(idx / 8)] >>> (idx % 8) & 0x01; 

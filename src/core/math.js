@@ -3,12 +3,22 @@
 const { Bigboy } = require("./types/bigboy.js");
 
 /**
- * Rescale positive float x to an integer of bit depth b, where xmax is the largest possible value
- * for x. TODO: validate inputs and catch overflow
- */
-function rescale_float(x, fmax, b) {
-  const max = (Math.pow(2, b) - 1) / fmax;
-  return Math.floor(x * max);
+ * Rescale positive float x to an integer computed over a range of b bits. xmax is the maximum
+ * value in the domain of x. E.g., if x = 17.000634 and it represents a percentage, then xmax = 100
+ * and b = 8 will rescale x to a byte-range integer.
+ */ 
+function rescale_float(x, xmax, b) {
+  if (x < 0 || x > xmax) {
+    throw new RangeError("Argument error");
+  }
+
+  const r = Math.round(x * (Math.pow(2, b) - 1) / xmax);
+
+  if (r === Number.POSITIVE_INFINITY) {
+    throw new RangeError("Overflow");
+  }
+
+  return r;
 }
 
 /**
@@ -61,4 +71,18 @@ function morton_invert_2d(key) {
   };
 }
 
-module.exports = { rescale_float, morton_remap_2d, morton_invert_2d };
+/**
+ * Compute the longest common prefix over an array of strings. TODO: there's a binary search way...
+ */ 
+function get_lcp(strings = []) {
+  const shortest = Math.min(...strings.map(str => str.length));
+  let i = 0;
+
+  while (strings.every(str => str[i] === strings[0][i]) && i < shortest) {
+    i += 1;
+  }
+
+  return strings[0].substring(0, i);
+}
+
+module.exports = { rescale_float, morton_remap_2d, morton_invert_2d, get_lcp };
