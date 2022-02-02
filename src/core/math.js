@@ -5,7 +5,7 @@ const { Bigboy } = require("./types/bigboy.js");
 /**
  * Rescale positive float x to an integer computed over a range of b bits. xmax is the maximum
  * value in the domain of x. E.g., if x = 17.000634 and it represents a percentage, then xmax = 100
- * and b = 8 will rescale x to a byte-range integer.
+ * and b = 8 will rescale x to a byte-range unsigned integer.
  */ 
 function rescale_float(x, xmax, b) {
   if (x < 0 || x > xmax) {
@@ -22,11 +22,15 @@ function rescale_float(x, xmax, b) {
 }
 
 /**
- * Map abscissa x and ordinate y to one dimension using a Morton order curve. b is the bit width to 
- * consider -- i.e., the domain over which to interpret x and y. E.g., if b = 80, then x and y will 
- * be interpreted as 40-bit values, and the returned value will be an 80-bit Bigboy. TODO: validation!
+ * Map abscissa x and ordinate y to one dimension using a Morton order curve. b is the bit width of
+ * the output, which also implies the domain over which to interpret x and y. E.g., if b = 80, then 
+ * x and y will be interpreted as 40-bit values, and the returned value will be an 80-bit Bigboy.
  */
 function morton_remap_2d(x, y, b) {
+  if (x < 0 || y < 0 || b / 2 < Math.ceil(Math.log2(x + 1)) || b / 2 < Math.ceil(Math.log2(y + 1))) {
+    throw new RangeError("Argument error");
+  }
+
   const byte_width = Math.ceil(b / 8);
   let xx = new Bigboy({len: byte_width, val: x});
   let yy = new Bigboy({len: byte_width, val: y});
@@ -74,7 +78,7 @@ function morton_invert_2d(key) {
 /**
  * Compute the longest common prefix over an array of strings. TODO: there's a binary search way...
  */ 
-function get_lcp(strings = []) {
+function get_lcp(strings = [""]) {
   const shortest = Math.min(...strings.map(str => str.length));
   let i = 0;
 
