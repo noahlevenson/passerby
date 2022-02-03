@@ -35,5 +35,30 @@ function crypto_box_keypair() {
   return Sodium.crypto_box_keypair();
 }
 
+class Public_key {
+  constructor(key, type) {
+    this.key = key;
+    this.type = type;
+  }
+
+  static from_pubstring(pubstring) {
+    const sep = pubstring.indexOf(":");
+    return new this(from_base64(pubstring.substring(0, sep)), pubstring.substring(sep + 1));
+  }
+
+  pubstring() {
+    return `${to_base64(this.key)}:${this.type}`;
+  }
+}
+
+class Private_key {
+  constructor(key, type) {
+    this._key = key;
+    this.type = type;
+  }
+}
+
 module.exports = { 
-  Sodium, to_hex, from_hex, to_base64, from_base64, generic_hash, crypto_box_keypair };
+  Sodium, to_hex, from_hex, to_base64, from_base64, generic_hash, crypto_box_keypair, 
+  Public_key, Private_key 
+};
