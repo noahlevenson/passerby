@@ -26,7 +26,7 @@ class Bigboy {
     }
   }
 
-  // TODO: validate the string
+  // TODO: Validate the string
   static from_hex_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < Math.ceil(str.length / 2)) {
       throw new RangeError("Argument error");
@@ -43,7 +43,7 @@ class Bigboy {
     return bigboy;
   }
 
-  // TODO: validate the string
+  // TODO: Validate the string
   static from_base2_str({len = Bigboy.DEFAULT_BYTE_WIDTH, str = "00"} = {}) {
     if (len < Math.ceil(str.length / 8)) {
       throw new RangeError("Argument error");
@@ -57,6 +57,13 @@ class Bigboy {
       bigboy._data[i / 8] = Number(`0b${str.substring(start, end)}`);
     }
 
+    return bigboy;
+  }
+
+  // TODO: Typecheck
+  static from_uint8(arr) {
+    const bigboy = new this({len: 0});
+    bigboy._data = Uint8Array.from(arr);
     return bigboy;
   }
 
