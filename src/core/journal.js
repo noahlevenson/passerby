@@ -19,7 +19,7 @@ function set_err(f) {
   _errf = f;
 }
 
-function log(msg, tag = "LOG", lead_newln = false, trail_newln = false) {
+function log(tag = "LOG", msg, lead_newln = false, trail_newln = false) {
   _logf(`[${tag}] ${lead_newln ? "\n" : ""} ${new Date().toLocaleString()} ` + 
     `${msg}${trail_newln ? "\n" : ""}`);
 }
