@@ -13,7 +13,7 @@ class Local extends Transport {
   /**
    * rinfo must be an Rinfo object with an address field set to the pubstring of the recipient
    */ 
-  async _send(msg, rinfo, msg_timeout) {
+  async send(msg, rinfo, msg_timeout) {
     const recip_api = this.peer_map.get(rinfo.address);
 
     if (!recip_api) {
@@ -29,7 +29,7 @@ class Local extends Transport {
     recip_api.transport.recv.emit("message", msg, my_rinfo);
   }
 
-  _on_network() {
+  on_network() {
     // Do nothing
   }
 }

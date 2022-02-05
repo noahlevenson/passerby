@@ -9,12 +9,12 @@ class Transport {
     this.recv = new EventEmitter();
   }
 
-  _send(msg, rinfo, msg_timeout) {
-    throw new Error("Subclasses must implement _send");
+  send(msg, rinfo, msg_timeout) {
+    throw new Error("Subclasses must implement send");
   }
 
-  _on_network() {
-    throw new Error("Subclasses must implement _on_network");
+  on_network() {
+    throw new Error("Subclasses must implement on_network");
   }
 }
 

@@ -64,7 +64,7 @@ class Udp extends Transport {
       this.socket = dgram.createSocket({type: "udp6", ipv6Only: true});
     }
 
-    this.socket.on("message", this._on_network.bind(this));
+    this.socket.on("message", this.on_network.bind(this));
     this.socket.bind(this.port);
     
     Journal.log(Transport.TAG, `UDP service starting on port ${this.port}, ` +
@@ -78,7 +78,7 @@ class Udp extends Transport {
 
   async stop() {
     // TODO: Currently we don't clear the send/recv buffers, which may or may not be desirable...
-    this.socket.removeListener("message", this._on_network.bind(this));
+    this.socket.removeListener("message", this.on_network.bind(this));
     clearTimeout(this.send_timeout);
     clearTimeout(this.recv_timeout);
     clearTimeout(this.gc_timeout);
@@ -161,7 +161,7 @@ class Udp extends Transport {
     }, Udp.T_SEND_TICK);
   }
 
-  async _on_network(msg, rinfo) {
+  async on_network(msg, rinfo) {
     try {
       /**
        * msg is a Buffer delivered from the socket, so we coerce into a Uint8Array for compatibility.
@@ -231,7 +231,7 @@ class Udp extends Transport {
   }
 
   // msg as Uint8Array
-  _send(msg, rinfo, msg_timeout) {
+  send(msg, rinfo, msg_timeout) {
     this.chunk_sender.add({
       chunk: msg,
       rinfo: rinfo,
