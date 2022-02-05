@@ -222,7 +222,7 @@ class Udp extends Transport {
       address, 
       (err) => {
         if (err) {
-          Journal.log(Transport.TAG, `UDP send error ${socketable.address}:${socketable.port} (${err})`);
+          Journal.log(Transport.TAG, `UDP send error ${address}:${port} (${err})`);
         }
       }
     );
