@@ -4,6 +4,10 @@
  * Deeply compare Uint8Array src to Uint8Array dest, return true if equal
  */ 
 function compare(src, dest) {
+  if (!ArrayBuffer.isView(src) || !ArrayBuffer.isView(dest)) {
+    throw new TypeError("Argument error");
+  }
+
   if (src.length !== dest.length ) {
     return false;
   }
@@ -21,6 +25,10 @@ function compare(src, dest) {
  * Read 2 bytes from Uint8Array src starting at index i, interpret as a little endian unsigned 16-bit int
  */ 
 function read_uint16le(src, i) {
+  if (!ArrayBuffer.isView(src)) {
+    throw new TypeError("Argument error");
+  }
+
   if (src.length < i + 2) {
     throw new RangeError("Source is too short");
   }
@@ -33,6 +41,10 @@ function read_uint16le(src, i) {
  * TODO: Catch overflow?
  */ 
 function write_uint16le(val, dest, i) {
+  if (!ArrayBuffer.isView(dest)) {
+    throw new TypeError("Argument error");
+  }
+
   if (dest.length < i + 2) {
     throw new RangeError("Destination is too short");
   }
