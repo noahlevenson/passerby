@@ -9,7 +9,7 @@ class Transport {
     this.recv = new EventEmitter();
   }
 
-  _send(msg, rinfo) {
+  _send(msg, rinfo, msg_timeout) {
     throw new Error("Subclasses must implement _send");
   }
 
@@ -18,4 +18,12 @@ class Transport {
   }
 }
 
-module.exports = { Transport };
+class Rinfo {
+  constructor({address, port, family} = {}) {
+    this.address = address;
+    this.port = port;
+    this.family = family;
+  }
+}
+
+module.exports = { Transport, Rinfo };

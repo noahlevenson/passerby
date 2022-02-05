@@ -240,13 +240,4 @@ class Udp extends Transport {
   }
 }
 
-class Rinfo {
-  constructor({address, port, family, pubkey} = {}) {
-    this.address = address;
-    this.port = port;
-    this.family = family;
-    this.pubkey = pubkey;
-  }
-}
-
-module.exports = { Udp, Rinfo };
+module.exports = { Udp };
