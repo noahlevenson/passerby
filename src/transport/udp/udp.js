@@ -231,11 +231,11 @@ class Udp extends Transport {
   }
 
   // msg as Uint8Array
-  send(msg, rinfo, msg_timeout) {
+  send(msg, rinfo, ttl) {
     this.chunk_sender.add({
       chunk: msg,
       rinfo: rinfo,
-      msg_timeout: msg_timeout
+      msg_timeout: ttl
     });
   }
 }

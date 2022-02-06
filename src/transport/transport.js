@@ -3,13 +3,13 @@
 const EventEmitter = require("events");
 
 class Transport {
-  static TAG = "TRANSPORT";
+  static TAG = "TSPT";
 
   constructor() {
     this.recv = new EventEmitter();
   }
 
-  send(msg, rinfo, msg_timeout) {
+  send(msg, rinfo, ttl) {
     throw new Error("Subclasses must implement send");
   }
 
@@ -19,10 +19,11 @@ class Transport {
 }
 
 class Rinfo {
-  constructor({address, port, family} = {}) {
+  constructor({address, port, family, pubstring} = {}) {
     this.address = address;
     this.port = port;
     this.family = family;
+    this.pubstring = pubstring;
   }
 }
 

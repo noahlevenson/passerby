@@ -54,4 +54,45 @@ function write_uint16le(val, dest, i) {
   return dest;
 }
 
-module.exports = { compare, read_uint16le, write_uint16le };
+/**
+ * Read 4 bytes from Uint8Array src starting at index i, interpret as a big endian signed 32-bit int
+ */ 
+function read_int32be(src, i) {
+  if (!ArrayBuffer.isView(src)) {
+    throw new TypeError("Argument error");
+  }
+
+  if (src.length < i + 4) {
+    throw new RangeError("Source is too short");
+  }
+
+  let int = 0;
+
+  for (let j = 3; j >= 0; j -= 1) {
+    int |= src[i + j] << (j * 8);
+  }
+
+  return int;
+}
+
+/**
+ * Write val to Uint8Array dest as a big endian signed 32-bit int, starting at index i
+ * TODO: Catch overflow?
+ */ 
+function write_int32be(val, dest, i) {
+  if (!ArrayBuffer.isView(dest)) {
+    throw new TypeError("Argument error");
+  }
+
+  if (dest.length < i + 4) {
+    throw new RangeError("Destination is too short");
+  }
+
+  for (let j = 3; j >= 0; j -= 1) {
+    dest[i + j] = val >>> (j * 8) & 0xFF;
+  }
+
+  return dest;
+}
+
+module.exports = { compare, read_uint16le, write_uint16le, read_int32be, write_int32be };
