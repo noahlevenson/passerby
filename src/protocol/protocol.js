@@ -2,9 +2,9 @@
 
 const EventEmitter = require("events");
 const Codec = require("./codec.js");
-const Journal = require("../core/journal.js");
 const { Io } = require("./io.js");
-const { Handshake } = require("../handshake/handshake.js");
+const { Handshake } = require("./handshake.js");
+const Journal = require("../core/journal.js");
 
 /**
  * This implementation is based on a message bus pattern. The message bus is essentially a broker 
@@ -45,7 +45,7 @@ class Passerby {
 
   /**
    * We increment our message counter each time we send a message, and wrap it according to the 
-   * byte width of the msg ID field specified in the codec
+   * byte width of the generation field specified in the codec
    */
   generate_id() {
     this._generation = this._generation < Codec.GEN_MAX ? this._generation + 1 : Codec.GEN_MIN;

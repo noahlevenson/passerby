@@ -1,7 +1,7 @@
 "use strict";
 
-const { Io } = require("../protocol/io.js");
-const Codec = require("../protocol/codec.js");
+const { Io } = require("./io.js");
+const Codec = require("./codec.js");
 const Journal = require("../core/journal.js");
 
 class Handshake extends Io {
