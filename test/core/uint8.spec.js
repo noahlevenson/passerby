@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("assert");
-const { compare, read_uint16le, write_uint16le, 
+const { compare, get_bit, read_uint16le, write_uint16le, read_uint16be, write_uint16be, 
   read_int32be, write_int32be } = require("../../src/core/uint8.js");
 
 /**
@@ -36,6 +36,65 @@ const { compare, read_uint16le, write_uint16le,
     compare(new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]), new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF])), 
     true
   );
+})();
+
+/**
+ * get_bit()
+ */ 
+(() => {
+  assert.throws(() => {
+    get_bit("foo", 0, 0);
+  });
+
+  assert.throws(() => {
+    get_bit([0xDE, 0, 0]);
+  });
+
+  assert.doesNotThrow(() => {
+    get_bit(new Uint8Array([0xDE]), 0, 13);
+  });
+
+  assert.doesNotThrow(() => {
+    get_bit(new Uint8Array([0xDE]), 4, 0);
+  });
+
+  const deadbeef = new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]);
+
+  assert.strictEqual(get_bit(deadbeef, 0, 0), 0);
+  assert.strictEqual(get_bit(deadbeef, 0, 1), 1);
+  assert.strictEqual(get_bit(deadbeef, 0, 2), 1);
+  assert.strictEqual(get_bit(deadbeef, 0, 3), 1);
+  assert.strictEqual(get_bit(deadbeef, 0, 4), 1);
+  assert.strictEqual(get_bit(deadbeef, 0, 5), 0);
+  assert.strictEqual(get_bit(deadbeef, 0, 6), 1);
+  assert.strictEqual(get_bit(deadbeef, 0, 7), 1);
+
+  assert.strictEqual(get_bit(deadbeef, 1, 0), 1);
+  assert.strictEqual(get_bit(deadbeef, 1, 1), 0);
+  assert.strictEqual(get_bit(deadbeef, 1, 2), 1);
+  assert.strictEqual(get_bit(deadbeef, 1, 3), 1);
+  assert.strictEqual(get_bit(deadbeef, 1, 4), 0);
+  assert.strictEqual(get_bit(deadbeef, 1, 5), 1);
+  assert.strictEqual(get_bit(deadbeef, 1, 6), 0);
+  assert.strictEqual(get_bit(deadbeef, 1, 7), 1);
+
+  assert.strictEqual(get_bit(deadbeef, 2, 0), 0);
+  assert.strictEqual(get_bit(deadbeef, 2, 1), 1);
+  assert.strictEqual(get_bit(deadbeef, 2, 2), 1);
+  assert.strictEqual(get_bit(deadbeef, 2, 3), 1);
+  assert.strictEqual(get_bit(deadbeef, 2, 4), 1);
+  assert.strictEqual(get_bit(deadbeef, 2, 5), 1);
+  assert.strictEqual(get_bit(deadbeef, 2, 6), 0);
+  assert.strictEqual(get_bit(deadbeef, 2, 7), 1);
+
+  assert.strictEqual(get_bit(deadbeef, 3, 0), 1);
+  assert.strictEqual(get_bit(deadbeef, 3, 1), 1);
+  assert.strictEqual(get_bit(deadbeef, 3, 2), 1);
+  assert.strictEqual(get_bit(deadbeef, 3, 3), 1);
+  assert.strictEqual(get_bit(deadbeef, 3, 4), 0);
+  assert.strictEqual(get_bit(deadbeef, 3, 5), 1);
+  assert.strictEqual(get_bit(deadbeef, 3, 6), 1);
+  assert.strictEqual(get_bit(deadbeef, 3, 7), 1);
 })();
 
 /**
@@ -114,6 +173,85 @@ const { compare, read_uint16le, write_uint16le,
 
   assert.throws(() => {
     write_uint16le(31337, new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]), 3)
+  });
+})();
+
+/**
+ * read_uint16be()
+ */ 
+(() => {
+  assert.throws(() => {
+    read_uint16be("foo", 0);
+  });
+
+  assert.throws(() => {
+    read_uint16be([0xDE, 0xAD], 0);
+  });
+
+  assert.throws(() => {
+    read_uint16be(new Uint8Array([0xDE, 0xAD]), 1);
+  });
+
+  assert.throws(() => {
+    read_uint16be(new Uint8Array([0xDE, 0xAD]), 2);
+  });
+
+  assert.throws(() => {
+    read_uint16be(new Uint8Array([0xDE, 0xAD]), 3);
+  });
+
+  assert.throws(() => {
+    read_uint16be(new Uint8Array([0xDE, 0xAD, 0xBE]), 2);
+  });
+
+  assert.doesNotThrow(() => {
+    read_uint16be(new Uint8Array([0xDE, 0xAD]), 0);
+  });
+
+  const deadbeef = new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]);
+
+  assert.strictEqual(read_uint16be(deadbeef, 0), 57005);
+  assert.strictEqual(read_uint16be(deadbeef, 1), 44478);
+  assert.strictEqual(read_uint16be(deadbeef, 2), 48879);
+})();
+
+/**
+ * write_uint16be()
+ */ 
+(() => {
+  assert.throws(() => {
+    write_uint16be(31337, "foo bar", 0);
+  });
+
+  assert.throws(() => {
+    write_uint16be(31337, [0xDE, 0xAD], 0);
+  });
+
+  assert.throws(() => {
+    write_uint16be(31337, new Uint8Array(1), 0);
+  });
+
+  assert.throws(() => {
+    write_uint16be(31337, new Uint8Array(16), 15);
+  });
+
+  assert.deepStrictEqual(
+    write_uint16be(31337, new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]), 0),
+    new Uint8Array([0x7A, 0x69, 0xBE, 0xEF])
+  );
+
+  assert.deepStrictEqual(
+    write_uint16be(31337, new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]), 1),
+    new Uint8Array([0xDE, 0x7A, 0x69, 0xEF])
+  );
+
+  assert.deepStrictEqual(
+    write_uint16be(31337, new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]), 2),
+    new Uint8Array([0xDE, 0xAD, 0x7A, 0x69])
+  );
+
+  assert.throws(() => {
+    write_uint16be(31337, new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]), 3)
   });
 })();
 

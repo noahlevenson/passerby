@@ -8,6 +8,15 @@ const { Header } = require("./header.js");
 const { Message } = require("./message.js");
 const { Attribute } = require("./attribute.js");
 
+/**
+ * TODO: Whoami is intended to be a generalized NAT traversal protocol, somewhat like libp2p's 
+ * Identify. Currently, it's just a thin wrapper over an implementation of STUN. It was originally 
+ * ported over from ministun (https://github.com/noahlevenson/ministun), and it still bears code
+ * style from that project which is inconsistent here. A notable inconsistency is the use of 
+ * camelcase instead of snake case. In general, this module could use a redesign and a more 
+ * thoughtful approach to modularization...
+ */ 
+
 class Whoami extends Io {
   static TAG = "WHOM";
 
