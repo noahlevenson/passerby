@@ -22,6 +22,17 @@ function compare(src, dest) {
 }
 
 /**
+ * Fetch the bit in Uint8Array src at byte_i and bit_i
+ */ 
+function get_bit(src, byte_i, bit_i) {
+  if (!ArrayBuffer.isView(src)) {
+    throw new TypeError("Argument error");
+  }
+
+  return (src[byte_i] >> bit_i) & 0x01;
+}
+
+/**
  * Read 2 bytes from Uint8Array src starting at index i, interpret as a little endian unsigned 16-bit int
  */ 
 function read_uint16le(src, i) {
@@ -51,6 +62,39 @@ function write_uint16le(val, dest, i) {
 
   dest[i] = val & 0xFF;
   dest[i + 1] = (val >> 8) & 0xFF;
+  return dest;
+}
+
+/**
+ * Read 2 bytes from Uint8Array src starting at index i, interpret as a big endian unsigned 16-bit int
+ */ 
+function read_uint16be(src, i) {
+  if (!ArrayBuffer.isView(src)) {
+    throw new TypeError("Argument error");
+  }
+
+  if (src.length < i + 2) {
+    throw new RangeError("Source is too short");
+  }
+
+  return src[i + 1] | (src[i] << 8);
+}
+
+/**
+ * Write val to Uint8Array dest as a big endian unsigned 16-bit int, starting at index i
+ * TODO: Catch overflow?
+ */ 
+function write_uint16be(val, dest, i) {
+  if (!ArrayBuffer.isView(dest)) {
+    throw new TypeError("Argument error");
+  }
+
+  if (dest.length < i + 2) {
+    throw new RangeError("Destination is too short");
+  }
+
+  dest[i + 1] = val & 0xFF;
+  dest[i] = (val >> 8) & 0xFF;
   return dest;
 }
 
@@ -95,4 +139,5 @@ function write_int32be(val, dest, i) {
   return dest;
 }
 
-module.exports = { compare, read_uint16le, write_uint16le, read_int32be, write_int32be };
+module.exports = { compare, get_bit, read_uint16le, write_uint16le, read_uint16be, write_uint16be, 
+  read_int32be, write_int32be };

@@ -12,8 +12,8 @@ class Handshake extends Io {
   }
 
   async begin(rinfo) {
-    Journal.log(Handshake.TAG, `Handshake begin: ${rinfo.pubstring}`);
-    Journal.log(Handshake.TAG, `Handshake OK, channel secure: ${rinfo.pubstring}`);
+    Journal.log(Handshake.TAG, `Handshake begin -> ${rinfo.address}:${rinfo.port}`);
+    Journal.log(Handshake.TAG, `Handshake OK <- ${rinfo.address}:${rinfo.port}`);
     return "DEBUG SESSION KEY";
   }
 

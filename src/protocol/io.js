@@ -32,7 +32,7 @@ class Io {
     }
   }
 
-  send({body, rinfo, gen, success = () => {}, timeout = () => {}, ttl = Io.DEFAULT_TTL}) {
+  send({body, body_type, rinfo, gen, success = () => {}, timeout = () => {}, ttl = Io.DEFAULT_TTL}) {
     if (Codec.is_gen_req(gen)) {
       new Promise((resolve, reject) => {
         const label = this._response_event_label(rinfo, gen);
@@ -52,11 +52,11 @@ class Io {
       });
     }
 
-    this.bus.emit(Io.OUT, this.type, body, rinfo, gen, ttl);
+    this.bus.emit(Io.OUT, this.type, body, body_type, rinfo, gen, ttl);
   }
 
   _response_event_label(rinfo, gen) {
-    return `${rinfo.pubstring}:${gen}`;
+    return `${rinfo.address}:${rinfo.port}:${gen}`;
   }
 }
 

@@ -4,6 +4,7 @@ const EventEmitter = require("events");
 const Codec = require("./codec.js");
 const { Io } = require("./io.js");
 const { Handshake } = require("./handshake.js");
+const { Whoami } = require("../whoami/whoami.js");
 const Journal = require("../core/journal.js");
 
 /**
@@ -26,6 +27,7 @@ class Passerby {
     this.sessions = new Map();
     this._generation = 0;
     this.handshake = new Handshake(this.bus, this.generate_id.bind(this));
+    this.whoami = new Whoami(this.bus, this.generate_id.bind(this));
   }
 
   /**
@@ -56,7 +58,7 @@ class Passerby {
    * Send a message to a remote peer over a secure channel; if a secure channel has not yet been
    * established, we'll execute the handshake protocol first
    */ 
-  async send_secure({type = Codec.MSG_TYPE.APPLICATION, body, rinfo, gen, ttl} = {}) {
+  async send_secure({type = Codec.MSG_TYPE.APPLICATION, body, body_type, rinfo, gen, ttl} = {}) {
     const session_key = this.sessions.get(JSON.stringify(rinfo));
 
     if (!session_key) {
@@ -65,6 +67,7 @@ class Passerby {
 
     const encoded = Codec.encode({
       body: body, 
+      body_type: body_type,
       type: type, 
       gen: gen,
       session_key: session_key
@@ -81,8 +84,6 @@ class Passerby {
     const decoded = Codec.decode(msg);
 
     if (decoded !== null) {
-      console.log(decoded);
-
       this.bus.emit(decoded.header.type, decoded.header.gen, decoded.body, rinfo);
     }
   }
@@ -91,8 +92,8 @@ class Passerby {
    * This handler is invoked when a higher level module announces an outbound message on the message
    * bus (we must encode it, encrypt it, and send it to the transport)
    */ 
-  _outbound(type, body, rinfo, gen, ttl) {
-    this.send_secure({type: type, body: body, rinfo: rinfo, gen: gen, ttl: ttl});
+  _outbound(type, body, body_type, rinfo, gen, ttl) {
+    this.send_secure({type: type, body: body, body_type: body_type, rinfo: rinfo, gen: gen, ttl: ttl});
   }  
 }
 

@@ -19,11 +19,10 @@ class Transport {
 }
 
 class Rinfo {
-  constructor({address, port, family, pubstring} = {}) {
+  constructor({address, port, family} = {}) {
     this.address = address;
     this.port = port;
     this.family = family;
-    this.pubstring = pubstring;
   }
 }
 
