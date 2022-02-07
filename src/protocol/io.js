@@ -28,14 +28,14 @@ class Io {
 
   on_message(gen, body, rinfo) {
     if (!Codec.is_gen_req(gen)) {
-      this.response.emit(this._response_event_label(rinfo, gen));
+      this.response.emit(this._msg_event_label(rinfo, gen));
     }
   }
 
   send({body, body_type, rinfo, gen, success = () => {}, timeout = () => {}, ttl = Io.DEFAULT_TTL}) {
     if (Codec.is_gen_req(gen)) {
       new Promise((resolve, reject) => {
-        const label = this._response_event_label(rinfo, gen);
+        const label = this._msg_event_label(rinfo, Codec.get_gen_res(gen));
 
         const timeout_id = setTimeout(() => {
           this.response.removeAllListeners(label);
@@ -55,7 +55,7 @@ class Io {
     this.bus.emit(Io.OUT, this.type, body, body_type, rinfo, gen, ttl);
   }
 
-  _response_event_label(rinfo, gen) {
+  _msg_event_label(rinfo, gen) {
     return `${rinfo.address}:${rinfo.port}:${gen}`;
   }
 }
