@@ -2,8 +2,8 @@
 
 const EventEmitter = require("events");
 const Codec = require("./codec.js");
-const { Io } = require("./io.js");
 const Journal = require("../core/journal.js");
+const { Io } = require("./io.js");
 const { Handshake } = require("../handshake/handshake.js");
 
 /**
@@ -24,8 +24,8 @@ class Passerby {
     this.bus = new EventEmitter();
     this.bus.on(Io.OUT, this._outbound.bind(this));
     this.sessions = new Map();
-    this.msg_id = 0;
-    this.handshake = new Handshake(this.bus);
+    this._generation = 0;
+    this.handshake = new Handshake(this.bus, this.generate_id.bind(this));
   }
 
   /**
@@ -47,16 +47,16 @@ class Passerby {
    * We increment our message counter each time we send a message, and wrap it according to the 
    * byte width of the msg ID field specified in the codec
    */
-  next_id() {
-    this.msg_id = this.msg_id < Codec.ID_MAX ? this.msg_id += 1 : Codec.ID_MIN;
-    return this.msg_id;
+  generate_id() {
+    this._generation = this._generation < Codec.GEN_MAX ? this._generation + 1 : Codec.GEN_MIN;
+    return this._generation;
   }
 
   /**
    * Send a message to a remote peer over a secure channel; if a secure channel has not yet been
    * established, we'll execute the handshake protocol first
    */ 
-  async send_secure({type = Codec.MSG_TYPE.APPLICATION, body, rinfo, msg_id, ttl} = {}) {
+  async send_secure({type = Codec.MSG_TYPE.APPLICATION, body, rinfo, gen, ttl} = {}) {
     const session_key = this.sessions.get(JSON.stringify(rinfo));
 
     if (!session_key) {
@@ -66,7 +66,7 @@ class Passerby {
     const encoded = Codec.encode({
       body: body, 
       type: type, 
-      msg_id: msg_id ? msg_id : this.next_id(),
+      gen: gen,
       session_key: session_key
     });
 
@@ -81,7 +81,9 @@ class Passerby {
     const decoded = Codec.decode(msg);
 
     if (decoded !== null) {
-      this.bus.emit(decoded.header.type, decoded.header.msg_id, decoded.body);
+      console.log(decoded);
+
+      this.bus.emit(decoded.header.type, decoded.header.gen, decoded.body, rinfo);
     }
   }
 
@@ -89,8 +91,8 @@ class Passerby {
    * This handler is invoked when a higher level module announces an outbound message on the message
    * bus (we must encode it, encrypt it, and send it to the transport)
    */ 
-  _outbound(type, body, rinfo, msg_id, ttl) {
-    this.send_secure({type: type, body: body, rinfo: rinfo, msg_id: msg_id, ttl: ttl});
+  _outbound(type, body, rinfo, gen, ttl) {
+    this.send_secure({type: type, body: body, rinfo: rinfo, gen: gen, ttl: ttl});
   }  
 }
 

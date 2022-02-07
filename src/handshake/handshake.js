@@ -7,8 +7,8 @@ const Journal = require("../core/journal.js");
 class Handshake extends Io {
   static TAG = "HAND";
 
-  constructor(bus) {
-    super({bus: bus, type: Codec.MSG_TYPE.HANDSHAKE});
+  constructor(bus, generator) {
+    super({bus: bus, generator: generator, type: Codec.MSG_TYPE.HANDSHAKE});
   }
 
   async begin(rinfo) {
@@ -17,8 +17,8 @@ class Handshake extends Io {
     return "DEBUG SESSION KEY";
   }
 
-  on_message(msg_id, body) {
-    super.on_message(msg_id, body);
+  on_message(gen, body, rinfo) {
+    super.on_message(gen, body, rinfo);
     // TODO: Handle inbound handshake request
   }
 }

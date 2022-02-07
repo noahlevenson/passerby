@@ -19,19 +19,22 @@ const MSG_TYPE = {
 
 const HEADER_LEN = 16;
 const TYPE_LEN = 1;
-const ID_LEN = 4;
+const GEN_LEN = 4;
 const TYPE_I = 0;
-const ID_I = TYPE_I + TYPE_LEN;
+const GEN_I = TYPE_I + TYPE_LEN;
+const GEN_MIN = 1;
+const GEN_MAX = Math.pow(2, GEN_LEN * 8) / 2 - 1;
 
-const ID_MAX = Math.pow(2, ID_LEN * 8) / 2 - 1;
-const ID_MIN = 1;
+function is_gen_req(gen) {
+  return gen > 0;
+}
 
-function encode({body, type, msg_id, session_key} = {}) {
+function encode({body, type, gen, session_key} = {}) {
   if (typeof body !== "object" || !Object.values(MSG_TYPE).includes(type)) {
     throw new TypeError("Argument error");
   }
 
-  const encoded_hdr = _encode_header({type: type, msg_id: msg_id});
+  const encoded_hdr = _encode_header({type: type, gen: gen});
   const encoded_body = _encode_body(body);
   return new Uint8Array([...encoded_hdr, ...encoded_body]);
 }
@@ -45,17 +48,17 @@ function decode(msg_buf, session_key) {
   };
 }
 
-function _encode_header({type, msg_id} = {}) {
+function _encode_header({type, gen} = {}) {
   const header = new Uint8Array(HEADER_LEN);
   header[TYPE_I] = type;
-  write_int32be(msg_id, header, ID_I);
+  write_int32be(gen, header, GEN_I);
   return header;
 }
 
 function _decode_header(hdr) {
   return {
     type: hdr[TYPE_I],
-    msg_id: read_int32be(hdr, ID_I)
+    gen: read_int32be(hdr, GEN_I)
   };
 }
 
@@ -67,4 +70,4 @@ function _decode_body(body) {
   return JSON.parse(new TextDecoder().decode(body));
 }
 
-module.exports = { MSG_TYPE, ID_MAX, encode, decode };
+module.exports = { MSG_TYPE, GEN_MAX, is_gen_req, encode, decode };
