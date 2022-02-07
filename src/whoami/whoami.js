@@ -31,15 +31,17 @@ class Whoami extends Io {
         id: id._data
       });
 
-      const req_msg = new Message({
-        hdr: req_hdr
-      });
-
       this.send({
-        body: req_msg.serialize(),
+        body: new Message({hdr: req_hdr}).serialize(),
         body_type: Codec.BODY_TYPE.BINARY,
         rinfo: rinfo,
-        gen: this.generator()
+        gen: this.generator(),
+        success: () => {
+          resolve()
+        },
+        timeout: () => {
+          reject()
+        }
       });
     });
   }
