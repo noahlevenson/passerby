@@ -28,7 +28,7 @@ class Io {
 
   on_message(gen, body, rinfo) {
     if (!Codec.is_gen_req(gen)) {
-      this.response.emit(this._msg_event_label(rinfo, gen));
+      this.response.emit(this._msg_event_label(rinfo, gen), gen, body);
     }
   }
 
@@ -42,10 +42,10 @@ class Io {
           reject(label);
         }, ttl);
 
-        this.response.once(label, (msg) => {
+        this.response.once(label, (gen, body) => {
           clearTimeout(timeout_id);
-          success(msg);
-          resolve(label);
+          success(gen, body);
+          resolve(gen, body);
         });
       }).catch((reason) => {
         timeout();

@@ -45,17 +45,17 @@ class Whoami extends Io {
         body_type: Codec.BODY_TYPE.BINARY,
         rinfo: rinfo,
         gen: this.generator(),
-        success: () => {
-          resolve()
+        success: (gen, body) => {
+          const msg = Message.from(body);
+          resolve(Attribute._decMappedAddr(msg.attrs[0].val, msg.hdr.id, true));
         },
         timeout: () => {
-          reject()
+          reject(null);
         }
       });
     });
   }
 
-  // body must be a Uint8Array, encoded and decoded by the Codec as binary type data
   on_message(gen, body, rinfo) {
     super.on_message(gen, body, rinfo);
     const inMsg = Message.from(body);
@@ -157,7 +157,7 @@ class Whoami extends Io {
   _res_binding_success(gen, inMsg, rinfo) {
     // TODO: confirm that this has the correct type attr, either XOR_MAPPED_ADDRESS or MAPPED_ADDRESS?
     const [addr, port] = Attribute._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
-    Journal.log(Whoami.TAG, `Binding response received: ${addr}:${port}`)
+    Journal.log(Whoami.TAG, `Binding response received: ${addr}:${port}`);
   }
 }
 

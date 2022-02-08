@@ -1,5 +1,7 @@
 "use strict";
 
+const { to_base64 } = require("../crypto.js");
+
 /**
  * Bigboy provides an interface for working with large fixed-width unsigned integers. Since it's 
  * fixed-width, it preserves leading zeroes (unlike BigInt), and since it's based on Uint8Array, 
@@ -7,6 +9,7 @@
  */ 
 class Bigboy {
   static DEFAULT_BYTE_WIDTH = 32;
+  static JSON_TYPE = "b1gb0y";
 
   /**
    * JavaScript converts Number types to 32-bit integers before bitwise manipulation, so the 
@@ -24,6 +27,22 @@ class Bigboy {
       this._data[i] = val & 0xFF;
       val >>>= 0x08;
     }
+  }
+
+  static json_revive(key, val) {
+    if (typeof val === "object" && val !== null && val.type === Bigboy.JSON_TYPE) {
+      return Bigboy.from_hex_str({len: val.len, str: val.data});
+    }
+
+    return val;
+  }
+
+  toJSON() {
+    return {
+      type: Bigboy.JSON_TYPE,
+      data: this.to_hex_str(),
+      len: this.length()
+    };
   }
 
   // TODO: Validate the string
@@ -227,6 +246,10 @@ class Bigboy {
 
   to_base2_str() {
     return Array.from(this._data).map(byte => byte.toString(2).padStart(8, "0")).reverse().join("");
+  }
+
+  to_base64_str() {
+    return to_base64(this._data);
   }
 
   length() {

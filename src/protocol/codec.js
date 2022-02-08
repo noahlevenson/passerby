@@ -1,6 +1,7 @@
 "use strict";
 
 const { read_int32be, write_int32be } = require("../core/uint8.js");
+const { Bigboy } = require("../core/types/bigboy.js");
 
 /**
  * TODO: Everything here is just placeholder stubs while we finalize our wire format... It's a 
@@ -94,7 +95,7 @@ function _encode_body(body, body_type) {
 function _decode_body(body, body_type) {
   switch (body_type) {
     case BODY_TYPE.JSON:
-      return new TextEncoder().encode(JSON.stringify(body));
+      return JSON.parse(new TextDecoder().decode(body), Bigboy.json_revive);
       break;
     case BODY_TYPE.BINARY:
       return body;
