@@ -4,7 +4,7 @@ const EventEmitter = require("events");
 const Codec = require("./codec.js");
 
 /**
- * Io is a bus interface. You can build network-I/O enabled modules by subclassing Io, passing in a 
+ * Io is a bus interface. You can build network I/O-enabled modules by subclassing Io, passing in a 
  * reference to the message bus that the module should pub/sub to and a function to emit message
  * generation numbers. Io enables stateful communication; by passing a success and/or timeout 
  * callback to the 'send' method, you can specify work to be done upon message success or failure.

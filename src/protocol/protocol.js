@@ -41,19 +41,15 @@ class Passerby {
   async start(addr, port, public_key) {
     Journal.log(Passerby.TAG, `Welcome to Passerby v${Passerby.V}`);
     await this.transport.start();
-    
-    if (!addr || !port) {
-      const network_info = await this.whoami.ask(new Rinfo({address: addr, port: port}));
+    const network_info = await this.whoami.ask(new Rinfo({address: addr, port: port}));
 
-      if (res === null) {
-        throw new Error("Public address resolution failed!");
-      }
-
-      [addr, port] = network_info;
+    if (network_info === null) {
+      throw new Error("Whoami failed!");
     }
 
-    this.dht = new Kademlia(this.bus, this.generate_id.bind(this), addr, port, public_key);
-    this.dht.bootstrap({addr: addr, port: port, public_key, public_key});
+    const [my_addr, my_port] = network_info;
+    this.dht = new Kademlia(this.bus, this.generate_id.bind(this), my_addr, my_port, public_key);
+    this.dht.bootstrap({addr: addr, port: port, public_key: public_key});
   }
 
   /**
