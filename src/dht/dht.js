@@ -536,6 +536,26 @@ class Kademlia extends Io {
     return data({type: DATA_TYPE.NODE_LIST, payload: sorted});
   }
 
+  /**
+   * This wrapper is used to wrap all the caller-specified timeout functions to enforce contact 
+   * locking. Cuirrently we're prohibited from locking ourselves, mostly to avoid cases where 
+   * network issues might result in our locking every contact in our routing table. TODO: this is
+   * implementing largely (solely?) to prevent the case where a call to get_nodes_closest_to() 
+   * returns zero contacts. There's likely a better way to do this.
+   */ 
+  _contact_lock_timeout(recip_node_info, caller_timeout) {
+    if (!compare_info(recip_node_info, this.node_info)) {
+      const bucket = this.find_kbucket_for_id(recip_node_info.node_id).get_data();
+      const kbucket_rec = bucket.exists(recip_node_info);
+
+      if (kbucket_rec !== null && !kbucket_rec.is_locked()) {
+        kbucket_rec.lock(`${Object.keys(RPC)[msg.rpc]} ${Object.keys(MSG_TYPE)[msg.type]} failed`);
+      }
+    }
+
+    caller_timeout();
+  }
+
   _req_ping(recip_node_info, success, timeout, ttl) {
     const msg = message({
       rpc: RPC.PING,
@@ -551,7 +571,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: timeout,
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
       ttl: ttl
     });
   }
@@ -578,7 +598,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: timeout,
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
       ttl: ttl
     });
   }
@@ -598,7 +618,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: timeout,
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
       ttl: ttl
     });
   }
@@ -618,7 +638,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: timeout,
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
       ttl: ttl
     });
   }
@@ -723,15 +743,6 @@ class Kademlia extends Io {
       gen: Codec.get_gen_res(gen),
       ttl: Kademlia.DEFAULT_TTL
     });
-  }
-
-  on_message(gen, body, rinfo) {
-    super.on_message(gen, body, rinfo);
-    this.routing_table_insert(body.from);
-
-    if (Codec.is_gen_req(gen)) {
-      this._on_req(gen, body);
-    }
   }
 
   /**
@@ -844,6 +855,15 @@ class Kademlia extends Io {
     if (this.replicate_interval_handle) {
       clearInterval(this.replicate_interval_handle);
       this.replicate_interval_handle = null;
+    }
+  }
+
+  on_message(gen, body, rinfo) {
+    super.on_message(gen, body, rinfo);
+    this.routing_table_insert(body.from);
+
+    if (Codec.is_gen_req(gen)) {
+      this._on_req(gen, body);
     }
   }
 }
