@@ -134,7 +134,7 @@ class Record {
     const ttl = !this.is_stale() ? Record.BACKOFF_FUNC(this.n_locks) : Number.POSITIVE_INFINITY;
     this.lock_until = Date.now() + ttl;
 
-    Journal.log(`Locked contact ${this.node_info.node_id.toString()} ` + 
+    Journal.log("KDHT", `Locked contact ${this.node_info.node_id.to_base64_str()} ` + 
       `(${this.node_info.addr}:${this.node_info.port}) <${reason}> ` + 
         `${this.n_locks}/${Record.MAX_LOCK_ATTEMPTS} ` + 
         `(${ttl < Number.POSITIVE_INFINITY ? (ttl / 1000).toFixed(1) + " sec" : "permanent"})`);
