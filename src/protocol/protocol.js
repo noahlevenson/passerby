@@ -28,8 +28,8 @@ class Passerby {
     this.bus.on(Io.OUT, this._outbound.bind(this));
     this.sessions = new Map();
     this._generation = 0;
-    this.handshake = new Handshake(this.bus, this.generate_id.bind(this));
-    this.whoami = new Whoami(this.bus, this.generate_id.bind(this));
+    this.handshake = new Handshake(this.bus, this.next_generation.bind(this));
+    this.whoami = new Whoami(this.bus, this.next_generation.bind(this));
     this.dht = null;
   }
 
@@ -64,7 +64,7 @@ class Passerby {
       [my_addr, my_port] = network_info;
     }
 
-    this.dht = new Kademlia(this.bus, this.generate_id.bind(this), my_addr, my_port, my_public_key);
+    this.dht = new Kademlia(this.bus, this.next_generation.bind(this), my_addr, my_port, my_public_key);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 
@@ -79,7 +79,7 @@ class Passerby {
    * We increment our message counter each time we send a message, and wrap it according to the 
    * byte width of the generation field specified in the codec
    */
-  generate_id() {
+  next_generation() {
     this._generation = this._generation < Codec.GEN_MAX ? this._generation + 1 : Codec.GEN_MIN;
     return this._generation;
   }
