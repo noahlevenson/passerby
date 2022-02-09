@@ -40,7 +40,7 @@ class Whoami extends Io {
         id: id._data
       });
 
-      Journal.log(Whoami.TAG, `STUN binding request -> ${rinfo.address}:${rinfo.port}`);
+      Journal.log(Whoami.TAG, `Outbound STUN binding request: ${rinfo.address}:${rinfo.port}`);
 
       this.send({
         body: new Message({hdr: req_hdr}).serialize(),
@@ -151,12 +151,14 @@ class Whoami extends Io {
       rinfo: rinfo,
       gen: Codec.get_gen_res(gen)
     });
+
+    Journal.log(Whoami.TAG, `Inbound STUN binding request: ${rinfo.address}:${rinfo.port}`);
   }
 
   _res_binding_success(gen, inMsg, rinfo) {
     // TODO: confirm that this has the correct type attr, either XOR_MAPPED_ADDRESS or MAPPED_ADDRESS?
     const [addr, port] = Attribute._decMappedAddr(inMsg.attrs[0].val, inMsg.hdr.id, true);
-    Journal.log(Whoami.TAG, `${addr}:${port} <- STUN binding success`);
+    Journal.log(Whoami.TAG, `Inbound STUN binding success: ${addr}:${port}`);
   }
 }
 
