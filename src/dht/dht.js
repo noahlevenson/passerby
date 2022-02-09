@@ -532,11 +532,7 @@ class Kademlia extends Io {
      * CASE 2: Either a value lookup has failed to return a value, or we performed a node lookup;
      * in both circumstances, we just return a sorted list of the closest nodes we heard about
      */ 
-    const sorted = active.dfs_in((node, data) => {
-      data.push(node.get_data());
-      //return data;  
-    });
-
+    const sorted = active.dfs_in((node, data) => data.push(node.get_data()));
     return data({type: DATA_TYPE.NODE_LIST, payload: sorted});
   }
 
@@ -762,8 +758,6 @@ class Kademlia extends Io {
           }
         }));
       }
-
-      //return data;
     });
 
     const sorted_node_infos = all_nodes.map(kbucket_rec => kbucket_rec.node_info).sort((a, b) => 
@@ -787,8 +781,6 @@ class Kademlia extends Io {
           if (bucket !== null) {
             data.push(bucket);
           }
-
-          // return data;
         });
       
         all_buckets.forEach((bucket) => {
