@@ -16,6 +16,10 @@ class Transport {
   on_network() {
     throw new Error("Subclasses must implement on_network");
   }
+
+  start() {
+    // Do nothing
+  }
 }
 
 class Rinfo {
