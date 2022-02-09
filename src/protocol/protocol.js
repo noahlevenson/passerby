@@ -34,22 +34,38 @@ class Passerby {
   }
 
   /**
-   * Boot this instance of the Passerby protocol. Specify the address, port, and public key of a 
-   * bootstrap node. To spawn a new network where we are the first bootstrap node, just pass our
-   * own public address, port, and public key.
+   * Boot this instance of the Passerby protocol, specifying network info for our own node and/or a
+   * bootstrap node. There are 3 standard configurations for the arguments here:
+   * 
+   * 1) You're a peer who wants to join an existing network via a known bootstrap node, but you're 
+   * unsure of your public network info (because of NAT or similar issues). Leave my_addr and my_port
+   * unspecified, and we'll attempt to auto-resolve your public network info during boot.
+   * 
+   * 2) You're a peer who wants to join an existing network via a known bootstrap node, and you want
+   * to force your own public network info (perhaps because you're using a transport like RS-232 or
+   * local network emulation). Just specify my_addr and my_port and we'll use those values during boot.
+   * 
+   * 3) You intend to be the first node in a newly spawned network. In this case, you are your own
+   * bootstrap node, and you must know for certain your public network info. Pass the same address
+   * and port values to my_addr, my_port, boot_addr, and boot_port, and you will auto-bootstrap.
    */ 
-  async start(addr, port, public_key) {
+  async start({my_addr, my_port, my_public_key, boot_addr, boot_port, boot_public_key} = {}) {
     Journal.log(Passerby.TAG, `Welcome to Passerby v${Passerby.V}`);
     await this.transport.start();
-    const network_info = await this.whoami.ask(new Rinfo({address: addr, port: port}));
 
-    if (network_info === null) {
-      throw new Error("Whoami failed!");
+    if (!my_addr || !my_port) {
+      Journal.log(Passerby.TAG, `No network info specified, attempting resolution...`);
+      const network_info = await this.whoami.ask(new Rinfo({address: boot_addr, port: boot_port}));
+
+      if (network_info === null) {
+        throw new Error("Whoami failed!");
+      }
+
+      [my_addr, my_port] = network_info;
     }
 
-    const [my_addr, my_port] = network_info;
-    this.dht = new Kademlia(this.bus, this.generate_id.bind(this), my_addr, my_port, public_key);
-    this.dht.bootstrap({addr: addr, port: port, public_key: public_key});
+    this.dht = new Kademlia(this.bus, this.generate_id.bind(this), my_addr, my_port, my_public_key);
+    await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 
   /**
