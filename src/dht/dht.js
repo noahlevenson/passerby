@@ -543,7 +543,7 @@ class Kademlia extends Io {
    * implementing largely (solely?) to prevent the case where a call to get_nodes_closest_to() 
    * returns zero contacts. There's likely a better way to do this.
    */ 
-  _contact_lock_timeout(recip_node_info, caller_timeout) {
+  _contact_lock_timeout(recip_node_info, msg, caller_timeout) {
     if (!compare_info(recip_node_info, this.node_info)) {
       const bucket = this.find_kbucket_for_id(recip_node_info.node_id).get_data();
       const kbucket_rec = bucket.exists(recip_node_info);
@@ -571,7 +571,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, msg, timeout),
       ttl: ttl
     });
   }
@@ -598,7 +598,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, msg, timeout),
       ttl: ttl
     });
   }
@@ -618,7 +618,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, msg, timeout),
       ttl: ttl
     });
   }
@@ -638,7 +638,7 @@ class Kademlia extends Io {
       rinfo: new Rinfo({address: recip_node_info.addr, port: recip_node_info.port}),
       gen: this.generator(),
       success: success,
-      timeout: this._contact_lock_timeout.bind(this, recip_node_info, timeout),
+      timeout: this._contact_lock_timeout.bind(this, recip_node_info, msg, timeout),
       ttl: ttl
     });
   }
