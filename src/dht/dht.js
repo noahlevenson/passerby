@@ -289,7 +289,7 @@ class Kademlia extends Io {
          * RPCs instead of rudely blasting them all out at once...
          */ 
         await new Promise((resolve, reject) => {
-          this._req_store(key, val.get_data(), node_info, (gen, body) => {
+          this._req_store(key, val, node_info, (gen, body) => {
             resolve();
           }, () => {
             resolve();
