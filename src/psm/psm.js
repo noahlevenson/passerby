@@ -20,7 +20,7 @@ class Psm extends Io {
    * Operands structure:
    * 
    * READ:  [] (empty array)
-   * WRITE: [val, commit_msg]
+   * WRITE: [val]
    */ 
   GRAMMAR = new Map([
     [Psm.OPCODE.READ, this._read],
@@ -48,14 +48,14 @@ class Psm extends Io {
     return this.read_f(key);
   }
 
-  _write(key, val, commit_msg) {
-    // TODO: Invariants, coordination, etc.
+  _write(key, val) {
+    // TODO: Invariants, receive and tally commit messages from coordinators, etc.
     this.write_f(key, val);
     return true;
   }
 }
 
-function instruction({key, opcode, operands} = {}) {
+function instruction({key, opcode, operands = []} = {}) {
   return {
     key: key,
     opcode: opcode,

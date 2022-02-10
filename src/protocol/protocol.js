@@ -7,7 +7,7 @@ const { Io } = require("./io.js");
 const { Handshake } = require("./handshake.js");
 const { Whoami } = require("../whoami/whoami.js");
 const { Kademlia } = require("../dht/dht.js");
-const { Psm } = require("../psm/psm.js");
+const { Psm, instruction } = require("../psm/psm.js");
 const { Repman } = require("../repman/repman.js");
 const { Pbft } = require("../consensus/consensus.js");
 const Journal = require("../core/journal.js");
@@ -84,13 +84,12 @@ class Passerby {
     await this.transport.stop();
   }
 
-  /**
-   * We increment our message counter each time we send a message, and wrap it according to the 
-   * byte width of the generation field specified in the codec
-   */
-  next_gen() {
-    this._generation = this._generation < Codec.GEN_MAX ? this._generation + 1 : Codec.GEN_MIN;
-    return this._generation;
+  async read(key) {
+    return this.consensus.exec(instruction({key: key, opcode: Psm.OPCODE.READ}));
+  }
+
+  async write(key, val) {
+    return this.consensus.exec(instruction({key: key, opcode: Psm.OPCODE.WRITE, operands: [val]}));
   }
 
   /**
@@ -113,6 +112,15 @@ class Passerby {
     });
 
     this.transport.send(encoded, rinfo, ttl);
+  }
+
+  /**
+   * We increment our message counter each time we send a message, and wrap it according to the 
+   * byte width of the generation field specified in the codec
+   */
+  next_gen() {
+    this._generation = this._generation < Codec.GEN_MAX ? this._generation + 1 : Codec.GEN_MIN;
+    return this._generation;
   }
 
   /**
