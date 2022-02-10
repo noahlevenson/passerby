@@ -172,6 +172,8 @@ class Kademlia extends Io {
         val: val,
         ttl: ttl
       });
+
+      Journal.log(Kademlia.TAG `Wrote ${key.to_hex_str()} to local storage`);
     }
   }
 

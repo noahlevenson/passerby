@@ -8,6 +8,8 @@ const { Handshake } = require("./handshake.js");
 const { Whoami } = require("../whoami/whoami.js");
 const { Kademlia } = require("../dht/dht.js");
 const { Psm } = require("../psm/psm.js");
+const { Repman } = require("../repman/repman.js");
+const { Pbft } = require("../consensus/consensus.js");
 const Journal = require("../core/journal.js");
 
 /**
@@ -29,10 +31,12 @@ class Passerby {
     this.bus.on(Io.OUT, this._outbound.bind(this));
     this.sessions = new Map();
     this._generation = 0;
-    this.handshake = new Handshake(this.bus, this.next_generation.bind(this));
-    this.whoami = new Whoami(this.bus, this.next_generation.bind(this));
+    this.handshake = new Handshake(this.bus, this.next_gen.bind(this));
+    this.whoami = new Whoami(this.bus, this.next_gen.bind(this));
     this.dht = null;
     this.psm = null;
+    this.repman = null;
+    this.consensus = null;
   }
 
   /**
@@ -66,8 +70,10 @@ class Passerby {
       [my_addr, my_port] = network_info;
     }
 
-    this.dht = new Kademlia(this.bus, this.next_generation.bind(this), my_addr, my_port, my_public_key);
-    this.psm = new Psm(this.bus, this.next_generation.bind(this), this.dht.read, this.dht.write);
+    this.dht = new Kademlia(this.bus, this.next_gen.bind(this), my_addr, my_port, my_public_key);
+    this.psm = new Psm(this.bus, this.next_gen.bind(this), this.dht.read, this.dht.write);
+    this.repman = new Repman(this.dht.node_lookup.bind(this.dht));
+    this.consensus = new Pbft(this.bus, this.next_gen.bind(this), this.repman, this.psm);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 
@@ -78,11 +84,17 @@ class Passerby {
     await this.transport.stop();
   }
 
+  // READ AND WRITE FUNCS GO HERE - CHECK THE PSM FOR VALID OPCODE
+
+
+
+
+
   /**
    * We increment our message counter each time we send a message, and wrap it according to the 
    * byte width of the generation field specified in the codec
    */
-  next_generation() {
+  next_gen() {
     this._generation = this._generation < Codec.GEN_MAX ? this._generation + 1 : Codec.GEN_MIN;
     return this._generation;
   }

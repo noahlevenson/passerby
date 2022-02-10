@@ -47,7 +47,7 @@ function get_gen_res(gen) {
 
 function encode({body, type, body_type, gen, session_key} = {}) {
   if (!Object.values(MSG_TYPE).includes(type) || !Object.values(BODY_TYPE).includes(body_type)) {
-    throw new TypeError("Argument error");
+    throw new RangeError("Argument error");
   }
 
   const encoded_hdr = _encode_header({type: type, gen: gen, body_type: body_type});
