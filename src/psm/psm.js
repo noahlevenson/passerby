@@ -39,9 +39,9 @@ class Psm extends Io {
     // Bad opcode, silently discard this transaction
     if (!handler) {
       return;
-    }
+    } 
     
-    return handler(instruction.key, ...instruction.operands);
+    return handler.bind(this)(instruction.key, ...instruction.operands);
   }
 
   _read(key) {

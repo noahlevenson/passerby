@@ -19,7 +19,7 @@ class Pbft extends Io {
     const r = await this.repman.fetch_r(instruction.key);
     const primary = this._get_p(0, r); // TODO: note the placeholder view number 0 here
     const msg = message({type: MSG_TYPE.REQUEST, data: request_data({o: instruction})});
-    
+
     this.send({
       body: msg,
       body_type: Codec.BODY_TYPE.JSON,
@@ -36,7 +36,7 @@ class Pbft extends Io {
     // TODO: Actually handle the msg and do PBFT... for now, we just execute operation requests locally
 
     if (body.type === MSG_TYPE.REQUEST) {
-      this.psm.exec(instruction);
+      this.psm.exec(body.data.o);
     }
   }
 }
