@@ -7,6 +7,7 @@ const { Io } = require("./io.js");
 const { Handshake } = require("./handshake.js");
 const { Whoami } = require("../whoami/whoami.js");
 const { Kademlia } = require("../dht/dht.js");
+const { Psm } = require("../psm/psm.js");
 const Journal = require("../core/journal.js");
 
 /**
@@ -31,6 +32,7 @@ class Passerby {
     this.handshake = new Handshake(this.bus, this.next_generation.bind(this));
     this.whoami = new Whoami(this.bus, this.next_generation.bind(this));
     this.dht = null;
+    this.psm = null;
   }
 
   /**
@@ -65,6 +67,7 @@ class Passerby {
     }
 
     this.dht = new Kademlia(this.bus, this.next_generation.bind(this), my_addr, my_port, my_public_key);
+    this.psm = new Psm(this.bus, this.next_generation.bind(this), this.dht.read, this.dht.write);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 

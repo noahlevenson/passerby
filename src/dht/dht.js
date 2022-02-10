@@ -58,7 +58,7 @@ class Kademlia extends Io {
   }
 
   /**
-   * Get XOR "distance" between two Bigboys
+   * Get XOR distance between two Bigboys
    */ 
   static get_distance(key1, key2) {
     return key1.xor(key2);
@@ -147,6 +147,36 @@ class Kademlia extends Io {
   stop() {
     this.stop_intervals();
     Journal.log(Kademlia.TAG, `Offline`);
+  }
+
+  write(key, val) {
+    /**
+     * We currently honor deletions from any peer by passing a null value. This functionality exists
+     * solely to enable PHT merge operations to immediately remove trimmed nodes from the topology.
+     */ 
+    if (val === null) {
+      this.data.delete(key);
+    } else {
+      /**
+       * To determine TTL for this value, we estimate the number of nodes between us and the key.
+       * What tree depth is the k-bucket for our node ID? What tree depth is the k-bucket for the
+       * key? The difference betwen those depths approximates our distance from the key wrt the 
+       * current topology of the routing table.
+       */ 
+      const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
+      const d2 = this.find_kbucket_for_id(key).get_data().get_prefix().length;
+      const ttl = Kademlia.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
+
+      this.data.put({
+        key: key,
+        val: val,
+        ttl: ttl
+      });
+    }
+  }
+
+  read(key) {
+    return this.data.get(key);
   }
 
   /**
@@ -582,6 +612,7 @@ class Kademlia extends Io {
    * data until periods of downtime, we uniquely set a very long TTL here; if the recipient is very
    * busy, it might them a few seconds to get to it and send us a RES. TODO: see the roadmap for 
    * discussion about a future system to compute TTL based on outbound message size.
+   * TODO: As of Research Prototype 2, we should no longer honor regular STORE requests...
    */
   _req_store(key, val, recip_node_info, success, timeout, ttl = 10000) {
     const msg = message({
@@ -623,6 +654,7 @@ class Kademlia extends Io {
     });
   }
 
+  // TODO: As of Research Prototype 2, we should no longer honor regular FIND VALUE requests...
   _req_find_value(key, recip_node_info, success, timeout, ttl) {
     const msg = message({
       rpc: RPC.FIND_VALUE,
@@ -653,35 +685,10 @@ class Kademlia extends Io {
     });
   }
 
+  // TODO: As of Research Prototype 2, we should no longer honor regular STORE requests...
   _res_store(req) {
     const [key, val] = req.data.payload;
-
-    /**
-     * We currently honor deletions from any peer by passing a null value. This functionality exists
-     * solely to enable PHT merge operations to immediately remove trimmed nodes from the topology.
-     */ 
-    if (val === null) {
-      this.data.delete(key);
-      Journal.log(Kademlia.TAG, `Deleted ${key.toString()} from local storage via ${req.from.node_id}`);
-    } else {
-      /**
-       * To determine TTL for this value, we estimate the number of nodes between us and the key.
-       * What tree depth is the k-bucket for our node ID? What tree depth is the k-bucket for the
-       * key? The difference betwen those depths approximates our distance from the key wrt the 
-       * current topology of the routing table.
-       */ 
-      const d1 = this.find_kbucket_for_id(this.node_id).get_data().get_prefix().length;
-      const d2 = this.find_kbucket_for_id(key).get_data().get_prefix().length;
-      const ttl = Kademlia.T_DATA_TTL * Math.pow(2, -(Math.max(d1, d2) - Math.min(d1, d2))); 
-
-      this.data.put({
-        key: key,
-        val: val,
-        ttl: ttl
-      });
-
-      Journal.log(Kademlia.TAG, `Added ${key.toString()} to local storage from ${req.from.node_id}`);
-    }
+    this.write(key, val);
 
     return message({
       rpc: RPC.STORE,
@@ -704,21 +711,14 @@ class Kademlia extends Io {
     });
   }
 
+  // TODO: As of Research Prototype 2, we should no longer honor regular FIND VALUE requests...
   _res_find_value(req) {
     const key = req.data.payload[0];
-    let ds_rec = this.data.get(key);
-  
-    /**
-     * Lazy deletion: the requested data exists but has expired, so delete it from our data store
-     */ 
-    if (ds_rec && ds_rec.get_created() < (Date.now() - ds_rec.get_ttl())) {
-      this.data.delete(key);
-      ds_rec = undefined;
-    }
+    let val = this.read(key)
 
-    const msg_data = ds_rec ? data({type: DATA_TYPE.VAL, payload: [ds_rec.get_data()]}) : 
+    const msg_data = val ? data({type: DATA_TYPE.VAL, payload: [val]}) : 
       data({type: DATA_TYPE.NODE_LIST, payload: this.get_nodes_closest_to({key: key})});
-
+    
     return message({
       rpc: RPC.FIND_VALUE,
       from: node_info(this.node_info),

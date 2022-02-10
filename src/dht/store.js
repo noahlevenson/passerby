@@ -11,11 +11,26 @@ class Store {
       data: val
     });
 
-    this.data.set(key.toString(), rec);
+    this.data.set(key.to_hex_str(), rec);
   }
 
   get(key) {
-    return this.data.get(key.toString());
+    const key_str = key.to_hex_str();
+    const rec = this.data.get(key_str);
+
+    // Case 1: We don't have a record for this value
+    if (!rec) {
+      return;
+    }
+
+    // Case 2: We have a record, but it's expired, so lazy delete it
+    if (rec.get_created() < (Date.now() - rec.get_ttl())) {
+      this.data.delete(key_str);
+      return;
+    }
+
+    // Case 3: We have an unexpired record for this value, so return the value
+    return rec.get_data();
   }
 
   /**
@@ -26,7 +41,7 @@ class Store {
   }
 
   delete(key) {
-    return this.data.delete(key.toString());
+    return this.data.delete(key.to_hex_str());
   }
 }
 
