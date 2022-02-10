@@ -19,7 +19,7 @@ class Psm extends Io {
   /**
    * Operands structure:
    * 
-   * READ:  []
+   * READ:  [] (empty array)
    * WRITE: [val, commit_msg]
    */ 
   GRAMMAR = new Map([
@@ -40,7 +40,7 @@ class Psm extends Io {
     if (!handler) {
       return;
     } 
-    
+
     return handler.bind(this)(instruction.key, ...instruction.operands);
   }
 
@@ -49,7 +49,9 @@ class Psm extends Io {
   }
 
   _write(key, val, commit_msg) {
-    return this.write_f(key, val);
+    // TODO: Invariants, coordination, etc.
+    this.write_f(key, val);
+    return true;
   }
 }
 

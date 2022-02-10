@@ -8,10 +8,11 @@ const MSG_TYPE = {
   REPLY: 4
 }
 
-function message({type, data} = {}) {
+function message({type, data, sig} = {}) {
   return {
     type: type,
-    data: data
+    data: data,
+    sig: sig
   };
 }
 
@@ -20,7 +21,17 @@ function request_data({o, t = Date.now(), c} = {}) {
     o: o,
     t: t,
     c: c
-  }
+  };
 }
 
-module.exports = { MSG_TYPE, message, request_data };
+function reply_data({v, t, c, i, r} = {}) {
+  return {
+    v: v,
+    t: t,
+    c: c,
+    i: i,
+    r: r
+  };
+}
+
+module.exports = { MSG_TYPE, message, request_data, reply_data };

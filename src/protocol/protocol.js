@@ -73,7 +73,7 @@ class Passerby {
     this.dht = new Kademlia(this.bus, this.next_gen.bind(this), my_addr, my_port, my_public_key);
     this.psm = new Psm(this.bus, this.next_gen.bind(this), this.dht.read.bind(this.dht), this.dht.write.bind(this.dht));
     this.repman = new Repman(this.dht.node_lookup.bind(this.dht));
-    this.consensus = new Pbft(this.bus, this.next_gen.bind(this), this.repman, this.psm);
+    this.consensus = new Pbft(this.bus, this.next_gen.bind(this), this.repman, this.psm, 0);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 
@@ -83,12 +83,6 @@ class Passerby {
   async stop() {
     await this.transport.stop();
   }
-
-  // READ AND WRITE FUNCS GO HERE
-
-
-
-
 
   /**
    * We increment our message counter each time we send a message, and wrap it according to the 
