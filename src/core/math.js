@@ -22,9 +22,9 @@ function rescale_float(x, xmax, b) {
 }
 
 /**
- * Map abscissa x and ordinate y to one dimension using a Morton order curve. b is the bit width of
- * the output, which also implies the domain over which to interpret x and y. E.g., if b = 80, then 
- * x and y will be interpreted as 40-bit values, and the returned value will be an 80-bit Bigboy.
+ * Map abscissa x and ordinate y (as Bigboys) to one dimension using a Morton order curve. b is the 
+ * bit domain of the output, which also implies the domain over which to interpret x and y. E.g., if
+ * b = 80, then x and y will be interpreted as 40-bit values, and the returned value will be an 80-bit Bigboy.
  */
 function morton_remap_2d(x, y, b) {
   if (x < 0 || y < 0 || b / 2 < Math.ceil(Math.log2(x + 1)) || b / 2 < Math.ceil(Math.log2(y + 1))) {
@@ -32,9 +32,8 @@ function morton_remap_2d(x, y, b) {
   }
 
   const byte_width = Math.ceil(b / 8);
-  let xx = new Bigboy({len: byte_width, val: x});
-  let yy = new Bigboy({len: byte_width, val: y});
-
+  let xx = Bigboy.from_hex_str({len: byte_width, str: x.to_hex_str()});
+  let yy = Bigboy.from_hex_str({len: byte_width, str: y.to_hex_str()});
   let l = new Bigboy({len: byte_width});
   let mask = new Bigboy({len: byte_width, val: 0x01});
 

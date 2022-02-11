@@ -11,6 +11,7 @@ const { Kademlia } = require("../dht/dht.js");
 const { Psm } = require("../psm/psm.js");
 const { Repman } = require("../repman/repman.js");
 const { Pbft } = require("../consensus/consensus.js");
+const { Pht } = require("../pht/pht.js");
 const Journal = require("../core/journal.js");
 
 /**
@@ -39,6 +40,7 @@ class Passerby {
     this.repman = null;
     this.consensus = null;
     this.db = null;
+    this.pht = null;
   }
 
   /**
@@ -77,6 +79,7 @@ class Passerby {
     this.repman = new Repman(this.dht.node_lookup.bind(this.dht));
     this.consensus = new Pbft(this.bus, this.next_gen.bind(this), this.repman, this.psm, 0);
     this.db = new Db(this.consensus);
+    this.pht = new Pht(this.db, Passerby.TAG);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 
