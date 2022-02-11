@@ -39,55 +39,48 @@ const M = require("../../src/core/math.js");
  */ 
 (() => {
   assert.throws(() => {
-    M.morton_remap_2d(-1, 55, 64);
+    M.morton_remap_2d(255, 255);
   });
 
   assert.throws(() => {
-    M.morton_remap_2d(55, -1, 64);
+    M.morton_remap_2d(255);
+  })
+
+  assert.throws(() => {
+    M.morton_remap_2d(new Bigboy({len: 2, val: 31337}), 31337);
   });
 
   assert.throws(() => {
-    M.morton_remap_2d(256, 255, 16);
-  });
-
-  assert.throws(() => {
-    M.morton_remap_2d(255, 256, 16);
-  });
-
-  assert.throws(() => {
-    M.morton_remap_2d(65536, 65535, 32);
-  });
-
-  assert.throws(() => {
-    M.morton_remap_2d(65536, 65535, 32);
+    M.morton_remap_2d(new Bigboy({len: 2, val: 31337}), new Bigboy({len: 1, val: 31337}));
   });
 
   assert.doesNotThrow(() => {
-    M.morton_remap_2d(0, 0, 8);
+    M.morton_remap_2d(new Bigboy({len: 1, val: 7}), new Bigboy({len: 1, val: 7}));
   });
 
-  assert.doesNotThrow(() => {
-    M.morton_remap_2d(64, 64, 15);
-  });
-
-  assert.doesNotThrow(() => {
-    M.morton_remap_2d(64, 64, 14);
-  });
-
-  assert.deepStrictEqual(M.morton_remap_2d(0x0F, 0x0F, 8)._data, new Uint8Array([0xFF]));
-  assert.deepStrictEqual(M.morton_remap_2d(0xFF, 0x00, 16)._data, new Uint8Array([0x55, 0x55]));
+  assert.deepStrictEqual(
+    M.morton_remap_2d(new Bigboy({len: 1, val: 0x0F}), new Bigboy({len: 1, val: 0x0F}))._data, 
+    new Uint8Array([0xFF, 0x00])
+  );
+  
+  assert.deepStrictEqual(
+    M.morton_remap_2d(new Bigboy({len: 1, val: 0xFF}), new Bigboy({len: 1, val: 0x00}))._data, 
+    new Uint8Array([0x55, 0x55])
+  );
  
-  assert.deepStrictEqual(M.morton_remap_2d(0xFFFF, 0x0000, 32)._data, new Uint8Array([
-    0x55, 0x55, 0x55, 0x55
-  ]));
+  assert.deepStrictEqual(
+    M.morton_remap_2d(new Bigboy({len: 2, val: 0xFFFF}), new Bigboy({len: 2, val: 0x0000}))._data, 
+    new Uint8Array([0x55, 0x55, 0x55, 0x55])
+  );
 
-  assert.deepStrictEqual(M.morton_remap_2d(0xFF, 0x00, 64)._data, new Uint8Array([
-    0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-  ]));
+  assert.deepStrictEqual(
+    M.morton_remap_2d(new Bigboy({len: 4, val: 0xFF}), new Bigboy({len: 4, val: 0x00}))._data, 
+    new Uint8Array([0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+  );
 
-  assert.deepStrictEqual(M.morton_remap_2d(0x5555, 0x5555, 64)._data, new Uint8Array([
-    0x33, 0x33, 0x33, 0x33, 0x00, 0x00, 0x0, 0x00
-  ]));
+  assert.deepStrictEqual(
+    M.morton_remap_2d(new Bigboy({len: 4, val: 0x5555}), new Bigboy({len: 4, val: 0x5555}))._data, 
+    new Uint8Array([0x33, 0x33, 0x33, 0x33, 0x00, 0x00, 0x0, 0x00]));
 })();
 
 /**

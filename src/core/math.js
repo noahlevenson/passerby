@@ -22,28 +22,28 @@ function rescale_float(x, xmax, b) {
 }
 
 /**
- * Map abscissa x and ordinate y (as Bigboys) to one dimension using a Morton order curve. b is the 
- * bit domain of the output, which also implies the domain over which to interpret x and y. E.g., if
- * b = 80, then x and y will be interpreted as 40-bit values, and the returned value will be an 80-bit Bigboy.
+ * Map abscissa x and ordinate y (as Bigboys) to one dimension using a Morton order curve. x and y
+ * must be the same length in bits, and the returned value will be double that length.
  */
-function morton_remap_2d(x, y, b) {
-  if (x < 0 || y < 0 || b / 2 < Math.ceil(Math.log2(x + 1)) || b / 2 < Math.ceil(Math.log2(y + 1))) {
+function morton_remap_2d(x, y) {
+  if (x.length() !== y.length()) {
     throw new RangeError("Argument error");
   }
 
-  const byte_width = Math.ceil(b / 8);
-  let xx = Bigboy.from_hex_str({len: byte_width, str: x.to_hex_str()});
-  let yy = Bigboy.from_hex_str({len: byte_width, str: y.to_hex_str()});
-  let l = new Bigboy({len: byte_width});
-  let mask = new Bigboy({len: byte_width, val: 0x01});
+  const output_len = x.length() * 2;
+  const n_bits = output_len * 8;
+  let x_extended = Bigboy.from_hex_str({len: output_len, str: x.to_hex_str()});
+  let y_extended = Bigboy.from_hex_str({len: output_len, str: y.to_hex_str()});
+  let z_value = new Bigboy({len: output_len});
+  let mask = new Bigboy({len: output_len, val: 0x01});
 
-  for (let i = 0; i < b; i += 1) {
-    l = l.or((xx.and(mask)).shift_left(i));
-    l = l.or((yy.and(mask)).shift_left(i + 1));
+  for (let i = 0; i < n_bits; i += 1) {
+    z_value = z_value.or((x_extended.and(mask)).shift_left(i));
+    z_value = z_value.or((y_extended.and(mask)).shift_left(i + 1));
     mask = mask.shift_left(0x01);
   }
 
-  return l;
+  return z_value;
 }
 
 /**

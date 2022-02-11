@@ -22,7 +22,7 @@ class Coord {
 
   /**
    * Map this 2D coordinate pair to one dimension using a space-filling curve. 'b' is the bit 
-   * domain per dimension; i.e., for b = 40, the 1D representation will scale topo the domain of 80 bits
+   * domain per dimension; i.e., for b = 40, the 1D representation will scale too the domain of 80 bits
    */
   linearize(b = 40) {
     const lat = rescale_float(this.lat + Math.abs(LIMITS.LAT_MIN), 
@@ -32,13 +32,12 @@ class Coord {
       LIMITS.LON_MAX + Math.abs(LIMITS.LON_MIN), b);
 
     /**
-     * We awkwardly coerce rescaled integers to Bigboys using the hex string constructor because 
-     * Bigboy's default constructor is only guaranteed for 32-bit numbers
+     * TODO: We awkwardly coerce rescaled integers to Bigboys using the hex string constructor 
+     * because Bigboy's default constructor is only guaranteed for 32-bit numbers
      */ 
     return morton_remap_2d(
       Bigboy.from_hex_str({len: b / 8, str: lat.toString(16)}), 
-      Bigboy.from_hex_str({len: b / 8, str: lon.toString(16)}), 
-      b * 2
+      Bigboy.from_hex_str({len: b / 8, str: lon.toString(16)})
     );
   }
 
