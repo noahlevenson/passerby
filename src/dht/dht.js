@@ -279,7 +279,7 @@ class Kademlia extends Io {
       const is_node_closer = compare_info(cnodes[0], node_info);
 
       if (is_node_k_closest && (is_self_closer || is_node_closer)) {
-        Journal.log(Kademlia.TAG, `Replicating ${key.to_base64_str()} to new node ` +
+        Journal.log(Kademlia.TAG, `Replicating ${key.to_hex_str()} to new node ` +
         `${node_info.node_id.to_base64_str()}`);
 
         const val = this.data.get(key);

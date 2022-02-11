@@ -15,10 +15,10 @@ class Pbft extends Io {
   }
 
   /**
-   * Request execution of a state machine operation for a given key. For details about the format of
-   * Psm instruction objects, supported opcodes, and operand structure, refer to the PSM docs.
+   * Request execution of a state machine operation. For details about the format of Psm instruction 
+   * objects, supported opcodes, and operand structure, refer to the PSM docs.
    */ 
-  async exec(instruction) {
+  async request(instruction) {
     const r = await this.repman.fetch_r(instruction.key);
     const primary = this._get_p(0, r); // TODO: note the placeholder view number 0 here
     const msg = message({type: MSG_TYPE.REQUEST, data: request_data({o: instruction})});

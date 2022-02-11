@@ -85,11 +85,11 @@ class Passerby {
   }
 
   async read(key) {
-    return this.consensus.exec(instruction({key: key, opcode: Psm.OPCODE.READ}));
+    return this.consensus.request(instruction({key: key, opcode: Psm.OPCODE.READ}));
   }
 
   async write(key, val) {
-    return this.consensus.exec(instruction({key: key, opcode: Psm.OPCODE.WRITE, operands: [val]}));
+    return this.consensus.request(instruction({key: key, opcode: Psm.OPCODE.WRITE, operands: [val]}));
   }
 
   /**
