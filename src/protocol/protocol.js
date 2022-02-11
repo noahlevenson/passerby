@@ -2,12 +2,13 @@
 
 const EventEmitter = require("events");
 const Codec = require("./codec.js");
-const { Rinfo } = require("../transport/transport.js");
 const { Io } = require("./io.js");
+const { Db } = require("./db.js");
+const { Rinfo } = require("../transport/transport.js");
 const { Handshake } = require("./handshake.js");
 const { Whoami } = require("../whoami/whoami.js");
 const { Kademlia } = require("../dht/dht.js");
-const { Psm, instruction } = require("../psm/psm.js");
+const { Psm } = require("../psm/psm.js");
 const { Repman } = require("../repman/repman.js");
 const { Pbft } = require("../consensus/consensus.js");
 const Journal = require("../core/journal.js");
@@ -37,6 +38,7 @@ class Passerby {
     this.psm = null;
     this.repman = null;
     this.consensus = null;
+    this.db = null;
   }
 
   /**
@@ -74,6 +76,7 @@ class Passerby {
     this.psm = new Psm(this.bus, this.next_gen.bind(this), this.dht.read.bind(this.dht), this.dht.write.bind(this.dht));
     this.repman = new Repman(this.dht.node_lookup.bind(this.dht));
     this.consensus = new Pbft(this.bus, this.next_gen.bind(this), this.repman, this.psm, 0);
+    this.db = new Db(this.consensus);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
   }
 
@@ -85,11 +88,11 @@ class Passerby {
   }
 
   async read(key) {
-    return this.consensus.request(instruction({key: key, opcode: Psm.OPCODE.READ}));
+    return this.db.read(key);
   }
 
   async write(key, val) {
-    return this.consensus.request(instruction({key: key, opcode: Psm.OPCODE.WRITE, operands: [val]}));
+    return this.db.write(key, val);
   }
 
   /**
