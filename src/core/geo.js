@@ -22,7 +22,7 @@ class Coord {
 
   /**
    * Map this 2D coordinate pair to one dimension using a space-filling curve. 'b' is the bit 
-   * domain per dimension; i.e., for b = 40, the 1D representation will scale too the domain of 80 bits
+   * domain per dimension; i.e., for b = 40, the 1D representation will scale to the domain of 80 bits
    */
   linearize(b = 40) {
     const lat = rescale_float(this.lat + Math.abs(LIMITS.LAT_MIN), 
