@@ -12,6 +12,8 @@ const { Psm } = require("../psm/psm.js");
 const { Repman } = require("../repman/repman.js");
 const { Pbft } = require("../consensus/consensus.js");
 const { Pht } = require("../pht/pht.js");
+const { key } = require("../pht/key.js");
+const { Coord } = require("../core/geo.js");
 const Journal = require("../core/journal.js");
 
 /**
@@ -81,6 +83,7 @@ class Passerby {
     this.db = new Db(this.consensus);
     this.pht = new Pht(this.db, Passerby.TAG);
     await this.dht.bootstrap({addr: boot_addr, port: boot_port, public_key: boot_public_key});
+    await this.pht.init(true);
   }
 
   /**
@@ -96,6 +99,14 @@ class Passerby {
 
   async write(key, val) {
     return this.db.write(key, val);
+  }
+
+  /**
+   * TODO: Actually assert a status object
+   */ 
+  async assert(lat, lon, status) {
+    const location_key = key({integral: new Coord({lat: lat, lon: lon}).linearize()});
+    return await this.pht.insert(location_key, status);
   }
 
   /**
