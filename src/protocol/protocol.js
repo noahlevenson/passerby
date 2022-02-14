@@ -104,9 +104,19 @@ class Passerby {
   /**
    * TODO: Actually assert a status object
    */ 
-  async assert(lat, lon, status) {
-    const location_key = key({integral: new Coord({lat: lat, lon: lon}).linearize()});
+  async assert(lat, lon, pubstring, status) {
+    const location_key = key({integral: new Coord({lat: lat, lon: lon}).linearize(), meta: pubstring});
     return await this.pht.insert(location_key, status);
+  }
+
+  async geosearch(lat, lon, dist, status_cb = () => {}) {
+    const bounds = new Coord({lat: lat, lon: lon}).get_exts(dist);
+    
+    return await this.pht.range_query_2d(
+      bounds.get_min().linearize(), 
+      bounds.get_max().linearize(), 
+      status_cb
+    );
   }
 
   /**
