@@ -18,6 +18,7 @@ class Pbft extends Io {
     this.reply = new EventEmitter();
     this.view = new Map();
     this.log = [];
+    this.last_reply = new Map();
   }
 
   /**
@@ -48,17 +49,19 @@ class Pbft extends Io {
        * REPLY to us by referencing that timestamp, so let's start listening for replies now
        */ 
       this.reply.on(msg.data.t, (response) => {
+        const category = `${JSON.stringify(response)}`; 
+
         /**
          * TODO: Is this reply from a valid replica? is the sig valid? See 4.1
          */ 
-        let n_received = replica_replies.has(response) ? replica_replies.get(response) + 1 : 1;
+        let n_received = replica_replies.has(category) ? replica_replies.get(category) + 1 : 1;
 
         if (n_received > f) {
           this.reply.removeAllListeners(msg.data.t);
           resolve(response);
         }
 
-        replica_replies.set(response, n_received);
+        replica_replies.set(category, n_received);
       });
 
       this.send({
@@ -240,6 +243,13 @@ class Pbft extends Io {
     const pre_prepare = this.log.filter(msg => 
       msg.type === MSG_TYPE.PRE_PREPARE && msg.data.d.localeCompare(body.data.d) === 0)[0];
 
+    // TODO: We saw an error in emulation testing where there was no pre prepare message for a commit...
+    // not sure why that would happen except for an adversarial situation, but since we must be pre-prepared to be committed, 
+    // we just quit?
+    if (!pre_prepare) {
+      return;
+    }
+
     const f = this.repman.compute_f(pre_prepare.r);
 
     if (committed.length >= f + 1) {
@@ -261,12 +271,19 @@ class Pbft extends Io {
         const msg = this.log.filter(msg => this._digest(msg).localeCompare(body.data.d) === 0)[0];
         const res = await this.psm.exec(msg.data.o);
 
+        const reply = message({
+          type: MSG_TYPE.REPLY, 
+          data: reply_data({v: this._get_v(msg.data.o.key), t: msg.data.t, r: res})
+        });
+
         this.send({
-          body: message({type: MSG_TYPE.REPLY, data: reply_data({v: this._get_v(msg.data.o.key), t: msg.data.t, r: res})}),
+          body: reply,
           body_type: Codec.BODY_TYPE.JSON,
           rinfo: new Rinfo({address: msg.data.c.address, port: msg.data.c.port}),
           gen: Codec.get_gen_res(gen)
         });
+
+        this.last_reply.set(msg.data.c.id.to_hex_str(), reply);
       }
     }
   }
