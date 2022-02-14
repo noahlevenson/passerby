@@ -109,6 +109,14 @@ class Passerby {
     return await this.pht.insert(location_key, status);
   }
 
+  /**
+   * TODO: We may not actually support deletions
+   */ 
+  async retract(lat, lon, pubstring) {
+    const location_key = key({integral: new Coord({lat: lat, lon: lon}).linearize(), meta: pubstring});
+    return await this.pht.delete(location_key);
+  }
+
   async geosearch(lat, lon, dist, status_cb = () => {}) {
     const bounds = new Coord({lat: lat, lon: lon}).get_exts(dist);
     
