@@ -6,11 +6,10 @@ const { Io } = require("../protocol/io.js");
 const { MSG_TYPE, message, request_data, reply_data } = require("./message.js");
  
 class Pbft extends Io {
-  constructor(bus, generator, repman, psm, f_sz) {
+  constructor(bus, generator, repman, psm) {
     super({bus: bus, generator: generator, type: Codec.MSG_TYPE.CONSENSUS});
     this.repman = repman;
     this.psm = psm;
-    this.f_sz = f_sz;
     this.reply = new EventEmitter();
   }
 
@@ -20,6 +19,7 @@ class Pbft extends Io {
    */ 
   async request(instruction) {
     const r = await this.repman.fetch_r(instruction.key);
+    const f = Math.floor((r.length - 1) / 3);  // Dynamic f adapts to the size of the network
     const primary = this._get_p(0, r); // TODO: note the placeholder view number 0 here
     const msg = message({type: MSG_TYPE.REQUEST, data: request_data({o: instruction})});
 
@@ -41,7 +41,7 @@ class Pbft extends Io {
          */ 
         let n_received = replica_replies.has(response) ? replica_replies.get(response) + 1 : 1;
 
-        if (n_received > this.f_sz) {
+        if (n_received > f) {
           this.reply.removeAllListeners(msg.data.t);
           resolve(response);
         }
