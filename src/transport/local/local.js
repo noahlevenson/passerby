@@ -8,15 +8,19 @@ const { Transport, Rinfo } = require("../transport.js");
  * number. The first peer to be spawned in the emulated network should not be passed a peer_map; 
  * each subsequently spawned peer should be passed a reference to the first peer's peer_map. You 
  * should pass my_addr and my_port to Passerby.start() as described in the protocol documentation.
+ * announcer is an optional EventEmitter; if one is supplied, this peer will announce its outbound
+ * messages on it. By creating an emulated network of peers who all share the same announcer, you
+ * can get a global view of the systemwide network traffic.
  */ 
 
 class Local extends Transport {
-  constructor({my_addr, my_port = 31337, peer_map = new Map()} = {}) {
+  constructor({my_addr, my_port = 31337, peer_map = new Map(), announcer = null} = {}) {
     super();
     this.my_addr = my_addr;
     this.my_port = my_port;
     this.peer_map = peer_map;
     this.peer_map.set(this.my_addr, this);
+    this.announcer = announcer;
   }
 
   /**
@@ -31,6 +35,11 @@ class Local extends Transport {
     }
 
     const my_rinfo = new Rinfo({address: this.my_addr, port: this.my_port, family: "local"});
+
+    if (this.announcer !== null) {
+      this.announcer.emit("message", this.my_addr, rinfo.address, msg);
+    }
+
     recip_transport.recv.emit("message", msg, my_rinfo);
   }
 
