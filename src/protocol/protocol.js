@@ -105,16 +105,20 @@ class Passerby {
    * TODO: Actually assert a status object
    */ 
   async assert(lat, lon, pubstring, status) {
-    const location_key = key({integral: new Coord({lat: lat, lon: lon}).linearize(), meta: pubstring});
-    return await this.pht.insert(location_key, status);
+    const location = new Coord({lat: lat, lon: lon});
+    const location_key = key({integral: location.linearize(), meta: pubstring});
+    await this.pht.insert(location_key, status);
+    return location;
   }
 
   /**
    * TODO: We may not actually support deletions
    */ 
   async retract(lat, lon, pubstring) {
-    const location_key = key({integral: new Coord({lat: lat, lon: lon}).linearize(), meta: pubstring});
-    return await this.pht.delete(location_key);
+    const location = new Coord({lat: lat, lon: lon});
+    const location_key = key({integral: location.linearize(), meta: pubstring});
+    await this.pht.delete(location_key);
+    return location;
   }
 
   async geosearch(lat, lon, dist, status_cb = () => {}) {
