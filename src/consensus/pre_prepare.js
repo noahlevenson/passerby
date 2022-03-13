@@ -1,6 +1,7 @@
 "use strict";
 
 const { MSG_TYPE, message, prepare_data} = require("./message.js");
+const { Entry } = require("./log.js");
 
 async function _pre_prepare(gen, body, rinfo) {
   const instruction = body.data.m.data.o;
@@ -22,8 +23,18 @@ async function _pre_prepare(gen, body, rinfo) {
   const req_msg = body.data.m;
   body.data.m = null;
   body.r = r;
-  this.log.push(body);
-  this.log.push(req_msg)
+
+  if (!this.log.has(body.data.d)) {
+    this.log.set(body.data.d, new Entry());
+  }
+
+  const entry = this.log.get(body.data.d);
+  entry.pre_prepare.push(body);
+  entry.request = req_msg;
+
+  // TODO: Temporary hack while we figure out how to correctly parameterize sequence numbers by 
+  // DHT key - just advance our clock to the max of our current sequence # and this inbound sequence #
+  this._n = Math.max(this._n, body.data.n); 
 
   // I agree that I'm in the replica set and we've stored what we need to, so I will multicast
   // a prepare message and start the view change timer. TODO: start the timer

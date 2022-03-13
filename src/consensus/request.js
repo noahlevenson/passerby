@@ -27,7 +27,7 @@ async function _request(gen, body, rinfo) {
     type: MSG_TYPE.PRE_PREPARE,
     data: pre_prepare_data({
       v: this._get_v(instruction.key), 
-      n: 0, // TODO: PLACEHOLDER SEQUENCE NUMBER
+      n: this._next_sequence(),
       d: this._digest(body),
       m: body
     })

@@ -9,6 +9,7 @@ const { _request } = require("./request.js");
 const { _commit } = require("./commit.js");
 const { _pre_prepare } = require("./pre_prepare.js");
 const { _prepare } = require("./prepare.js");
+
 const { MSG_TYPE, message, request_data } = require("./message.js");
 
 class Pbft extends Io {
@@ -20,8 +21,11 @@ class Pbft extends Io {
     this.psm = psm;
     this.reply = new EventEmitter();
     this.view = new Map();
-    this.log = [];
+    this.log = new Map();
     this.last_reply = new Map();
+    this.h = 0;
+    this.H = 1000;
+    this._n = this.h;
   }
 
   /**
@@ -74,6 +78,11 @@ class Pbft extends Io {
         gen: this.generator()
       });
     });
+  }
+
+  _next_sequence() {
+    this._n = this._n < this.H ? this._n + 1 : this.h;
+    return this._n;
   }
 
   _get_p(v, r) {

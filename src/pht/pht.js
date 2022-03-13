@@ -17,7 +17,7 @@ const Journal = require("../core/journal.js");
 
 class Pht {
   static TAG = "TRIE";
-  static B = 2;
+  static B = 4;
   static HASH_LEN = 32;
 
   constructor(db, index = "DEFAULT_ATTRIBUTE") {
