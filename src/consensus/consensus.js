@@ -9,7 +9,7 @@ const { _request } = require("./request.js");
 const { _commit } = require("./commit.js");
 const { _pre_prepare } = require("./pre_prepare.js");
 const { _prepare } = require("./prepare.js");
-
+const { Log } = require("./log.js");
 const { MSG_TYPE, message, request_data } = require("./message.js");
 
 class Pbft extends Io {
@@ -21,7 +21,7 @@ class Pbft extends Io {
     this.psm = psm;
     this.reply = new EventEmitter();
     this.view = new Map();
-    this.log = new Map();
+    this.log = new Log();
     this.last_reply = new Map();
     this.h = 0;
     this.H = 1000;

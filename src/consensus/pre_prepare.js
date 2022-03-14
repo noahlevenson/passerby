@@ -1,7 +1,6 @@
 "use strict";
 
 const { MSG_TYPE, message, prepare_data} = require("./message.js");
-const { Entry } = require("./log.js");
 
 async function _pre_prepare(gen, body, rinfo) {
   const instruction = body.data.m.data.o;
@@ -23,14 +22,8 @@ async function _pre_prepare(gen, body, rinfo) {
   const req_msg = body.data.m;
   body.data.m = null;
   body.r = r;
-
-  if (!this.log.has(body.data.d)) {
-    this.log.set(body.data.d, new Entry());
-  }
-
-  const entry = this.log.get(body.data.d);
-  entry.pre_prepare.push(body);
-  entry.request = req_msg;
+  this.log.append(body.data.d, body);
+  this.log.append(body.data.d, req_msg);
 
   // TODO: Temporary hack while we figure out how to correctly parameterize sequence numbers by 
   // DHT key - just advance our clock to the max of our current sequence # and this inbound sequence #
