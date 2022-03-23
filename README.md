@@ -10,12 +10,11 @@
 * [Technology overview](#floppy_disk-technology-overview)
 
 ### :earth_americas: What is Passerby?
-[Passerby](https://passerby.at) is a peer-to-peer protocol for geographic resource discovery. It helps you find out who and what is near any point on Earth &mdash; no coordinating central authority required.
+[Passerby](https://passerby.at) is a peer-to-peer protocol for geographic resource discovery. Using Passerby, you can find nearby people or resources &mdash; or help people find *you* &mdash; without requiring a coordinating central authority.
 
 It's byzantine fault tolerant, it supports a full node on mobile devices, and it works well offline.
 
-You can use it to build decentralized hyperlocal applications &mdash; like food delivery, ride hailing, or online dating. More broadly, though, 
-our goal is to create the location layer for the decentralized web &mdash; that is, a persistent, decentralized, and scalable mechanism for coordinating with peers who are near you IRL.
+You can use it to build decentralized hyperlocal applications &mdash; like food delivery, ride hailing, or online dating. More broadly, though, our goal is to create the location layer for the decentralized web &mdash; that is, a persistent, decentralized, and scalable mechanism for coordinating with peers based on geographic proximity.
 
 ### :handbag: Portability as a design requirement
 This implementation is written in portable JavaScript with zero dependencies. We've used it to build projects for Node.js, the web, and React Native.
