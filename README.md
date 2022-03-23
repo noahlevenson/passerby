@@ -2,6 +2,8 @@
 
 [![Build Status](https://app.travis-ci.com/noahlevenson/passerby.svg?branch=master)](https://app.travis-ci.com/noahlevenson/passerby)
 
+![Passerby Park gif](https://github.com/noahlevenson/passerby/blob/master/passerby.gif)
+
 # :compass: Table of contents
 * [What is Passerby?](#earth_americas-what-is-passerby)
 * [Portability as a design requirement](#handbag-portability-as-a-design-requirement)
