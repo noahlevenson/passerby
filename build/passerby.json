@@ -1,0 +1,3 @@
+{
+  "libsodium_path": "./libsodium.js/dist/modules/libsodium-wrappers.js" 
+}
