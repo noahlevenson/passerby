@@ -10,7 +10,7 @@
 * [Technology overview](#floppy_disk-technology-overview)
 
 ### :earth_americas: What is Passerby?
-[Passerby](https://passerby.at) is a peer-to-peer protocol for geographic resource discovery. Using Passerby, you can find nearby people or resources &mdash; or help people find *you* &mdash; without requiring a coordinating central authority.
+[Passerby](https://passerby.at) is a peer-to-peer protocol for location-aware resource discovery. Using Passerby, you can find nearby people or resources &mdash; or help people find *you* &mdash; without requiring a coordinating central authority.
 
 It's byzantine fault tolerant, it supports a full node on mobile devices, and it works well offline.
 
