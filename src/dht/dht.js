@@ -27,7 +27,7 @@ class Kademlia extends Io {
   static ID_LEN = Kademlia.DHT_BIT_WIDTH / 8;
   static K_SIZE = 20;
   static ALPHA = 3;
-  static T_KBUCKET_REFRESH = 1000 * 5;
+  static T_KBUCKET_REFRESH = 1000 * 10;
   static T_DATA_TTL = 1000 * 60 * 60 * 25;
   static T_REPUBLISH = 1000 * 60 * 60 * 24;
   static T_REPLICATE = 1000 * 60 * 60;
