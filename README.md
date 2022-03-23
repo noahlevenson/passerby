@@ -1,6 +1,6 @@
 # passerby
 
-[![Build Status](https://app.travis-ci.com/noahlevenson/libfood.svg?branch=master)](https://app.travis-ci.com/noahlevenson/libfood)
+[![Build Status](https://app.travis-ci.com/noahlevenson/passerby.svg?branch=master)](https://app.travis-ci.com/noahlevenson/passerby)
 
 # :compass: Table of contents
 * [What is Passerby?](#earth_americas-what-is-passerby)
