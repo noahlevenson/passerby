@@ -1,4 +1,4 @@
 language: node_js
 node_js: lts/*
-install: ./install_libsodium.sh
-script: ./test.sh
+install: ./build/install.sh
+script: ./build/test.sh
