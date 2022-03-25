@@ -20,17 +20,17 @@ You might use it to build decentralized hyperlocal applications &mdash; like foo
 
 
 ### :pencil2: Design goals
-* **Low latency, high frequency updates**
+#### **Low latency, high frequency updates**
 
 Passerby should support decentralized applications in which peer locations change rapidly, like ride hailing.
 
 
-* **Mutual offline discovery**
+#### **Mutual offline discovery**
 
 If Bob discovers Alice while Alice is experiencing a temporary loss of connectivity, Alice must hear about it when she reconnects &mdash; even if at that point, Bob is far away.
 
 
-* **Radical portability and zero dependencies** 
+#### **Radical portability and zero dependencies** 
 
 This reference implementation is designed to work in a variety of disparate JavaScript runtimes, including Node.js and Hermes (React Native). Passerby relies only on [libsodium](https://doc.libsodium.org/) for cryptographic primitives.
 
