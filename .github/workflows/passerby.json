@@ -1,3 +1,3 @@
 {
-  "libsodium_path": "$GITHUB_WORKSPACE/libsodium.js/dist/modules/libsodium-wrappers.js" 
+  "libsodium_path": "/home/runner/work/passerby/libsodium.js/dist/modules/libsodium-wrappers.js" 
 }
