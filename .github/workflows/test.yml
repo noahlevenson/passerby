@@ -10,8 +10,11 @@ jobs:
       - name: Checkout Passerby
         uses: actions/checkout@v3
       - name: Install libsodium.js
-        run: git clone https://github.com/jedisct1/libsodium.js && export NODE_PATH=$GITHUB_WORKSPACE/libsodium.js/dist/modules/
+        run: git clone https://github.com/jedisct1/libsodium.js
+      - name: Set up NODE_PATH
+        run: export NODE_PATH=$GITHUB_WORKSPACE/libsodium.js/dist/modules/
       - name: Copy passerby.json
         run: cp $GITHUB_WORKSPACE/.github/workflows/passerby.json $GITHUB_WORKSPACE
       - name: Run tests
         run: $GITHUB_WORKSPACE/.github/workflows/test.sh
+
