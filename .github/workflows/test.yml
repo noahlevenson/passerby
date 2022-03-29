@@ -2,9 +2,6 @@ name: Unit tests
 
 on: [push, pull_request]
 
-env:
-  NODE_PATH: $GITHUB_WORKSPACE/libsodium.js/dist/modules/
-
 jobs:
   tests:
     name: All tests
@@ -13,7 +10,7 @@ jobs:
       - name: Checkout Passerby
         uses: actions/checkout@v3
       - name: Install libsodium.js
-        run: git clone https://github.com/jedisct1/libsodium.js
+        run: git clone https://github.com/jedisct1/libsodium.js && export NODE_PATH=$GITHUB_WORKSPACE/libsodium.js/dist/modules/
       - name: Copy passerby.json
         run: cp $GITHUB_WORKSPACE/.github/workflows/passerby.json $GITHUB_WORKSPACE
       - name: Run tests
