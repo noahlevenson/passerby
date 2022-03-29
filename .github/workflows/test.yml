@@ -12,6 +12,6 @@ jobs:
       - name: Install libsodium.js
         run: git clone https://github.com/jedisct1/libsodium.js
       - name: Copy passerby.json
-        run: cp $GITHUB_WORKSPACE/passerby/.github/workflows/passerby.json $GITHUB_WORKSPACE/passerby/
+        run: cp $GITHUB_WORKSPACE/.github/workflows/passerby.json $GITHUB_WORKSPACE
       - name: Run tests
         run: ./test.sh
