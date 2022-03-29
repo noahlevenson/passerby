@@ -6,6 +6,8 @@ jobs:
   tests:
     name: All tests
     runs-on: ubuntu-latest
+    env:
+      NODE_PATH=${{ github.workspace }}/libsodium.js/dist/modules/
     steps:
       - name: Checkout Passerby
         uses: actions/checkout@v3
@@ -15,6 +17,3 @@ jobs:
         run: cp $GITHUB_WORKSPACE/.github/workflows/passerby.json $GITHUB_WORKSPACE
       - name: Run tests
         run: $GITHUB_WORKSPACE/.github/workflows/test.sh
-        env:
-          NODE_PATH=${{ github.workspace }}/libsodium.js/dist/modules/
-
