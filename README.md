@@ -1,6 +1,6 @@
 # passerby
 
-[![Build Status](https://app.travis-ci.com/noahlevenson/passerby.svg?branch=master)](https://app.travis-ci.com/noahlevenson/passerby)
+![Unit tests](https://github.com/noahlevenson/passerby/actions/workflows/test.yml/badge.svg)
 
 ![Passerby Park gif](https://github.com/noahlevenson/passerby/blob/master/passerby.gif)
 

@@ -1,4 +1,0 @@
-language: node_js
-node_js: lts/*
-install: ./build/install.sh
-script: ./build/test.sh
