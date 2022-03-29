@@ -2,6 +2,9 @@ name: Unit tests
 
 on: [push, pull_request]
 
+env:
+  NODE_PATH: $GITHUB_WORKSPACE/libsodium.js/dist/modules/
+
 jobs:
   tests:
     name: All tests
