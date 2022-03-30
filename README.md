@@ -21,9 +21,7 @@ You might use it to build decentralized hyperlocal applications &mdash; like foo
 
 
 ### :hammer: Research emulator
-![architecture](https://github.com/noahlevenson/park/blob/main/architecture.png)
-
-We're building a graphical research emulator, [Passerby Park](https://github.com/noahlevenson/park), for studying the behaviors of Passerby networks.
+The [gif](https://github.com/noahlevenson/passerby/blob/master/passerby.gif) above was captured in [Passerby Park](https://github.com/noahlevenson/park) &mdash; a graphical research emulator for studying the behaviors of Passerby networks.
 
 
 ### :pencil2: Design goals
