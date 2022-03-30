@@ -17,4 +17,3 @@ jobs:
         run: cp $GITHUB_WORKSPACE/.github/workflows/passerby.json $GITHUB_WORKSPACE
       - name: Run tests
         run: $GITHUB_WORKSPACE/.github/workflows/test.sh
-

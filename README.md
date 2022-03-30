@@ -6,6 +6,7 @@
 
 # :compass: Table of contents
 * [What is Passerby?](#earth_americas-what-is-passerby)
+* [Research emulator](#hammer-research-emulator)
 * [Design goals](#pencil2-design-goals)
 * [The asterisk](#heavy_exclamation_mark-the-asterisk)
 * [Technology overview](#floppy_disk-technology-overview)
@@ -17,6 +18,12 @@
 It's Byzantine fault tolerant<sup>\*</sup> and it supports a full node on mobile devices.
 
 You might use it to build decentralized hyperlocal applications &mdash; like food delivery, ride hailing, or online dating. More broadly, though, **our goal is to create the location layer for the decentralized web** &mdash; that is, a persistent, decentralized, and scalable mechanism for coordinating with peers based on geographic proximity.
+
+
+### :hammer: Research emulator
+![architecture](https://github.com/noahlevenson/park/blob/main/architecture.png)
+
+We're building a graphical research emulator, [Passerby Park](https://github.com/noahlevenson/park), for studying the behaviors of Passerby networks.
 
 
 ### :pencil2: Design goals
