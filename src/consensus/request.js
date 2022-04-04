@@ -5,8 +5,9 @@ const { MSG_TYPE, message, pre_prepare_data} = require("./message.js");
 async function _request(gen, body, rinfo) {
   const instruction = body.data.o;
 
-  // First: Do I agree that I'm the primary replica for this data object? If not, forward it
-  // to who I believe to be the primary replica
+  /**
+   * If I don't think I'm the primary replica for this data object, forward it to who I think it is
+   */ 
   const r = await this.repman.fetch_r(instruction.key);
   const v = this._get_v(instruction.key);
   const primary = this._get_p(v, r);
@@ -22,7 +23,9 @@ async function _request(gen, body, rinfo) {
     return;
   }
 
-  // OK, I think I'm the primary replica, so I will multicast a pre-prepare to the backups
+  /**
+   * OK, I think I'm the primary replica, so I'll multicast a pre prepare to the backups
+   */ 
   const pre_prepare = message({
     type: MSG_TYPE.PRE_PREPARE,
     data: pre_prepare_data({
@@ -33,9 +36,11 @@ async function _request(gen, body, rinfo) {
     })
   });
 
-  // const backups = r.filter(replica => !replica.id.equals(this.repman.my_id()));
-  // TODO: We currently broadcast the pre-prepare even to ourself, to handle the case where 
-  // we're the only replica for a data object?
+  /**
+   * TODO: We currently broadcast the pre prepare to everyone including ourselves, to handle the
+   * case where we're the only replica for a data object... 
+   * const backups = r.filter(replica => !replica.id.equals(this.repman.my_id()));
+   */ 
   this._multicast(r, pre_prepare);
 }
 
