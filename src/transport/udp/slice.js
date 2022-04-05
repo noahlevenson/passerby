@@ -15,11 +15,12 @@ const { compare, read_uint16le, write_uint16le } = require("../../core/uint8.js"
 *
 * Deep thoughts about the checksum: The checksum was added to mitigate issues arising from a peer
 * who tries to send us two different chunks with the same chunk ID. This could happen if a peer 
-* sends us a chunk while experiencing connectivity issues -- and by rebooting, they reset their 
-* write pointer before our garbage collector can clean their incomplete chunk from our recv buffer.
-* To compute the checksum, we're currently just taking a 4 byte-hash over the chunk. It'd be more 
-* rigorous and more expensive to compute a CRC. It'd be less rigorous and less expensive to take 
-* the 4 low order bytes of the unix epoch time at which the chunk was created.
+* sends us part of a chunk and then crashes -- and by rebooting, they reset their write pointer 
+* before our garbage collector can clean their incomplete chunk from our recv buffer. This problem
+* is essentially the same problem for which the TCP Quiet Time concept was invented; you can read a
+* bit about that idea in RFC 793. To compute the checksum, we're currently just taking a 4 byte-hash 
+* over the chunk. It'd be more rigorous and more expensive to compute a CRC. It'd be less rigorous 
+* and less expensive to take the 4 low order bytes of the unix epoch time at which the chunk was created.
 */
 
 const VERSION_LEN = 1;
