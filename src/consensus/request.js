@@ -1,5 +1,6 @@
 "use strict";
 
+const Codec = require("../protocol/consensus.js");
 const { MSG_TYPE, message, pre_prepare_data} = require("./message.js");
 
 async function _request(gen, body, rinfo) {
