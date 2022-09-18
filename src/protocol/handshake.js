@@ -22,13 +22,13 @@ class Handshake extends Io {
       gen: this.generator(),
       success: (gen, body) => {
         Journal.log(Handshake.TAG, `Handshake OK <- ${rinfo.address}:${rinfo.port}`);
+        return "DEBUG SESSION KEY";
       },
       timeout: () => {
         console.log(Handshake.TAG, `Handshake FAILED ${rinfo.address}:${rinfo.port}`);
+        throw new Error("Handshake failed");
       }
     });
-
-    return "DEBUG SESSION KEY";
   }
 
   on_message(gen, body, rinfo) {
@@ -36,15 +36,15 @@ class Handshake extends Io {
     // TODO: Implement the handshake state machine! 
     // For now the handshake is just a sender hello and a receiver hello
 
-    if (Codec.is_gen_req(gen)) {
-      this.send({
-        body: "HELLO",
-        body_type: Codec.BODY_TYPE.JSON,
-        rinfo: new Rinfo({address: msg.from.addr, port: msg.from.port}),
-        gen: Codec.get_gen_res(gen),
-        ttl: Kademlia.DEFAULT_TTL
-      });
-    }
+    // if (Codec.is_gen_req(gen)) {
+    //   this.send({
+    //     body: "HELLO",
+    //     body_type: Codec.BODY_TYPE.JSON,
+    //     rinfo: new Rinfo({address: msg.from.addr, port: msg.from.port}),
+    //     gen: Codec.get_gen_res(gen),
+    //     ttl: Kademlia.DEFAULT_TTL
+    //   });
+    // }
   }
 }
 

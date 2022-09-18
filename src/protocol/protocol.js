@@ -139,7 +139,12 @@ class Passerby {
     const session_key = this.sessions.get(JSON.stringify(rinfo));
 
     if (!session_key) {
-      this.sessions.set(JSON.stringify(rinfo), await this.handshake.begin(rinfo));
+      try {
+        this.sessions.set(JSON.stringify(rinfo), const await this.handshake.begin(rinfo));
+      } catch (err) {
+        // TODO: Handshake failed, should we be more explicit about it?
+        return;
+      }
     }
 
     const encoded = Codec.encode({
