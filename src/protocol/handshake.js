@@ -30,7 +30,7 @@ class Handshake extends Io {
           resolve(key);
         },
         timeout: () => {
-          console.log(Handshake.TAG, `Handshake FAILED ${rinfo.address}:${rinfo.port}`);
+          Journal.log(Handshake.TAG, `Handshake FAILED ${rinfo.address}:${rinfo.port}`);
           resolve(undefined);
         }
       });
