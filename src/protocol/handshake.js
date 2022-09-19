@@ -12,39 +12,42 @@ class Handshake extends Io {
     super({bus: bus, generator: generator, type: Codec.MSG_TYPE.HANDSHAKE});
   }
 
-  async begin(rinfo) {
-    Journal.log(Handshake.TAG, `Handshake begin -> ${rinfo.address}:${rinfo.port}`);
+  /**
+   * TODO: Implement the handshake state machine! For now the handshake is just a client/server hello
+   */ 
+  begin(rinfo) {
+    return new Promise((resolve, reject) => {
+      Journal.log(Handshake.TAG, `Handshake begin -> ${rinfo.address}:${rinfo.port}`);
 
-    this.send({
-      body: "HELLO",
-      body_type: Codec.BODY_TYPE.JSON,
-      rinfo: rinfo,
-      gen: this.generator(),
-      success: (gen, body) => {
-        Journal.log(Handshake.TAG, `Handshake OK <- ${rinfo.address}:${rinfo.port}`);
-        return "DEBUG SESSION KEY";
-      },
-      timeout: () => {
-        console.log(Handshake.TAG, `Handshake FAILED ${rinfo.address}:${rinfo.port}`);
-        throw new Error("Handshake failed");
-      }
+      this.send({
+        body: "HELLO",
+        body_type: Codec.BODY_TYPE.JSON,
+        rinfo: rinfo,
+        gen: this.generator(),
+        success: (gen, body) => {
+          const key = "DEBUG SESSION KEY";
+          Journal.log(Handshake.TAG, `Handshake OK <- ${rinfo.address}:${rinfo.port} [${key}]`);
+          resolve(key);
+        },
+        timeout: () => {
+          console.log(Handshake.TAG, `Handshake FAILED ${rinfo.address}:${rinfo.port}`);
+          resolve(undefined);
+        }
+      });
     });
   }
 
   on_message(gen, body, rinfo) {
     super.on_message(gen, body, rinfo);
-    // TODO: Implement the handshake state machine! 
-    // For now the handshake is just a sender hello and a receiver hello
 
-    // if (Codec.is_gen_req(gen)) {
-    //   this.send({
-    //     body: "HELLO",
-    //     body_type: Codec.BODY_TYPE.JSON,
-    //     rinfo: new Rinfo({address: msg.from.addr, port: msg.from.port}),
-    //     gen: Codec.get_gen_res(gen),
-    //     ttl: Kademlia.DEFAULT_TTL
-    //   });
-    // }
+    if (Codec.is_gen_req(gen)) {
+      this.send({
+        body: "HELLO",
+        body_type: Codec.BODY_TYPE.JSON,
+        rinfo: rinfo,
+        gen: Codec.get_gen_res(gen)
+      });
+    }
   }
 }
 

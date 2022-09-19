@@ -136,13 +136,18 @@ class Passerby {
    * established, we'll execute the handshake protocol first
    */ 
   async send_secure({type = Codec.MSG_TYPE.APPLICATION, body, body_type, rinfo, gen, ttl} = {}) {
-    const session_key = this.sessions.get(JSON.stringify(rinfo));
+    if (type !== Codec.MSG_TYPE.HANDSHAKE) {
+      let shake = this.sessions.get(JSON.stringify(rinfo));
 
-    if (!session_key) {
-      try {
-        this.sessions.set(JSON.stringify(rinfo), const await this.handshake.begin(rinfo));
-      } catch (err) {
-        // TODO: Handshake failed, should we be more explicit about it?
+      if (!shake) {
+        shake = this.handshake.begin(rinfo);
+        this.sessions.set(JSON.stringify(rinfo), shake);
+      }
+
+      const key = await shake;
+
+      if (!key) {
+        this.sessions.delete(JSON.stringify(rinfo));
         return;
       }
     }
@@ -152,7 +157,7 @@ class Passerby {
       body_type: body_type,
       type: type, 
       gen: gen,
-      session_key: session_key
+      session_key: key
     });
 
     this.transport.send(encoded, rinfo, ttl);
