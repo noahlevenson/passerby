@@ -17,7 +17,7 @@ class Handshake extends Io {
    */ 
   begin(rinfo) {
     return new Promise((resolve, reject) => {
-      Journal.log(Handshake.TAG, `Handshake begin -> ${rinfo.address}:${rinfo.port}`);
+      Journal.log(Handshake.TAG, `Client HELLO -> ${rinfo.address}:${rinfo.port}`);
 
       this.send({
         body: "HELLO",
@@ -26,7 +26,7 @@ class Handshake extends Io {
         gen: this.generator(),
         success: (gen, body) => {
           const key = "DEBUG SESSION KEY";
-          Journal.log(Handshake.TAG, `Handshake OK <- ${rinfo.address}:${rinfo.port} [${key}]`);
+          Journal.log(Handshake.TAG, `Server HELLO <- ${rinfo.address}:${rinfo.port} [${key}]`);
           resolve(key);
         },
         timeout: () => {
@@ -41,6 +41,8 @@ class Handshake extends Io {
     super.on_message(gen, body, rinfo);
 
     if (Codec.is_gen_req(gen)) {
+      Journal.log(Handshake.TAG, `Client HELLO <- ${rinfo.address}:${rinfo.port}`);
+
       this.send({
         body: "HELLO",
         body_type: Codec.BODY_TYPE.JSON,
@@ -50,5 +52,7 @@ class Handshake extends Io {
     }
   }
 }
+
+
 
 module.exports = { Handshake };
