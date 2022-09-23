@@ -23,6 +23,7 @@ class Db {
   }
 
   async write(key, val) {
+    Journal.log(Db.TAG, `WRITE ${key.to_hex_str()}`);
     return this.consensus.request(instruction({key: key, opcode: Psm.OPCODE.WRITE, operands: [val]}));
   }
 }
