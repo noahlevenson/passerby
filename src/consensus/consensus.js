@@ -11,8 +11,10 @@ const { _pre_prepare } = require("./pre_prepare.js");
 const { _prepare } = require("./prepare.js");
 const { Log } = require("./log.js");
 const { MSG_TYPE, message, request_data } = require("./message.js");
+const Journal = require("../core/journal.js");
 
 class Pbft extends Io {
+  static TAG = "PBFT";
   static DIGEST_LEN = 32;
 
   constructor(bus, generator, repman, psm) {
@@ -113,15 +115,20 @@ class Pbft extends Io {
   async on_message(gen, body, rinfo) {
     switch (body.type) {
       case MSG_TYPE.REQUEST:
+        Journal.log(Pbft.TAG, `<< REQUEST 0x${body.data.o.opcode.toString(16)} ` + 
+          `${this._digest(body)} ${rinfo.address}:${rinfo.port}`);
         await _request.bind(this)(gen, body, rinfo);
         break;
       case MSG_TYPE.PRE_PREPARE:
+        Journal.log(Pbft.TAG, `<< PRE-PREPARE ${body.data.d} ${rinfo.address}:${rinfo.port}`);
         await _pre_prepare.bind(this)(gen, body, rinfo);
         break;
       case MSG_TYPE.PREPARE:
+        Journal.log(Pbft.TAG, `<< PREPARE ${body.data.d} ${rinfo.address}:${rinfo.port}`);
         await _prepare.bind(this)(gen, body, rinfo);
         break;
       case MSG_TYPE.COMMIT:
+        Journal.log(Pbft.TAG, `<< COMMIT ${body.data.d} ${rinfo.address}:${rinfo.port}`);
         await _commit.bind(this)(gen, body, rinfo);
         break;
       case MSG_TYPE.REPLY:

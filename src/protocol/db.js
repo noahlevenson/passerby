@@ -1,6 +1,7 @@
 "use strict";
 
 const { Psm, instruction } = require("../psm/psm.js");
+const Journal = require("../core/journal.js");
 
 /**
  * Db is the public API for the distributed database, combining consensus, the replicated state 
@@ -10,11 +11,14 @@ const { Psm, instruction } = require("../psm/psm.js");
  */ 
 
 class Db {
+  static TAG = "DBAS";
+
   constructor(consensus) {
     this.consensus = consensus;
   }
 
   async read(key) {
+    Journal.log(Db.TAG, `READ ${key.to_hex_str()}`);
     return this.consensus.request(instruction({key: key, opcode: Psm.OPCODE.READ}));
   }
 
