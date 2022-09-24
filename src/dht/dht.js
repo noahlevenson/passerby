@@ -572,7 +572,7 @@ class Kademlia extends Io {
    * This wrapper is used to wrap all the caller-specified timeout functions to enforce contact 
    * locking. Cuirrently we're prohibited from locking ourselves, mostly to avoid cases where 
    * network issues might result in our locking every contact in our routing table. TODO: this is
-   * implementing largely (solely?) to prevent the case where a call to get_nodes_closest_to() 
+   * implemented largely (solely?) to prevent the case where a call to get_nodes_closest_to() 
    * returns zero contacts. There's likely a better way to do this.
    */ 
   _contact_lock_timeout(recip_node_info, msg, caller_timeout) {
