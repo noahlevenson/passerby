@@ -73,6 +73,9 @@ class Pbft extends Io {
         replica_replies.set(category, n_received);
       });
 
+      Journal.log(Pbft.TAG, `-> REQUEST 0x${msg.data.o.opcode.toString(16)} ` + 
+        `${this._digest(msg)} ${primary.address}:${primary.port}`);
+
       this.send({
         body: msg,
         body_type: Codec.BODY_TYPE.JSON,
@@ -115,21 +118,21 @@ class Pbft extends Io {
   async on_message(gen, body, rinfo) {
     switch (body.type) {
       case MSG_TYPE.REQUEST:
-        Journal.log(Pbft.TAG, `<< REQUEST 0x${body.data.o.opcode.toString(16)} ` + 
+        Journal.log(Pbft.TAG, `<- REQUEST 0x${body.data.o.opcode.toString(16)} ` + 
           `${this._digest(body)} ${rinfo.address}:${rinfo.port}`);
-        await _request.bind(this)(gen, body, rinfo);
+        await _request.bind(this)(gen, body, rinfo, Pbft.TAG);
         break;
       case MSG_TYPE.PRE_PREPARE:
-        Journal.log(Pbft.TAG, `<< PRE-PREPARE ${body.data.d} ${rinfo.address}:${rinfo.port}`);
-        await _pre_prepare.bind(this)(gen, body, rinfo);
+        Journal.log(Pbft.TAG, `<- PRE-PREPARE ${body.data.d} ${rinfo.address}:${rinfo.port}`);
+        await _pre_prepare.bind(this)(gen, body, rinfo, Pbft.TAG);
         break;
       case MSG_TYPE.PREPARE:
-        Journal.log(Pbft.TAG, `<< PREPARE ${body.data.d} ${rinfo.address}:${rinfo.port}`);
-        await _prepare.bind(this)(gen, body, rinfo);
+        Journal.log(Pbft.TAG, `<- PREPARE ${body.data.d} ${rinfo.address}:${rinfo.port}`);
+        await _prepare.bind(this)(gen, body, rinfo, Pbft.TAG);
         break;
       case MSG_TYPE.COMMIT:
-        Journal.log(Pbft.TAG, `<< COMMIT ${body.data.d} ${rinfo.address}:${rinfo.port}`);
-        await _commit.bind(this)(gen, body, rinfo);
+        Journal.log(Pbft.TAG, `<- COMMIT ${body.data.d} ${rinfo.address}:${rinfo.port}`);
+        await _commit.bind(this)(gen, body, rinfo, Pbft.TAG);
         break;
       case MSG_TYPE.REPLY:
         this.reply.emit(body.data.t, body.data.r);

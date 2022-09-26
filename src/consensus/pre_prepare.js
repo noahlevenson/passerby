@@ -1,8 +1,9 @@
 "use strict";
 
 const { MSG_TYPE, message, prepare_data} = require("./message.js");
+const Journal = require("../core/journal.js");
 
-async function _pre_prepare(gen, body, rinfo) {
+async function _pre_prepare(gen, body, rinfo, tag) {
   const instruction = body.data.m.data.o;
 
   /**
@@ -52,6 +53,8 @@ async function _pre_prepare(gen, body, rinfo) {
     })
   });    
 
+  Journal.log(tag, `-> PREPARE (${r.length}) ${prepare.data.d} ` + 
+    `${r.map(replica => replica.address + ":" + replica.port).join(", ")}`);
   this._multicast(r, prepare);
 }
 

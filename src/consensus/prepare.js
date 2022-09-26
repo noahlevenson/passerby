@@ -1,8 +1,9 @@
 "use strict";
 
 const { MSG_TYPE, message, commit_data} = require("./message.js");
+const Journal = require("../core/journal.js");
 
-async function _prepare(gen, body, rinfo) {
+async function _prepare(gen, body, rinfo, tag) {
   /**
    * TODO: Perform the checks: Verify the sigs, make sure we're in the same view number, make sure
    * the seq number is between h and H
@@ -53,6 +54,8 @@ async function _prepare(gen, body, rinfo) {
         })
       });
 
+      Journal.log(tag, `-> COMMIT (${pre_prepare[0].r.length}) ${commit.data.d} ` + 
+        `${pre_prepare[0].r.map(replica => replica.address + ":" + replica.port).join(", ")}`);
       this._multicast(pre_prepare[0].r, commit);
     }
   }

@@ -2,9 +2,10 @@
 
 const Codec = require("../protocol/codec.js");
 const { Rinfo } = require("../transport/transport.js");
+const Journal = require("../core/journal.js");
 const { MSG_TYPE, message, pre_prepare_data} = require("./message.js");
 
-async function _request(gen, body, rinfo) {
+async function _request(gen, body, rinfo, tag) {
   const instruction = body.data.o;
 
   /**
@@ -15,6 +16,8 @@ async function _request(gen, body, rinfo) {
   const primary = this._get_p(v, r);
 
   if (!this.repman.my_id().equals(primary.id)) {
+    Journal.log(tag, `NOT P for ${this._digest(body)}, forwarding to ${primary.address}:${primary.port}`);
+
     this.send({
       body: body,
       body_type: Codec.BODY_TYPE.JSON,
@@ -43,6 +46,9 @@ async function _request(gen, body, rinfo) {
    * case where we're the only replica for a data object... 
    * const backups = r.filter(replica => !replica.id.equals(this.repman.my_id()));
    */ 
+  Journal.log(tag, `AM P for ${pre_prepare.data.d}`);
+  Journal.log(tag, `-> PRE-PREPARE (${r.length}) ${pre_prepare.data.d} ` + 
+    `${r.map(replica => replica.address + ":" + replica.port).join(", ")}`);
   this._multicast(r, pre_prepare);
 }
 

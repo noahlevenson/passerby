@@ -3,8 +3,9 @@
 const { MSG_TYPE, message, reply_data} = require("./message.js");
 const Codec = require("../protocol/codec.js");
 const { Rinfo } = require("../transport/transport.js");
+const Journal = require("../core/journal.js");
 
-async function _commit(gen, body, rinfo) {
+async function _commit(gen, body, rinfo, tag) {
   /**
    * TODO: Perform the checks: Verify the sigs, make sure we're in the same view number, make sure
    * the seq number is between h and H...
@@ -85,6 +86,7 @@ async function _commit(gen, body, rinfo) {
         gen: Codec.get_gen_res(gen)
       });
 
+      Journal.log(tag, `-> REPLY ${body.data.d} ${rinfo.address}:${rinfo.port}`);
       this.last_reply.set(msg.data.c.id.to_hex_str(), reply);
     }
   }
