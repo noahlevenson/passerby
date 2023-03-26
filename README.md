@@ -7,6 +7,7 @@
 # :compass: Table of contents
 * [What is Passerby?](#earth_americas-what-is-passerby)
 * [Research emulator](#hammer-research-emulator)
+* [Quickstart](#rocket-quickstart)
 * [Design goals](#pencil2-design-goals)
 * [The asterisk](#heavy_exclamation_mark-the-asterisk)
 * [Technology overview](#floppy_disk-technology-overview)
@@ -22,6 +23,50 @@ You might use it to build decentralized hyperlocal applications &mdash; like foo
 
 ### :hammer: Research emulator
 The [gif](https://github.com/noahlevenson/passerby/blob/master/passerby.gif) above was captured in [Passerby Park](https://github.com/noahlevenson/park) &mdash; a graphical research emulator for studying the behaviors of Passerby networks.
+
+
+### :rocket: Quickstart
+A good first step is to operationalize Passerby in [Passerby Park](https://github.com/noahlevenson/park). This will create a local test network consisting of 10 peers and let you execute protocol functions from any peer's perspective using a browser-based GUI.
+
+```
+# Passerby depends on libsodium for cryptographic primitives
+git clone https://github.com/jedisct1/libsodium.js
+
+# Get Passerby and Passerby Park
+git clone https://github.com/noahlevenson/passerby
+git clone https://github.com/park
+
+# Configure Passerby
+cd passerby
+cp default.json passerby.json
+
+# Edit passerby.json and supply the absolute path to libsodium-wrapper.js
+# e.g. "/home/user/libsodium.js/dist/modules/libsodium-wrappers.js"
+
+# Install Passerby Park's dependencies
+cd park
+npm i
+
+# Configure Passerby Park
+cd park/server
+cp default.json park.json
+
+# Edit park.json and supply the absolute path to Passerby (note the trailing slash)
+# e.g. "/home/user/passerby/"
+
+# Start Passerby Park
+cd park/server/src
+export NODE_PATH=/path/to/libsodium.js/dist/modules
+node index.js
+```
+
+Direct your browser to `localhost:9000` to load the GUI. Click on any peer to open its command menu.
+
+**SEARCH N**: Execute a geosearch over N square miles. The GUI will draw a search box (to scale) and highlight peers that are returned by the search function. The search box and peer highlighting are independent functions. In other words, the box represents the ground truth, and the peer highlighting represents the real result of the geosearch operation. This is how we verify the correctness of the distributed algorithms.
+
+**MOVE**: Move this peer to a new location. Click a second time to select a location on the map.
+
+Click the broom in the upper left corner to clear the current search results.
 
 
 ### :pencil2: Design goals
