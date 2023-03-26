@@ -40,7 +40,7 @@ git clone https://github.com/noahlevenson/park
 cd passerby
 cp default.json passerby.json
 
-# Edit passerby.json and supply the absolute path to libsodium-wrapper.js
+# Edit passerby.json and supply the absolute path to libsodium-wrappers.js
 # e.g. "/home/user/libsodium.js/dist/modules/libsodium-wrappers.js"
 
 # Install Passerby Park's dependencies
