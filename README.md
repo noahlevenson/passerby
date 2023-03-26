@@ -34,7 +34,7 @@ git clone https://github.com/jedisct1/libsodium.js
 
 # Get Passerby and Passerby Park
 git clone https://github.com/noahlevenson/passerby
-git clone https://github.com/park
+git clone https://github.com/noahlevenson/park
 
 # Configure Passerby
 cd passerby
