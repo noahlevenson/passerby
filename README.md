@@ -18,7 +18,7 @@
 
 It's Byzantine fault tolerant<sup>\*</sup> and it supports a full node on mobile devices.
 
-You might use it to build decentralized hyperlocal applications &mdash; like food delivery, ride hailing, or online dating. More broadly, though, **our goal is to create the location layer for the decentralized web** &mdash; that is, a persistent, decentralized, and scalable mechanism for coordinating with peers based on geographic proximity.
+You might use it to build decentralized hyperlocal applications &mdash; like food delivery, ride hailing, or online dating. More broadly, **our goal is to create the location layer for the decentralized web** &mdash; that is, a persistent, decentralized, and scalable mechanism for coordinating with peers based on geographic proximity.
 
 
 ### :hammer: Research emulator
