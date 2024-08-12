@@ -1,6 +1,6 @@
 # passerby
 
-![Unit tests](https://github.com/noahlevenson/passerby/workflows/Unit%20Tests/badge.svg)
+![Unit tests](https://github.com/noahlevenson/passerby/workflows/Unit%20tests/badge.svg)
 
 ![Passerby Park gif](https://github.com/noahlevenson/passerby/blob/master/passerby.gif)
 
