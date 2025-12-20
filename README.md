@@ -31,6 +31,8 @@ A good first step is to operationalize Passerby in [Passerby Park](https://githu
 ```
 # Passerby depends on libsodium for cryptographic primitives
 git clone https://github.com/jedisct1/libsodium.js
+cd libsodium.js
+git checkout 0.7.5
 
 # Get Passerby and Passerby Park
 git clone https://github.com/noahlevenson/passerby
@@ -54,7 +56,7 @@ cp default.json park.json
 # Edit park.json and supply the absolute path to Passerby (note the trailing slash)
 # e.g. "/home/user/passerby/"
 
-# Start Passerby Park
+# Start Passerby Park (tested with Node.js v18.20.8)
 cd park/server/src
 export NODE_PATH=/path/to/libsodium.js/dist/modules
 node index.js
